@@ -1,0 +1,45 @@
+{
+  "name": "valdra-store",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "check": "biome check .",
+    "typecheck": "tsc --noEmit",
+    "payload": "node scripts/payload-cli.mjs",
+    "payload:migrate:create": "pnpm payload migrate:create",
+    "payload:migrate": "pnpm payload migrate",
+    "payload:types": "pnpm payload generate:types",
+    "payload:importmap": "pnpm payload generate:importmap"
+  },
+  "engines": {
+    "node": "^22.23.4 || >=24.22.1"
+  },
+  "dependencies": {
+    "@payloadcms/db-postgres": "3.91.0",
+    "@payloadcms/next": "3.91.0",
+    "@payloadcms/plugin-ecommerce": "3.91.0",
+    "@payloadcms/storage-s3": "3.91.0",
+    "next": "16.4.2",
+    "payload": "3.91.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.2",
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "esbuild": "0.28.0",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  }
+}
