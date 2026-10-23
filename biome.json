@@ -10,6 +10,7 @@
       "*.{js,jsx,ts,tsx,mjs,cjs,json,jsonc,css,graphql}",
       "**/*.{js,jsx,ts,tsx,mjs,cjs,json,jsonc,css,graphql}",
       "!**/importMap.js",
+      "!payload-types.ts",
       "!**/.specify",
       "!**/.agents"
     ]

@@ -62,6 +62,12 @@ una imagen WebP de prueba desde Payload. Falta comprobar expiración efectiva, r
 de un cliente sin rol admin, límites de tipo/tamaño y borrado desde Payload. CORS no
 sustituye la autorización del servidor ni el bucket privado.
 
+Las imágenes del catálogo usan la colección `media` y el bucket público
+`valdra-catalog-media` (creado el 2026-10-23 con límite de 10 MB y JPEG/PNG/WebP).
+`S3_CATALOG_BUCKET` y `SUPABASE_URL` deben existir en `.env.local`; `SUPABASE_URL` solo
+se usa en servidor para construir la URL pública del objeto. Solo las imágenes de
+catálogo son públicas; referencias, propuestas y mockups permanecen privados.
+
 Usa el Session Pooler en modo de sesión, puerto `5432`, para ambas cadenas. Mantén
 `sslmode=verify-full` y `sslrootcert` con la ruta local al certificado raíz descargado
 desde **Supabase Dashboard → Database Settings → SSL Configuration**. No ignores
@@ -106,8 +112,8 @@ Después de aplicar la migración, levanta la aplicación y abre `/admin`. Mient
 haya administradores, Payload permite la creación inicial solo si se cumple todo lo
 siguiente: entorno no productivo, `ALLOW_ADMIN_BOOTSTRAP=true` y colección vacía.
 El hook asigna el rol de administrador en el servidor. Al terminar, cambia la variable
-a `false` en `.env.local` y reinicia el servidor. La colección de clientes no permite
-crear cuentas todavía; el registro se incorporará al implementar la HU correspondiente.
+a `false` en `.env.local` y reinicia el servidor. Los clientes se registran desde
+`/registro` (HU-01); su rol lo asigna el servidor y no acceden al panel.
 
 No despliegues un proyecto vacío con una cuenta administradora pendiente de crear.
 La configuración de producción siempre bloquea el modo de bootstrap.
@@ -122,7 +128,11 @@ pnpm dev
 
 Rutas locales:
 
-- `http://localhost:3000`: portada inicial del prototipo.
+- `http://localhost:3000`: portada del prototipo.
+- `http://localhost:3000/catalogo`: catálogo público con paginación.
+- `http://localhost:3000/catalogo/[id]`: detalle de prenda.
+- `http://localhost:3000/registro` y `/login`: registro e inicio de sesión de clientes.
+- `http://localhost:3000/cuenta`: vista privada del cliente autenticado.
 - `http://localhost:3000/admin`: panel Payload.
 - `http://localhost:3000/api`: API REST integrada de Payload.
 
