@@ -7,8 +7,9 @@ Prototipo web para personalizar y gestionar prendas con inteligencia artificial.
 El Sprint 1 está «En construcción» en el backlog. Su carpeta local registra las diez
 historias, sus criterios de aceptación y responsables. Ya existe el scaffold integrado
 Next.js + Payload, con autenticación base, roles separados y el plugin oficial
-Ecommerce configurado para el catálogo en COP. No se han implementado las historias
-funcionales del Sprint 1 ni aplicado migraciones a Supabase. Consulta la guía para
+Ecommerce configurado para el catálogo en COP. Las migraciones base de Payload ya se
+aplicaron a Supabase; las historias funcionales del Sprint 1 siguen pendientes.
+Consulta la [guía para el equipo](docs/guia-inicio-equipo.md) y la guía para
 [instalar, configurar y levantar el proyecto](docs/desarrollo.md).
 
 ## Stack aprobado
@@ -53,7 +54,8 @@ Copy-Item .env.example .env.local
 pnpm dev
 ```
 
-Luego abre `http://localhost:3000` o `http://localhost:3000/admin`. Antes del primer
-arranque, completa `.env.local` y aplica una migración Payload revisada; ver
-[docs/desarrollo.md](docs/desarrollo.md) para todos los pasos. Los comandos
+Luego abre `http://localhost:3000` o `http://localhost:3000/admin`. Completa
+`.env.local` antes del primer arranque. Las migraciones base ya están aplicadas;
+solo el responsable autorizado aplica migraciones nuevas después de revisar el diff.
+Consulta [docs/desarrollo.md](docs/desarrollo.md) para todos los pasos. Los comandos
 `pnpm lint`, `pnpm format`, `pnpm format:check` y `pnpm check` usan Biome.
