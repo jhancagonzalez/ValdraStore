@@ -18,7 +18,7 @@ integración definidos. El scaffold no implementa funcionalidades de las histori
 
 **Dependencias principales**: Payload CMS, @payloadcms/next, @payloadcms/db-postgres, @payloadcms/storage-s3, Next.js, React, TypeScript. Herramientas de calidad: Biome para lint y formato, Vitest y Playwright.
 
-**Almacenamiento**: PostgreSQL y Supabase Storage en el mismo proyecto. Pooler para consultas de aplicación; conexión directa para migraciones Payload. El proyecto conserva la URL proporcionada por el equipo, sin credenciales en Git.
+**Almacenamiento**: PostgreSQL y Supabase Storage en el mismo proyecto. Supavisor Session Pooler IPv4 (puerto 5432) para consultas de aplicación y migraciones Payload, para evitar depender de IPv6 en las redes del equipo. El proyecto conserva las URL proporcionadas por el equipo, sin credenciales en Git.
 
 **Pruebas**: La instalación prepara herramientas; no crea ni ejecuta suites funcionales en esta fase. El spike sí debe producir evidencia manual de sus cinco criterios.
 
@@ -30,7 +30,7 @@ integración definidos. El scaffold no implementa funcionalidades de las histori
 
 **Objetivos de rendimiento**: No se definen métricas no presentes en las fuentes. Verificar duración de función disponible frente al tiempo real del proveedor de IA antes de elegir ejecución síncrona o asíncrona.
 
-**Restricciones**: No usar Supabase Auth. Payload maneja autenticación, roles, colecciones y migraciones. La Data API de Supabase debe estar desactivada para las tablas Payload o protegida con RLS activo y sin permisos públicos. Archivos de referencia, IA y maquetas privados; catálogo público. IA y WhatsApp sujetos a costos, accesos y adaptadores. Sin checkout ni pagos.
+**Restricciones**: No usar Supabase Auth. Payload maneja autenticación, roles, colecciones y migraciones. Las tablas Payload mantienen RLS activo y no conceden privilegios a `anon`, `authenticated`, `service_role` ni `PUBLIC`; el rol propietario de Payload omite RLS y la aplicación aplica sus propios controles. Archivos de referencia, IA y maquetas privados; catálogo público. IA y WhatsApp sujetos a costos, accesos y adaptadores. Sin checkout ni pagos.
 
 **Equipo/Alcance**: Cinco integrantes, entrega máxima 2026-12-15. Alcance HU-01 a HU-29 más HU-31 (Could, aprobada por el cliente el 2026-10-22). HU-30 Won't. Sprint 0 (2026-10-20 a 2026-11-03) corre en paralelo con el inicio del Sprint 1 según Notion.
 
@@ -81,7 +81,7 @@ separadas en las tres capas lógicas (C-10).
 2. Entorno reproducible: Node 24.22.1 está instalado y verificado; mantener la
    versión indicada por .node-version, las dependencias fijadas con pnpm, el
    pnpm-lock.yaml y Biome 2.6.2 con sus comandos configurados.
-3. Seguridad/infraestructura: verificar las conexiones Payload pooler/directa,
+3. Seguridad/infraestructura: verificar las conexiones Payload por Session Pooler IPv4,
    privacidad de Data API/RLS y credenciales locales sin guardarlas en el repo. El
    scaffold deja el push automático desactivado y no ha aplicado migraciones.
 4. Spike técnico (timebox de dos días): demostrar a-e de la especificación con datos
@@ -102,7 +102,8 @@ separadas en las tres capas lógicas (C-10).
 
 ## Seguimiento de complejidad
 
-No se crean servicios separados, modelos de producción, contratos API ni migraciones
-de producto durante Sprint 0. El scaffold integrado y los schemas técnicos base ya
-están preparados, sin cambios aplicados a Supabase. El adaptador S3 y el procesamiento
-asíncrono solo se implementarán si el spike y las aprobaciones lo requieren.
+No se crean servicios separados, modelos de producción ni contratos API durante
+Sprint 0. El 2026-10-23 se aplicó la migración base de Payload en Supabase mediante el
+Session Pooler, después de revisar que solo crea las colecciones técnicas aprobadas
+para cuentas y catálogo. El adaptador S3 y el procesamiento asíncrono siguen sujetos
+a sus pruebas y aprobaciones.

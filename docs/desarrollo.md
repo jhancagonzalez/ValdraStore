@@ -37,8 +37,9 @@ node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 
 Pega el resultado en `PAYLOAD_SECRET` dentro de `.env.local`. Completa también:
 
-- `DATABASE_URL`: cadena del pooler de Supabase para la aplicación.
-- `DATABASE_URL_DIRECT`: cadena directa, reservada para crear y ejecutar migraciones.
+- `DATABASE_URL`: cadena Supavisor Session Pooler IPv4 de Supabase para la aplicación.
+- `DATABASE_URL_MIGRATIONS`: cadena del mismo Session Pooler, reservada para crear
+  y ejecutar migraciones.
 - `NEXT_PUBLIC_SERVER_URL`: conserva `http://localhost:3000` para desarrollo local.
 - `ALLOW_ADMIN_BOOTSTRAP=true`: permite crear el primer administrador únicamente
   en desarrollo local y mientras la colección de administradores esté vacía. El
@@ -47,18 +48,34 @@ Pega el resultado en `PAYLOAD_SECRET` dentro de `.env.local`. Completa también:
 No compartas ni subas `.env.local`; está excluido de Git. No uses una clave
 `NEXT_PUBLIC_` para secretos.
 
-Mantén `sslmode=require` en ambas cadenas PostgreSQL y no desactives SSL. Para
-verificación completa del certificado, descarga el certificado raíz desde **Supabase
-Dashboard → Database Settings → SSL Configuration** y configura el cliente Node/Postgres
-para confiar en ese archivo. No ignores errores de certificado. Si la contraseña de
-Postgres contiene caracteres reservados, codifícala para URL en ambas cadenas.
+## Credenciales S3 para el spike de Storage
+
+El adaptador S3 todavía no está habilitado en Payload. El bucket privado
+`valdra-private-spike` existe, pero la prueba real está pendiente. Para continuarla,
+genera un par de claves en **Supabase → Storage → S3 Configuration** y completa en
+`.env.local` las variables `S3_ACCESS_KEY_ID` y `S3_SECRET_ACCESS_KEY` del ejemplo.
+Usa la región `us-east-1`, el endpoint indicado y el bucket de spike. Estas claves
+son privilegiadas y omiten RLS: no las envíes por chat, no las publiques y no las
+uses en el navegador. El origen local y los métodos CORS de carga deben configurarse
+en el panel de Storage antes de probar la carga directa; la API S3 de Supabase no
+implementa `PutBucketCors`. La matriz de compatibilidad tampoco declara soporte de
+`If-None-Match` para `PutObject`, encabezado que Payload 3.91.0 usa al firmar cargas
+directas; su compatibilidad se debe probar antes de adoptar este flujo.
+
+Usa el Session Pooler en modo de sesión, puerto `5432`, para ambas cadenas. Mantén
+`sslmode=verify-full` y `sslrootcert` con la ruta local al certificado raíz descargado
+desde **Supabase Dashboard → Database Settings → SSL Configuration**. No ignores
+errores de certificado. Si la contraseña de Postgres contiene caracteres reservados,
+codifícala para URL en ambas cadenas.
 
 ## Crear y aplicar el esquema Payload
 
 Payload tiene `push: false`: arrancar la aplicación no altera el esquema de Supabase.
 Las tablas las administra Payload mediante migraciones.
 
-1. Verifica que `DATABASE_URL_DIRECT` apunte al proyecto `pfvhzecrervwtsetspqq`.
+1. Verifica que `DATABASE_URL_MIGRATIONS` use el Session Pooler del proyecto
+   `pfvhzecrervwtsetspqq` (host de pooler, puerto `5432`, usuario
+   `postgres.pfvhzecrervwtsetspqq`).
 2. Genera una migración desde la configuración actual:
 
    ```powershell
@@ -75,8 +92,13 @@ Las tablas las administra Payload mediante migraciones.
    ```
 
 Los dos comandos anteriores cargan `.env.local` y usan exclusivamente
-`DATABASE_URL_DIRECT`. No se ejecuta ninguna migración automáticamente al iniciar
+`DATABASE_URL_MIGRATIONS`. No se ejecuta ninguna migración automáticamente al iniciar
 Next.js. No uses Supabase CLI para migrar el esquema de la aplicación.
+
+La migración inicial `20261023_165324` ya se aplicó al proyecto correcto el
+2026-10-23. Creó 20 tablas técnicas de Payload, cuentas y catálogo; no añadió datos,
+direcciones, pedidos ni pagos. Incluyó RLS y la revocación de privilegios de Data API
+para `anon`, `authenticated`, `service_role` y `PUBLIC`.
 
 ## Crear el primer administrador local
 
@@ -132,23 +154,30 @@ pnpm start
 | `pnpm typecheck` | Comprueba los tipos de TypeScript. |
 | `pnpm payload:types` | Genera los tipos de colecciones Payload. |
 | `pnpm payload:importmap` | Regenera el import map del panel Payload. |
-| `pnpm payload:migrate:create` | Genera una migración usando la conexión directa. |
-| `pnpm payload:migrate` | Aplica migraciones Payload usando la conexión directa. |
+| `pnpm payload:migrate:create` | Genera una migración usando el Session Pooler IPv4. |
+| `pnpm payload:migrate` | Aplica migraciones Payload usando el Session Pooler IPv4. |
 
 ## Estado de la infraestructura
 
 - El 2026-10-23, el conector confirmó el proyecto `pfvhzecrervwtsetspqq` activo y
-  respondió una consulta de solo lectura en PostgreSQL 17.11. Ya existe el bucket
-  privado de prueba `valdra-private-spike`, limitado a 10 MB y JPEG/PNG/WebP; S3 aún
-  no se ha probado. Las cadenas pooler y directa están completas en `.env` y
-  `.env.local`, que están ignorados por Git. La primera prueba del pooler con SSL
-  requerido falló porque Node no confía todavía en la cadena del certificado
-  (`SELF_SIGNED_CERT_IN_CHAIN`); una prueba previa sin SSL recibió rechazo de
-  credenciales (`28P01`). La conexión directa no resolvió el hostname en el entorno
-  local (`ENOTFOUND`), aunque coincide con el hostname que reporta Supabase. No ejecutar
-  migraciones hasta corregir certificado/credenciales y verificar ambas conexiones.
-- No se activó Supabase Storage en Payload. La integración S3 y la carga privada
-  firmada siguen sujetas al spike técnico.
+  respondió una consulta de solo lectura en PostgreSQL 17.11. Las cadenas de
+  aplicación y migración usan Session Pooler IPv4 con `sslmode=verify-full`; una
+  consulta runtime devolvió `postgres`. Payload aplicó `20261023_165324` y una
+  consulta `getPayload` leyó `products` sin errores. La conexión directa publica
+  una dirección AAAA IPv6 y la ruta de red local falló; no se activará el complemento
+  IPv4 pago.
+- Las 20 tablas de Payload tienen RLS y no conceden acceso a `anon`, `authenticated`
+  ni `service_role`; los privilegios predeterminados de `postgres` también quedaron
+  revocados para nuevos objetos en `public`. La API automática de Supabase no se
+  desactivó globalmente; las tablas están protegidas por permisos y RLS. El asesor de
+  Supabase muestra avisos informativos de RLS sin políticas, esperado porque las
+  tablas solo se acceden mediante Payload.
+- El bucket `valdra-private-spike` está privado, limitado a 10 MB y JPEG/PNG/WebP, y
+  tiene 0 objetos. No hay claves S3 en `.env.local`; por eso aún no se ha probado
+  carga, descarga firmada, CORS ni acceso no autorizado.
+- La ruta HTTP de Next ejecutada desde un proceso en segundo plano de esta sesión no
+  pudo resolver el pooler (`ENOTFOUND`). La conexión puntual de Payload sí funcionó;
+  confirmar `pnpm dev` en el terminal local normal del equipo.
 - Vercel está definido como hosting gratuito de la demo académica no comercial; no
   contratar planes, complementos ni servicios pagos. No bloquea el inicio del
   desarrollo; sus límites técnicos se revisarán al preparar el despliegue.

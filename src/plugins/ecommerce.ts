@@ -1,6 +1,6 @@
 import { ecommercePlugin } from "@payloadcms/plugin-ecommerce";
 import type { EcommercePluginConfig } from "@payloadcms/plugin-ecommerce/types";
-import type { Access } from "payload";
+import type { Access, Plugin } from "payload";
 import { hasAdminRole, isAdmin, isAdminField, isCustomer } from "@/access/roles";
 
 const isAuthenticated: Access = ({ req }) => Boolean(req.user);
@@ -40,4 +40,21 @@ const ecommerceConfig: EcommercePluginConfig = {
 };
 
 /** Catalog foundation only; deliberately excludes checkout and payment flows. */
-export const ecommercePluginForCatalog = ecommercePlugin(ecommerceConfig);
+const configureEcommerce = ecommercePlugin(ecommerceConfig);
+
+/**
+ * Payload 3.91.0's config sanitizer turns `addresses: false` into a truthy object.
+ * Filter only plugin-added collections so address data and checkout remain outside
+ * the approved catalog foundation until a product story explicitly needs them.
+ */
+export const ecommercePluginForCatalog: Plugin = async (incomingConfig) => {
+  const existingSlugs = new Set(incomingConfig.collections?.map(({ slug }) => slug) ?? []);
+  const configured = await configureEcommerce(incomingConfig);
+
+  return {
+    ...configured,
+    collections: configured.collections?.filter(
+      ({ slug }) => slug !== "addresses" || existingSlugs.has(slug),
+    ),
+  };
+};

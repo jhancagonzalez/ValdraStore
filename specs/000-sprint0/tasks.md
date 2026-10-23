@@ -33,8 +33,8 @@ validación, no una suite de pruebas del producto.
 
 **Propósito**: Confirmar los prerrequisitos de una integración confiable.
 
-- [ ] T006 Validar desde Payload la conexión PostgreSQL por pooler y la conexión directa para migraciones, sin versionar credenciales (RNF-14/RNF-16). El 2026-10-23 se confirmó que el proyecto correcto (`pfvhzecrervwtsetspqq`) está activo, PostgreSQL 17.11 responde consultas de solo lectura y se creó el bucket privado `valdra-private-spike`. Las cadenas están completas en `.env` y `.env.local`, ambos ignorados por Git; el pooler y host directo corresponden al proyecto y ambas URL exigen SSL. El pooler dio `SELF_SIGNED_CERT_IN_CHAIN` al verificar TLS y una prueba previa sin SSL devolvió `28P01`; falta configurar la CA y confirmar contraseña/codificación. El hostname directo coincide con Supabase, pero este entorno devolvió `ENOTFOUND`; falta revisar DNS/IPv6. No ejecutar migraciones hasta validar ambas conexiones.
-- [ ] T007 Verificar la exposición de la Data API de Supabase y evitar que las tablas de Payload queden expuestas públicamente; documentar RLS/permisos antes de cambiar el esquema (seguridad).
+- [x] T006 Validar desde Payload las conexiones PostgreSQL de aplicación y migraciones por Supavisor Session Pooler IPv4, sin versionar credenciales (RNF-14/RNF-16). El 2026-10-23 el proyecto `pfvhzecrervwtsetspqq` (PostgreSQL 17.11) respondió `postgres` por `DATABASE_URL` y por `DATABASE_URL_MIGRATIONS`, ambos en Session Pooler, TLS `verify-full` y CA. No depender de IPv6 ni activar complemento IPv4 pago. `.env.local` y `.env` están ignorados por Git. La migración Payload `20261023_165324` se aplicó correctamente y el runtime `getPayload` leyó la colección vacía `products`. La ruta HTTP de Next desde el proceso aislado de esta sesión falló al resolver DNS (`ENOTFOUND`); validar `pnpm dev` en un terminal normal del equipo.
+- [x] T007 Verificar y proteger la exposición de la Data API de Supabase para tablas Payload. El 2026-10-23 se revocaron por migración los privilegios predeterminados de `anon`, `authenticated`, `service_role` y `PUBLIC` sobre tablas, secuencias y funciones creadas por `postgres` en `public`; se habilitó RLS en las 20 tablas base y se revocó la ejecución API de `public.rls_auto_enable()`. Verificación SQL: ninguna tabla Payload concede lectura o escritura a esos roles; el trigger `ensure_rls` continúa activo. No se depende del interruptor global de Data API.
 - [ ] T008 Identificar la ubicación de `ValdraStoreRespaldos` en el Drive compartido, que el usuario informó haber creado el 2026-10-23. Jhancarlos Gonzalez es responsable de realizar y verificar las copias semanales. Configurar copias de PostgreSQL y de todos los archivos de todos los buckets de Storage con retención de 30 días. Probar restauración en un entorno local aislado. La frecuencia, retención, alcance de Storage y destino local de restauración están aprobados; ruta exacta, cifrado y modalidad de ejecución siguen pendientes (RNF-16).
 - [x] T009 Registrar Vercel Hobby gratuito solo como hosting de la demo académica no comercial, sin contratar servicios pagos. No hay decisiones pendientes de Vercel para iniciar desarrollo. Revisar límites técnicos y duración efectiva al preparar el despliegue; el límite documentado de cuerpo de función (4.5 MB) es menor que el máximo de archivo aprobado (10 MB), por lo que el spike valida carga directa a Supabase.
 - [ ] T010 Completar el spike de disponibilidad de un endpoint de generación de imágenes OpenRouter que cueste USD 0. El usuario aprobó presupuesto máximo USD 0, generación desactivada hasta verificar gratuidad real y máximo futuro de 3 generaciones por usuario al día. No llamar endpoints pagados ni activar fallback pagado. Registrar evidencia de catálogo/precio y privacidad; mientras no se confirme una opción gratuita, HU-14/HU-31 permanecen sin generación de imágenes activa (HU-14/HU-31).
@@ -47,12 +47,12 @@ validación, no una suite de pruebas del producto.
 
 **Propósito**: Resolver riesgos de integración usando únicamente datos descartables de prueba.
 
-- [ ] T015 Validar la conexión de ejecución de Payload a PostgreSQL Supabase mediante pooler y una migración controlada de Payload mediante conexión directa; registrar evidencia y limpieza (RNF-14).
-- [ ] T016 Validar @payloadcms/storage-s3 y el flujo de carga privada directa. Revisión documental iniciada el 2026-10-23: Supabase S3 soporta SigV4/PutObject, pero su matriz no confirma `If-None-Match` en PutObject, mientras Payload 3.91.0 la envía en cargas directas. El bucket privado `valdra-private-spike` ya existe con límite de 10 MB y tipos JPEG/PNG/WebP. Falta obtener credenciales S3 desde el panel, definir CORS para el origen local, configurar el adaptador Payload y probar carga/lectura/eliminación, permisos, expiración y acceso no autorizado; registrar incompatibilidades (seguridad/privacidad).
+- [x] T015 Validar la conexión de ejecución de Payload a PostgreSQL Supabase y una migración controlada mediante Supavisor Session Pooler IPv4 (puerto 5432); registrar evidencia y limpieza (RNF-14). La migración base se aplicó sin datos de prueba; `getPayload.find({ collection: 'products', limit: 1 })` devolvió cero documentos y no produjo errores.
+- [ ] T016 Validar @payloadcms/storage-s3 y el flujo de carga privada directa. El bucket privado `valdra-private-spike` fue verificado en Supabase: 10 MB, JPEG/PNG/WebP, 0 objetos. Falta generar las claves S3 en el panel y añadirlas solo a `.env.local`, definir CORS en el panel para el origen local (la API S3 no implementa `PutBucketCors`), configurar el adaptador Payload y probar carga/lectura/eliminación, permisos, expiración y acceso no autorizado. Payload 3.91.0 envía `If-None-Match: *` en la carga directa; la matriz S3 de Supabase no declara soporte para este encabezado, así que requiere prueba real (seguridad/privacidad).
 - [ ] T017 Crear una colección y un registro Payload descartables para una prenda con tallas y colores; documentar si el modelo de datos la representa sin convertirlo en un módulo de producto (preparación de catálogo).
 - [ ] T018 Validar cuentas/roles separados de administrador y cliente en Payload; comprobar que el cliente no tenga acceso administrativo (HU-05/RF-5/RNF-2).
 - [ ] T019 Validar que un pedido de prueba almacene y recupere un estado de pedido definido por el proyecto, sin adoptar un flujo externo (HU-20/HU-21/RF-20/RF-21).
-- [ ] T020 Publicar el informe del spike en specs/000-sprint0/spike-results.md con configuración, pasos, evidencia, limpieza, fallos, riesgos y decisiones siguientes (RNF-14/RNF-16).
+- [ ] T020 Completar el informe del spike en specs/000-sprint0/spike-results.md con los resultados restantes, evidencia, limpieza, fallos, riesgos y decisiones siguientes (RNF-14/RNF-16). Existe un informe parcial con T006/T007/T015 y el bloqueo de Storage.
 
 ## Fase 4: Revisión y entrega del Sprint 0
 
@@ -68,11 +68,11 @@ validación, no una suite de pruebas del producto.
 - T004 bloquea ejecutar Payload y el spike; los metadatos de dependencias y el lockfile pueden prepararse por separado.
 - T025 bloquea el scaffold y las condiciones de calidad de Sprint 1.
 - T026 crea la base integrada; T027 documenta su puesta en marcha. Ninguna de las dos tareas aplica una migración a Supabase.
-- T006 y T007 bloquean T015 y T016.
+- T006 y T007 completadas; T015 completada. T016 sigue bloqueada hasta disponer de claves S3 locales y configurar CORS.
 - T009 y T010 informan la decisión sobre procesamiento asíncrono de IA; no autorizan activar un proveedor mientras no se verifique un endpoint gratuito ni requieren llamadas pagadas.
 - T011 define límites aprobados para el prototipo; T016 debe verificar compatibilidad y usar solo datos de prueba.
 - T015 a T019 componen el spike de dos días y pueden hacerse en paralelo solo después de T006/T007 y de tener cuentas de prueba de roles/datos.
-- T020 depende de T015–T019. T021–T024 siguen la revisión de evidencias y decisiones del spike.
+- T020 tiene evidencia parcial; se completa después de T016–T019. T021–T024 siguen la revisión de evidencias y decisiones del spike.
 
 ## Trabajo en paralelo
 
@@ -87,8 +87,8 @@ superponen. T020 consolida la evidencia cuando terminen las validaciones.
 - Los cinco chequeos del spike tienen resultados registrados; los fallos tienen responsable y siguiente acción.
 - La disponibilidad de un endpoint IA realmente gratuito, detalles operativos de respaldos,
   compatibilidad de carga directa de imágenes y conexión/compatibilidad de Storage
-  con Supabase siguen visibles hasta resolverse. La conexión de Payload requiere las
-  cadenas locales pooler/directa. La política de costo/cuota de IA, HU-31, la disponibilidad de Andrés, Vercel Hobby
+  con Supabase siguen visibles hasta resolverse. La conexión de Payload requiere
+  cadenas locales de Session Pooler para aplicación y migraciones. La política de costo/cuota de IA, HU-31, la disponibilidad de Andrés, Vercel Hobby
   gratuito solo para hosting no comercial,
   la estructura integrada, Biome, moneda COP, mecanismo manual HU-28 y ratificación de la constitución están
   registrados.

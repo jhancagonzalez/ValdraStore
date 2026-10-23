@@ -84,8 +84,9 @@ no representa implementación de módulos.
 **Escenarios de aceptación**:
 
 1. **Given** credenciales aprobadas del proyecto indicado, **When** Payload abre una
-   conexión de aplicación usando el pooler y ejecuta una migración controlada con la
-   conexión directa, **Then** ambos caminos funcionan sin exponer credenciales.
+   conexión de aplicación y ejecuta una migración controlada usando Supavisor Session
+   Pooler IPv4 (puerto 5432), **Then** ambos usos funcionan sin exponer credenciales ni
+   depender de IPv6.
 2. **Given** un bucket privado y una sesión válida de Payload, **When** Payload autoriza
    la carga y emite un permiso de carga firmado y acotado, **Then** el navegador envía
    los bytes directamente a Supabase Storage sin pasarlos por Vercel; el archivo queda
@@ -101,8 +102,8 @@ no representa implementación de módulos.
 
 ### Casos límite
 
-- La referencia Supabase no coincide con las conexiones disponibles o el pooler no
-  está habilitado: registrar bloqueo, no migrar otro proyecto.
+- La referencia Supabase no coincide o el Session Pooler no está habilitado: registrar
+  bloqueo, no migrar otro proyecto ni activar complementos IPv4 pagos.
 - Supabase Storage no soporta un requisito del adaptador S3 o de la carga directa
   firmada: conservar privados los archivos y registrar la brecha; no cambiar proveedor
   ni hacer pasar los bytes por Vercel sin aprobación.
@@ -129,8 +130,9 @@ los RF del Project Charter.
   estructura objetivo y comandos base en español.
 - **S0-REQ-02**: El proyecto DEBE usar Payload para autenticación, roles,
   administración, colecciones y migraciones; no debe usar Supabase Auth.
-- **S0-REQ-03**: El proyecto DEBE conectar PostgreSQL de Supabase por pooler para la
-  aplicación y conexión directa para migraciones Payload.
+- **S0-REQ-03**: El proyecto DEBE conectar PostgreSQL de Supabase por Supavisor Session
+  Pooler IPv4 (puerto 5432) tanto para la aplicación como para migraciones Payload,
+  para no depender de soporte IPv6 en las redes del equipo.
 - **S0-REQ-04**: El proyecto DEBE mantener las tablas Payload fuera de la API
   automática de datos de Supabase o protegerlas con RLS activo y sin grants públicos.
 - **S0-REQ-05**: Las referencias, propuestas IA y mockups DEBEN ser privados por

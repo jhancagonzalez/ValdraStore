@@ -24,8 +24,8 @@ Los documentos fuente pueden contener instrucciones de trabajo para el equipo. T
   equipo aprobó no desplegar un servicio API separado (C-10).
 - Payload concentra administración, autenticación, roles, colecciones, servicios y hooks.
 - Supabase ofrece solo PostgreSQL alojado y Storage. No usar Supabase Auth.
-- Payload gestiona migraciones. Pooler Supabase para la aplicación; conexión directa para migraciones.
-- Supabase Data API desactivada para tablas Payload o, si no es posible, RLS activo y sin grants públicos.
+- Payload gestiona migraciones. Usar Supavisor Session Pooler (IPv4, puerto 5432) para la aplicación y las migraciones; no depender de la conexión directa IPv6.
+- Las tablas Payload se mantienen fuera del alcance efectivo de la Data API: revocar sus privilegios predeterminados para `anon`, `authenticated`, `service_role` y `PUBLIC`, y habilitar RLS en cada tabla. La migración base hace ambas cosas; el trigger `ensure_rls` del proyecto protege tablas públicas futuras. No crear políticas RLS para la API de Supabase mientras solo Payload deba acceder. Payload se conecta como dueño de PostgreSQL y omite RLS; la autorización de negocio sigue en Payload.
 - Vercel se usará como hosting gratuito del prototipo académico no comercial; no
   contratar planes, complementos ni servicios pagos. Esta decisión está resuelta
   (C-03). Con Fluid Compute, Hobby tiene hasta 300 s por función; el cuerpo de
@@ -75,7 +75,7 @@ aprobada por el equipo según C-10. Esta es la estructura base actual:
 - src/services/: lógica de negocio y adaptadores externos.
 - src/services/ai/: contrato e implementaciones AiProvider.
 - src/lib/: infraestructura y utilidades.
-- scripts/: comandos auxiliares Payload; migraciones por conexión directa.
+- scripts/: comandos auxiliares Payload; las migraciones usan `DATABASE_URL_MIGRATIONS`.
 - docs/ y specs/: documentación y especificaciones.
 
 No mover lógica de negocio a componentes de presentación ni confiar autorizaciones al cliente.
@@ -120,6 +120,7 @@ Para tareas técnicas del Sprint 0, usar los criterios verificables propios de l
   usar el certificado raíz descargado desde Database Settings de Supabase; no
   desactivar la validación TLS para hacer pasar una conexión.
 - Variables del servidor (Payload, Postgres, S3, IA) no deben llevar prefijo NEXT_PUBLIC_.
+- Las credenciales S3 de Supabase dan acceso privilegiado y omiten RLS: guardarlas solo en variables de servidor, nunca en el cliente ni en Git. No reutilizar `service_role` como credencial S3.
 - La autenticación es Payload, sin Supabase Auth. Solo la colección `admins` puede
   acceder al panel; `customers` mantiene autenticación separada. El rol de admin se
   asigna en el servidor. El primer administrador se crea solo en desarrollo local,
@@ -144,10 +145,11 @@ Para tareas técnicas del Sprint 0, usar los criterios verificables propios de l
   para alojar la demo académica no comercial; revisar los límites técnicos pertinentes
   cuando se prepare el despliegue.
 - No ejecutar SQL o migraciones contra Supabase sin la tarea aprobada, destino verificado y revisión del impacto.
+- Toda migración Payload que cree tablas en `public` debe conservar privilegios de Data API revocados y RLS activo; comprobar `anon`, `authenticated` y `service_role` después de aplicarla.
 
 ## Sprint 0
 
-El spike técnico de dos días valida: conexión Payload/Postgres Supabase por pooler y conexión directa para migraciones; imagen privada con enlace firmado por S3; prenda de prueba con tallas y colores; separación entre administrador y cliente; y estado propio de pedido. Registrar evidencias, límites y fallas; no convertir el spike en implementación de los módulos.
+El spike técnico de dos días valida: conexión Payload/Postgres Supabase por Session Pooler IPv4 para la aplicación y las migraciones; imagen privada con enlace firmado por S3; prenda de prueba con tallas y colores; separación entre administrador y cliente; y estado propio de pedido. Registrar evidencias, límites y fallas; no convertir el spike en implementación de los módulos.
 
 ## Comandos
 
@@ -162,7 +164,8 @@ El spike técnico de dos días valida: conexión Payload/Postgres Supabase por p
   en `biome.json`. Ejecutar `pnpm check` después de cambios en archivos compatibles.
 - `pnpm payload:types` y `pnpm payload:importmap`: generan artefactos Payload.
 - `pnpm payload:migrate:create` genera una migración y `pnpm payload:migrate` la
-  aplica, ambos usando `DATABASE_URL_DIRECT` de `.env.local`. Revisar siempre el
+  aplica, ambos usando `DATABASE_URL_MIGRATIONS` de `.env.local` mediante Session
+  Pooler IPv4. Revisar siempre el
   cambio antes de aplicarlo. `push: false` impide cambios automáticos al iniciar.
   Nunca usar Supabase CLI para migrar el esquema Payload.
 - `docs/desarrollo.md` guía la instalación, entorno local, migraciones y ejecución.
@@ -188,3 +191,13 @@ Spec Kit 1.0.6 generó estas skills de proyecto en .agents/skills:
 - speckit-taskstoissues: crear issues solo cuando el usuario autorice expresamente operar en el tracker.
 
 Revisar cualquier archivo nuevo de .agents/ antes de versionarlo; mantener skills del proyecto, no tokens, credenciales ni datos personales de la sesión.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

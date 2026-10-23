@@ -12,7 +12,7 @@ Valdra Store es un prototipo avanzado para demostrar el recorrido de cuenta, cat
 | CMS y lógica | Payload CMS + plugin oficial Ecommerce | Panel administrativo, autenticación, acceso por rol, colecciones, servicios y hooks. El plugin está preparado solo para catálogo |
 | Base de datos | PostgreSQL en Supabase | Un proyecto Supabase para la base alojada y Storage |
 | Migraciones | Payload | No crear ni gestionar migraciones de aplicación con Supabase CLI |
-| Conexión de aplicación | Pooler de Supabase | Pooler para consultas de ejecución; conexión directa para migraciones |
+| Conexiones PostgreSQL | Supavisor Session Pooler IPv4 | Puerto 5432 para la aplicación y para las migraciones Payload; no depender de la conexión directa IPv6 |
 | Archivos | Supabase Storage con @payloadcms/storage-s3 | La compatibilidad, URLs firmadas y control de acceso se validan en el spike |
 | Hosting inicial | Vercel Hobby gratuito | Solo hosting de demo no comercial; sin servicios pagos |
 | WhatsApp | Enlaces wa.me para HU-26 y HU-27 | Sin API de WhatsApp Business en esta etapa |
@@ -51,21 +51,22 @@ las instrucciones de ejecución están en `docs/desarrollo.md`.
 - src/services/: servicios de dominio y adaptadores externos.
 - src/services/ai/: interfaz AiProvider e implementaciones intercambiables.
 - src/lib/: configuración y utilidades de infraestructura.
-- scripts/: utilidad CLI que carga `.env.local` y dirige las migraciones a la conexión directa.
+- scripts/: utilidad CLI que carga `.env.local` y dirige las migraciones a `DATABASE_URL_MIGRATIONS`.
 - docs/: documentación técnica.
 - specs/000-sprint0/: documentos Spec Kit del Sprint 0.
 
 La aplicación no se conecta a PostgreSQL sin `DATABASE_URL` y `PAYLOAD_SECRET`.
 Payload tiene desactivado el push automático de Drizzle. Las migraciones se crean y
-aplican manualmente con la conexión directa, después de revisar el destino y el SQL.
+aplican manualmente por Supavisor Session Pooler IPv4, después de revisar el destino
+y el SQL.
 
 ## Supabase
 
 - URL de proyecto proporcionada por el equipo: https://pfvhzecrervwtsetspqq.supabase.co.
 - Usar el mismo proyecto para Postgres y Storage.
 - No usar Supabase Auth ni exponer credenciales de base de datos al cliente.
-- Usar el pooler en ejecución y una conexión directa para ejecutar las migraciones Payload.
-- Desactivar la API automática de datos de Supabase para las tablas de Payload. Si no es posible, mantener RLS activo y no conceder acceso anónimo o autenticado a esas tablas. El rol de conexión de Payload puede omitir RLS, por lo que Payload debe comprobar autorización en cada operación.
+- Usar Supavisor Session Pooler IPv4 (puerto 5432) en ejecución y para ejecutar las migraciones Payload, evitando depender de IPv6 en las redes de los integrantes.
+- Para las tablas de Payload, revocar los privilegios predeterminados de Data API para `anon`, `authenticated`, `service_role` y `PUBLIC`, y habilitar RLS. La migración base incluye ambas medidas; además, el trigger `ensure_rls` del proyecto aplica RLS a tablas públicas futuras. No crear políticas para la Data API de Supabase mientras el acceso lo gestione Payload. Payload se conecta como dueño de PostgreSQL y omite RLS, por lo que debe autorizar cada operación en servidor.
 - No ejecutar migraciones de Supabase sobre las tablas administradas por Payload.
 - La integración S3 de Supabase Storage debe pasar el spike antes de considerarse validada.
 
@@ -75,6 +76,7 @@ aplican manualmente con la conexión directa, después de revisar el destino y e
 - Solo las imágenes aprobadas para el catálogo pueden ser públicas.
 - Servir archivos privados con enlaces firmados temporales y control de acceso de Payload.
 - Guardar credenciales S3 exclusivamente en el servidor.
+- Las claves S3 de Supabase omiten RLS y dan acceso amplio al almacenamiento. Nunca usar `service_role` como sustituto ni exponer las claves con `NEXT_PUBLIC_`.
 - Probar en el spike el flujo donde Payload autoriza la carga y emite un permiso firmado acotado; el navegador envía los bytes directamente al bucket Supabase para evitar que pasen por funciones de Vercel.
 - La compatibilidad de las URLs prefirmadas, CORS, el alcance/expiración del permiso de carga y la interacción con @payloadcms/storage-s3 están pendientes de validación. Las claves S3 no deben llegar al navegador. La expiración aprobada de 15 minutos aplica a los enlaces firmados de lectura.
 - Límites aprobados para el prototipo: 10 MB máximo por archivo; JPEG, PNG o WebP; enlaces firmados por 15 minutos; limpieza de propuestas IA no aprobadas a los 30 días. El spike debe validar compatibilidad técnica antes de implementarlos.

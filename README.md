@@ -39,8 +39,9 @@ El alcance aprobado comprende HU-01 a HU-29 y HU-31 (prioridad Could, aprobada p
 ## Requisitos locales
 
 - Node.js `24.22.1` y pnpm `11.25.0`.
-- Variables locales en `.env.local`, excluidas de Git. Requiere las cadenas PostgreSQL
-  pooler y directa de Supabase; no se incluyen credenciales en este repositorio.
+- Variables locales en `.env.local`, excluidas de Git. `DATABASE_URL` y
+  `DATABASE_URL_MIGRATIONS` usan el Session pooler IPv4 de Supabase; no se incluyen
+  credenciales en este repositorio.
 - Biome 2.6.2 está seleccionado y configurado para lint y formato. Consultar
   `specs/000-sprint0/clarifications.md` para las decisiones aún abiertas.
 

@@ -14,11 +14,11 @@ const [command] = process.argv.slice(2);
 const isMigrationCommand = command?.startsWith("migrate");
 
 if (isMigrationCommand) {
-  if (!process.env.DATABASE_URL_DIRECT) {
-    throw new Error("Define DATABASE_URL_DIRECT en .env.local antes de ejecutar migraciones.");
+  if (!process.env.DATABASE_URL_MIGRATIONS) {
+    throw new Error("Define DATABASE_URL_MIGRATIONS en .env.local antes de ejecutar migraciones.");
   }
 
-  process.env.DATABASE_URL = process.env.DATABASE_URL_DIRECT;
+  process.env.DATABASE_URL = process.env.DATABASE_URL_MIGRATIONS;
 } else if (!process.env.DATABASE_URL) {
   throw new Error("Define DATABASE_URL en .env.local antes de ejecutar Payload.");
 }
