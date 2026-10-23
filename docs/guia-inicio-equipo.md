@@ -148,17 +148,27 @@ No uses Supabase CLI para migrar el esquema de Payload y no cambies tablas a man
 
 ## Git y colaboración
 
-La base de Sprint 0 se publica ahora en `main` por decisión del responsable para que
-el equipo pueda iniciar. Las ramas permanentes `develop` e `integracion` pueden no
-tener todavía esta actualización; antes de crear una rama desde ellas, comprueba que
-incluyan el commit actual de `main`. Si siguen atrasadas, inicia temporalmente desde
-`main` y coordina con el integrador cómo sincronizarlas.
+En GitHub, `main`, `develop` e `integracion` están sincronizadas. Para cada cambio,
+crea una rama de trabajo desde la versión más reciente de `integracion`; no trabajes
+directamente sobre las ramas permanentes.
 
-Para cada historia, usa una rama como `feat/HU-01-customer-registration`. Para una
-tarea técnica, usa `branch/SPRINT-1-descripcion`. Incluye HU/RF/RNF confirmados en
-ramas y commits. El flujo del equipo está descrito en
-[git-workflow.md](git-workflow.md): PR hacia `integracion`, luego `develop` y al final
-`main`. No hagas commits directos a las ramas permanentes durante el desarrollo normal.
+Para una historia, usa el prefijo `feat/`; para una tarea técnica, usa `branch/`.
+Ejemplos:
+
+```powershell
+git switch integracion
+git pull --ff-only origin integracion
+git switch -c feat/HU-01-customer-registration
+git push -u origin feat/HU-01-customer-registration
+```
+
+Para una tarea técnica, cambia el nombre de rama, por ejemplo,
+`branch/SPRINT-1-update-docs`. Incluye en la rama y en los commits los IDs HU/RF/RNF
+que estén confirmados en las fuentes. Abre un PR de la rama de trabajo hacia
+`integracion`; después el integrador promueve `integracion` a `develop` y `develop` a
+`main` mediante PR. Consulta [git-workflow.md](git-workflow.md) para el detalle.
+Si las ramas remotas dejan de estar sincronizadas, avisa al integrador antes de
+crear tu rama; no cambies la rama base por tu cuenta.
 
 ## Seguridad y alcance
 
