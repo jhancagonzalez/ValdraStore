@@ -61,9 +61,10 @@
   requirió configurar `PutBucketCors`. CORS no controla permisos de acceso.
 - Sigue pendiente probar desde el navegador el ciclo integrado de Payload:
   autorización para emitir la URL, subida con la sesión del administrador, lectura
-  por Payload, rechazo a un cliente no autorizado, expiración efectiva, validación
-  de MIME/tamaño y borrado mediante Payload. En esta sesión, la petición local a
-  `http://localhost:3000` no pudo conectar. La expiración de URL de carga sigue sin
+  autorizada, rechazo a un cliente no autorizado, expiración efectiva, validación
+  de MIME/tamaño y borrado mediante Payload. Un GET sin sesión a
+  `/api/private-spike-media?limit=1` respondió 403, confirmando que la ruta Next/Payload
+  está activa y deniega acceso anónimo. La expiración de URL de carga sigue sin
   decidirse; la descarga quedó configurada a los 15 minutos aprobados, aún falta
   medir su expiración real.
 
