@@ -48,11 +48,11 @@ validación, no una suite de pruebas del producto.
 **Propósito**: Resolver riesgos de integración usando únicamente datos descartables de prueba.
 
 - [x] T015 Validar la conexión de ejecución de Payload a PostgreSQL Supabase y una migración controlada mediante Supavisor Session Pooler IPv4 (puerto 5432); registrar evidencia y limpieza (RNF-14). La migración base se aplicó sin datos de prueba; `getPayload.find({ collection: 'products', limit: 1 })` devolvió cero documentos y no produjo errores.
-- [ ] T016 Validar @payloadcms/storage-s3 y el flujo de carga privada directa. El bucket privado `valdra-private-spike` fue verificado en Supabase: 10 MB, JPEG/PNG/WebP, 0 objetos. Falta generar las claves S3 en el panel y añadirlas solo a `.env.local`, definir CORS en el panel para el origen local (la API S3 no implementa `PutBucketCors`), configurar el adaptador Payload y probar carga/lectura/eliminación, permisos, expiración y acceso no autorizado. Payload 3.91.0 envía `If-None-Match: *` en la carga directa; la matriz S3 de Supabase no declara soporte para este encabezado, así que requiere prueba real (seguridad/privacidad).
+- [ ] T016 Validar @payloadcms/storage-s3 y el flujo de carga privada directa. Configuración del adaptador y colección temporal aplicada mediante migración Payload revisada. Las credenciales S3 existen localmente en `.env.local` (sin versionarlas ni imprimirlas). La prueba S3 de bajo nivel pasó: PUT firmado con `If-None-Match: *`, lectura firmada con bytes idénticos, lectura anónima denegada (403) y borrado del objeto temporal. Un preflight OPTIONS con origen `http://localhost:3000`, método PUT y encabezados `content-type,if-none-match` respondió 200. Falta probar el flujo HTTP de Payload desde el navegador, expiración efectiva, validación de tipos/tamaño y autorización de carga; el acceso local a `localhost:3000` no estuvo disponible desde esta sesión. La vigencia de carga sigue pendiente. CORS no sustituye autorización (seguridad/privacidad).
 - [ ] T017 Crear una colección y un registro Payload descartables para una prenda con tallas y colores; documentar si el modelo de datos la representa sin convertirlo en un módulo de producto (preparación de catálogo).
 - [ ] T018 Validar cuentas/roles separados de administrador y cliente en Payload; comprobar que el cliente no tenga acceso administrativo (HU-05/RF-5/RNF-2).
 - [ ] T019 Validar que un pedido de prueba almacene y recupere un estado de pedido definido por el proyecto, sin adoptar un flujo externo (HU-20/HU-21/RF-20/RF-21).
-- [ ] T020 Completar el informe del spike en specs/000-sprint0/spike-results.md con los resultados restantes, evidencia, limpieza, fallos, riesgos y decisiones siguientes (RNF-14/RNF-16). Existe un informe parcial con T006/T007/T015 y el bloqueo de Storage.
+- [ ] T020 Completar el informe del spike en specs/000-sprint0/spike-results.md con los resultados restantes, evidencia, limpieza, fallos, riesgos y decisiones siguientes (RNF-14/RNF-16). T016 tiene evidencia parcial de la API S3 y su preflight; falta el flujo integrado de Payload y T017–T019.
 
 ## Fase 4: Revisión y entrega del Sprint 0
 
@@ -68,7 +68,7 @@ validación, no una suite de pruebas del producto.
 - T004 bloquea ejecutar Payload y el spike; los metadatos de dependencias y el lockfile pueden prepararse por separado.
 - T025 bloquea el scaffold y las condiciones de calidad de Sprint 1.
 - T026 crea la base integrada; T027 documenta su puesta en marcha. Ninguna de las dos tareas aplica una migración a Supabase.
-- T006 y T007 completadas; T015 completada. T016 sigue bloqueada hasta disponer de claves S3 locales y configurar CORS.
+- T006, T007 y T015 completadas. T016 tiene prueba directa S3 y preflight OPTIONS exitosas; queda validar el flujo integrado de Payload desde navegador. No hay que configurar CORS mediante `PutBucketCors`.
 - T009 y T010 informan la decisión sobre procesamiento asíncrono de IA; no autorizan activar un proveedor mientras no se verifique un endpoint gratuito ni requieren llamadas pagadas.
 - T011 define límites aprobados para el prototipo; T016 debe verificar compatibilidad y usar solo datos de prueba.
 - T015 a T019 componen el spike de dos días y pueden hacerse en paralelo solo después de T006/T007 y de tener cuentas de prueba de roles/datos.

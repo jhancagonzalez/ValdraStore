@@ -4,7 +4,7 @@
 
 **Proyecto:** Supabase `ValdraStore` (`pfvhzecrervwtsetspqq`)
 
-**Estado:** base de datos y seguridad completadas; Storage y escenarios de dominio pendientes.
+**Estado:** base de datos y seguridad completadas; prueba directa de Storage aprobada parcialmente; flujo Payload y escenarios de dominio pendientes.
 
 ## T006/T015 — PostgreSQL y migración Payload
 
@@ -43,25 +43,29 @@
   Son esperados: no hay políticas de Data API porque el acceso a esas tablas debe
   pasar por Payload. No crear políticas permisivas para eliminar estos avisos.
 
-## T016 — Storage S3: pendiente de credenciales y prueba
+## T016 — Storage S3: prueba directa aprobada parcialmente
 
-- El bucket `valdra-private-spike` existe, es privado, limita archivos a 10 MB y
-  acepta `image/jpeg`, `image/png` y `image/webp`. Tiene 0 objetos.
-- No hay variables S3 en `.env.local` y la sesión actual no tiene acceso al panel
-  visual de Supabase para generar claves. No se configuró el adaptador ni CORS y no
-  se cargó ningún archivo.
-- Por tanto, siguen sin probarse carga directa, lectura firmada, expiración, borrado,
-  denegación de acceso no autorizado, CORS ni el encabezado `If-None-Match` que envía
-  Payload 3.91.0. La vigencia de la URL firmada de carga permanece sin decidir.
-- La matriz oficial de compatibilidad de Supabase no declara soporte de
-  `If-None-Match` para `PutObject` y no implementa `PutBucketCors`; la prueba deberá
-  configurar CORS desde el panel y medir la compatibilidad real del encabezado.
-- Para continuar, el responsable debe generar claves S3 en **Supabase → Storage → S3
-  Configuration** y escribirlas directamente en `.env.local` bajo
-  `S3_ACCESS_KEY_ID` y `S3_SECRET_ACCESS_KEY`. No compartirlas por chat ni usar la
-  clave `service_role`. Después se configura CORS para `http://localhost:3000`, se
-  conecta `@payloadcms/storage-s3` a la colección temporal del spike y se ejecutan
-  las pruebas usando un archivo sintético.
+- El bucket `valdra-private-spike` es privado, limita archivos a 10 MB y acepta
+  `image/jpeg`, `image/png` y `image/webp`. Tras la prueba y limpieza quedó vacío.
+- Se confirmó que las variables S3 necesarias están definidas en `.env.local`, sin
+  mostrar ni registrar sus valores. `payload.config.ts` conecta el adaptador S3,
+  habilita carga directa del cliente, fija las descargas firmadas a 900 segundos y
+  limita cargas a 10 MB. La colección temporal `private-spike-media` solo permite
+  acceso a administradores. Se generó, revisó y aplicó `20261023_174312`; su tabla
+  tiene RLS y no concede lectura a los roles de Data API.
+- Prueba sintética directa contra Supabase S3: PUT firmado con `If-None-Match: *`
+  devolvió 200; GET firmado devolvió 200 y los bytes coincidieron; GET sin firma
+  devolvió 403; el objeto temporal fue borrado.
+- Preflight OPTIONS con origen `http://localhost:3000`, método PUT y encabezados
+  `content-type,if-none-match` devolvió 200 y autorizó dichos encabezados. No se
+  requirió configurar `PutBucketCors`. CORS no controla permisos de acceso.
+- Sigue pendiente probar desde el navegador el ciclo integrado de Payload:
+  autorización para emitir la URL, subida con la sesión del administrador, lectura
+  por Payload, rechazo a un cliente no autorizado, expiración efectiva, validación
+  de MIME/tamaño y borrado mediante Payload. En esta sesión, la petición local a
+  `http://localhost:3000` no pudo conectar. La expiración de URL de carga sigue sin
+  decidirse; la descarga quedó configurada a los 15 minutos aprobados, aún falta
+  medir su expiración real.
 
 ## T017–T019 — Casos de dominio pendientes
 
@@ -74,7 +78,7 @@
 ## Siguiente trabajo
 
 1. Repetir `pnpm dev` desde un terminal normal y comprobar `/api/products`.
-2. Configurar claves y CORS S3 localmente; ejecutar el flujo privado de carga y lectura.
+2. Levantar `pnpm dev` en el entorno local y ejecutar la prueba integrada Payload Storage desde navegador con un administrador y archivo sintético.
 3. Completar los escenarios T017–T019 con datos descartables y documentar su limpieza.
 4. Actualizar este informe y cerrar T016/T020 solo después de observar resultados.
 

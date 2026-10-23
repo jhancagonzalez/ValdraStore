@@ -50,17 +50,16 @@ No compartas ni subas `.env.local`; está excluido de Git. No uses una clave
 
 ## Credenciales S3 para el spike de Storage
 
-El adaptador S3 todavía no está habilitado en Payload. El bucket privado
-`valdra-private-spike` existe, pero la prueba real está pendiente. Para continuarla,
-genera un par de claves en **Supabase → Storage → S3 Configuration** y completa en
-`.env.local` las variables `S3_ACCESS_KEY_ID` y `S3_SECRET_ACCESS_KEY` del ejemplo.
-Usa la región `us-east-1`, el endpoint indicado y el bucket de spike. Estas claves
-son privilegiadas y omiten RLS: no las envíes por chat, no las publiques y no las
-uses en el navegador. El origen local y los métodos CORS de carga deben configurarse
-en el panel de Storage antes de probar la carga directa; la API S3 de Supabase no
-implementa `PutBucketCors`. La matriz de compatibilidad tampoco declara soporte de
-`If-None-Match` para `PutObject`, encabezado que Payload 3.91.0 usa al firmar cargas
-directas; su compatibilidad se debe probar antes de adoptar este flujo.
+El adaptador `@payloadcms/storage-s3` está configurado para la colección temporal
+`private-spike-media`, con carga directa, lectura firmada por 15 minutos y límite
+global de 10 MB. El usuario ya agregó las variables S3 a `.env.local`; verifica que
+usen la región, endpoint y bucket del spike. Las claves son privilegiadas y omiten
+RLS: no las envíes por chat, no las publiques y no las uses en el navegador. La
+prueba directa con archivo sintético confirmó PUT con `If-None-Match: *`, GET firmado,
+rechazo anónimo y borrado. La preflight OPTIONS desde el origen local también pasó;
+no se necesita configurar `PutBucketCors`. Falta probar el flujo integrado de Payload
+desde el navegador, incluido el acceso autorizado, expiración efectiva y validación
+de límites. CORS no sustituye la autorización del servidor ni el bucket privado.
 
 Usa el Session Pooler en modo de sesión, puerto `5432`, para ambas cadenas. Mantén
 `sslmode=verify-full` y `sslrootcert` con la ruta local al certificado raíz descargado
@@ -172,9 +171,11 @@ pnpm start
   desactivó globalmente; las tablas están protegidas por permisos y RLS. El asesor de
   Supabase muestra avisos informativos de RLS sin políticas, esperado porque las
   tablas solo se acceden mediante Payload.
-- El bucket `valdra-private-spike` está privado, limitado a 10 MB y JPEG/PNG/WebP, y
-  tiene 0 objetos. No hay claves S3 en `.env.local`; por eso aún no se ha probado
-  carga, descarga firmada, CORS ni acceso no autorizado.
+- El bucket `valdra-private-spike` está privado, limitado a 10 MB y JPEG/PNG/WebP.
+  La prueba S3 sintética confirmó carga y lectura firmadas, bytes íntegros, rechazo
+  anónimo (403), preflight OPTIONS (200) y borrado. La tabla de la colección de spike
+  tiene RLS y ningún rol de Data API puede leerla. El ciclo integrado de Payload
+  desde navegador y la expiración efectiva aún están pendientes.
 - La ruta HTTP de Next ejecutada desde un proceso en segundo plano de esta sesión no
   pudo resolver el pooler (`ENOTFOUND`). La conexión puntual de Payload sí funcionó;
   confirmar `pnpm dev` en el terminal local normal del equipo.
