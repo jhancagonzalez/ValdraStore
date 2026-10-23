@@ -4,7 +4,7 @@
 
 **Proyecto:** Supabase `ValdraStore` (`pfvhzecrervwtsetspqq`)
 
-**Estado:** base de datos y seguridad completadas; prueba directa de Storage aprobada parcialmente; flujo Payload y escenarios de dominio pendientes.
+**Estado:** base de datos y seguridad completadas; carga y previsualización privada de Payload comprobadas; expiración, validaciones negativas y escenarios de dominio pendientes.
 
 ## T006/T015 — PostgreSQL y migración Payload
 
@@ -43,10 +43,12 @@
   Son esperados: no hay políticas de Data API porque el acceso a esas tablas debe
   pasar por Payload. No crear políticas permisivas para eliminar estos avisos.
 
-## T016 — Storage S3: prueba directa aprobada parcialmente
+## T016 — Storage S3: flujo feliz comprobado; validaciones restantes pendientes
 
 - El bucket `valdra-private-spike` es privado, limita archivos a 10 MB y acepta
-  `image/jpeg`, `image/png` y `image/webp`. Tras la prueba y limpieza quedó vacío.
+  `image/jpeg`, `image/png` y `image/webp`. La prueba sintética directa fue borrada;
+  después el administrador subió una imagen WebP de 29 096 bytes (1080×1080) desde
+  Payload y pudo previsualizarla.
 - Se confirmó que las variables S3 necesarias están definidas en `.env.local`, sin
   mostrar ni registrar sus valores. `payload.config.ts` conecta el adaptador S3,
   habilita carga directa del cliente, fija las descargas firmadas a 900 segundos y
@@ -59,10 +61,10 @@
 - Preflight OPTIONS con origen `http://localhost:3000`, método PUT y encabezados
   `content-type,if-none-match` devolvió 200 y autorizó dichos encabezados. No se
   requirió configurar `PutBucketCors`. CORS no controla permisos de acceso.
-- Sigue pendiente probar desde el navegador el ciclo integrado de Payload:
-  autorización para emitir la URL, subida con la sesión del administrador, lectura
-  autorizada, rechazo a un cliente no autorizado, expiración efectiva, validación
-  de MIME/tamaño y borrado mediante Payload. Un GET sin sesión a
+- El ciclo feliz desde el panel Payload está comprobado: la sesión de administrador
+  cargó la imagen WebP y la previsualizó. Sigue pendiente probar el rechazo a un
+  cliente autenticado sin rol admin, la expiración efectiva, límites MIME/tamaño y
+  borrado del registro/objeto mediante Payload. Un GET sin sesión a
   `/api/private-spike-media?limit=1` respondió 403, confirmando que la ruta Next/Payload
   está activa y deniega acceso anónimo. La expiración de URL de carga sigue sin
   decidirse; la descarga quedó configurada a los 15 minutos aprobados, aún falta

@@ -57,9 +57,10 @@ usen la región, endpoint y bucket del spike. Las claves son privilegiadas y omi
 RLS: no las envíes por chat, no las publiques y no las uses en el navegador. La
 prueba directa con archivo sintético confirmó PUT con `If-None-Match: *`, GET firmado,
 rechazo anónimo y borrado. La preflight OPTIONS desde el origen local también pasó;
-no se necesita configurar `PutBucketCors`. Falta probar el flujo integrado de Payload
-desde el navegador, incluido el acceso autorizado, expiración efectiva y validación
-de límites. CORS no sustituye la autorización del servidor ni el bucket privado.
+no se necesita configurar `PutBucketCors`. El administrador ya subió y previsualizó
+una imagen WebP de prueba desde Payload. Falta comprobar expiración efectiva, rechazo
+de un cliente sin rol admin, límites de tipo/tamaño y borrado desde Payload. CORS no
+sustituye la autorización del servidor ni el bucket privado.
 
 Usa el Session Pooler en modo de sesión, puerto `5432`, para ambas cadenas. Mantén
 `sslmode=verify-full` y `sslrootcert` con la ruta local al certificado raíz descargado
@@ -173,9 +174,10 @@ pnpm start
   tablas solo se acceden mediante Payload.
 - El bucket `valdra-private-spike` está privado, limitado a 10 MB y JPEG/PNG/WebP.
   La prueba S3 sintética confirmó carga y lectura firmadas, bytes íntegros, rechazo
-  anónimo (403), preflight OPTIONS (200) y borrado. La tabla de la colección de spike
-  tiene RLS y ningún rol de Data API puede leerla. El ciclo integrado de Payload
-  desde navegador y la expiración efectiva aún están pendientes.
+  anónimo (403), preflight OPTIONS (200) y borrado. El administrador cargó y
+  previsualizó una imagen WebP desde Payload. La tabla de la colección de spike tiene
+  RLS y ningún rol de Data API puede leerla. Faltan comprobar expiración efectiva,
+  rechazo de clientes sin rol admin, límites de archivo y borrado mediante Payload.
 - La ruta HTTP de Next ejecutada desde un proceso en segundo plano de esta sesión no
   pudo resolver el pooler (`ENOTFOUND`). La conexión puntual de Payload sí funcionó;
   confirmar `pnpm dev` en el terminal local normal del equipo.
