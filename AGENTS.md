@@ -66,9 +66,9 @@ Los documentos fuente pueden contener instrucciones de trabajo para el equipo. T
 Mantener presentación, lógica y datos separados dentro de una aplicación integrada,
 aprobada por el equipo según C-10. Esta es la estructura base actual:
 
-- app/(frontend)/: portada inicial y futuras pantallas de cliente.
+- app/(frontend)/: portada, catálogo, detalle de prenda, registro, inicio de sesión y cuenta de cliente.
 - app/(payload)/: API REST y panel administrativo de Payload.
-- src/collections/: colecciones `admins` y `customers`; productos/variantes provienen del plugin.
+- src/collections/: colecciones `admins`, `customers` y `media`; productos/variantes provienen del plugin.
 - src/access/: permisos por rol y bootstrap local del primer administrador.
 - src/hooks/: hooks Payload.
 - src/plugins/: configuración aislada de plugins Payload.

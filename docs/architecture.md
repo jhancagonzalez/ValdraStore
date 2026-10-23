@@ -42,7 +42,7 @@ Flujo de datos: pantalla Next.js → endpoint/servicio Payload con autorización
 Esta es la base actual del repositorio. Los nombres de código se mantienen en inglés;
 las instrucciones de ejecución están en `docs/desarrollo.md`.
 
-- app/(frontend)/: portada inicial y rutas futuras de cliente.
+- app/(frontend)/: portada, catálogo, detalle de prenda, registro, inicio de sesión y cuenta de cliente.
 - app/(payload)/: rutas del panel, API REST integrada y layout de Payload.
 - src/collections/: colecciones base de administradores y clientes; el plugin añade productos y variantes.
 - src/access/: permisos por rol y bootstrap local controlado de administrador.

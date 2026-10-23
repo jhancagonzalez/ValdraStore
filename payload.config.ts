@@ -49,6 +49,30 @@ const privateS3Storage = s3Storage({
   enabled: s3StorageEnabled,
 });
 
+const catalogBucket = process.env.S3_CATALOG_BUCKET ?? "valdra-catalog-media";
+
+/** Catalog images live in a public bucket; the stored URL is the public object URL. */
+const catalogS3Storage = s3Storage({
+  bucket: catalogBucket,
+  collections: {
+    media: {
+      disablePayloadAccessControl: true,
+      generateFileURL: ({ filename }) =>
+        `${requiredEnvironmentVariable("SUPABASE_URL")}/storage/v1/object/public/${catalogBucket}/${filename}`,
+    },
+  },
+  config: {
+    credentials: {
+      accessKeyId: process.env.S3_ACCESS_KEY_ID ?? "",
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? "",
+    },
+    endpoint: process.env.S3_ENDPOINT,
+    forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
+    region: process.env.S3_REGION ?? "us-east-1",
+  },
+  enabled: s3StorageEnabled,
+});
+
 export default buildConfig({
   admin: {
     importMap: {
@@ -70,7 +94,7 @@ export default buildConfig({
     // Prevent Payload/Drizzle from changing the hosted schema at application startup.
     push: false,
   }),
-  plugins: [ecommercePluginForCatalog, privateS3Storage],
+  plugins: [ecommercePluginForCatalog, privateS3Storage, catalogS3Storage],
   secret: requiredEnvironmentVariable("PAYLOAD_SECRET"),
   upload: {
     limits: {

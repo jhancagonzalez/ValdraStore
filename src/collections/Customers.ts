@@ -1,22 +1,28 @@
 import type { CollectionConfig } from "payload";
 import { canAccessAdminPanel, isAdmin, isAdminField } from "@/access/roles";
 
-/** Customer account schema only; customer registration is not enabled here. */
+/** Customer accounts; public self-registration with server-assigned role (HU-01). */
 export const Customers: CollectionConfig = {
   slug: "customers",
   auth: true,
   admin: {
-    defaultColumns: ["email", "createdAt"],
+    defaultColumns: ["name", "email", "createdAt"],
     useAsTitle: "email",
   },
   access: {
     admin: canAccessAdminPanel,
-    create: () => false,
+    create: () => true,
     delete: isAdmin,
     read: isAdmin,
     update: isAdmin,
   },
   fields: [
+    {
+      name: "name",
+      type: "text",
+      label: "Nombre",
+      required: true,
+    },
     {
       name: "role",
       type: "select",

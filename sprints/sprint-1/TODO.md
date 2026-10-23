@@ -11,9 +11,9 @@ No se agregan subtareas técnicas que no estén en las fuentes.
 
 Responsable registrado: Jhancarlos Gonzalez.
 
-- [ ] El formulario solicita nombre, correo y contraseña, y no permite enviar campos vacíos o con formato inválido.
-- [ ] Si el correo ya está registrado, el sistema lo informa y no crea una cuenta duplicada.
-- [ ] Al registrarse correctamente se crea la cuenta con rol cliente y la contraseña queda almacenada de forma protegida.
+- [x] El formulario solicita nombre, correo y contraseña, y no permite enviar campos vacíos o con formato inválido.
+- [x] Si el correo ya está registrado, el sistema lo informa y no crea una cuenta duplicada.
+- [x] Al registrarse correctamente se crea la cuenta con rol cliente y la contraseña queda almacenada de forma protegida.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481469a1bd2b4776f544f).
 
@@ -21,9 +21,9 @@ Responsable registrado: Jhancarlos Gonzalez.
 
 Responsable registrado: Jhancarlos Gonzalez.
 
-- [ ] Con credenciales válidas el usuario ingresa y es dirigido a la plataforma; con credenciales inválidas ve un mensaje de error sin revelar cuál dato falló.
-- [ ] Al cerrar sesión se invalida la sesión y las páginas privadas dejan de ser accesibles.
-- [ ] Un usuario sin sesión iniciada no puede acceder a las vistas que requieren autenticación.
+- [x] Con credenciales válidas el usuario ingresa y es dirigido a la plataforma; con credenciales inválidas ve un mensaje de error sin revelar cuál dato falló.
+- [x] Al cerrar sesión se invalida la sesión y las páginas privadas dejan de ser accesibles.
+- [x] Un usuario sin sesión iniciada no puede acceder a las vistas que requieren autenticación.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481999ac1d06bc9215d2b).
 
@@ -31,9 +31,9 @@ Responsable registrado: Jhancarlos Gonzalez.
 
 Responsable registrado: Jhancarlos Gonzalez.
 
-- [ ] El catálogo lista las prendas disponibles con nombre, imagen y precio.
-- [ ] El listado es navegable (paginación o desplazamiento) y carga sin errores.
-- [ ] Las prendas deshabilitadas por el administrador no se muestran al cliente.
+- [x] El catálogo lista las prendas disponibles con nombre, imagen y precio.
+- [x] El listado es navegable (paginación o desplazamiento) y carga sin errores.
+- [x] Las prendas deshabilitadas por el administrador no se muestran al cliente.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481a5adc2d063df72909d).
 
@@ -41,9 +41,9 @@ Responsable registrado: Jhancarlos Gonzalez.
 
 Responsable registrado: Jhancarlos Gonzalez.
 
-- [ ] El detalle de la prenda muestra nombre, categoría, tallas, colores, material y precio.
-- [ ] Al seleccionar una talla o color, la información mostrada corresponde a la opción elegida.
-- [ ] Desde el detalle el cliente puede volver al catálogo sin perder su posición.
+- [x] El detalle de la prenda muestra nombre, categoría, tallas, colores, material y precio.
+- [x] Al seleccionar una talla o color, la información mostrada corresponde a la opción elegida.
+- [x] Desde el detalle el cliente puede volver al catálogo sin perder su posición.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef364817c83dff4b541ad8bfa).
 

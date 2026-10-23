@@ -35,7 +35,51 @@ const ecommerceConfig: EcommercePluginConfig = {
   inventory: false,
   orders: false,
   payments: { paymentMethods: [] },
-  products: true,
+  products: {
+    productsCollectionOverride: ({ defaultCollection }) => ({
+      ...defaultCollection,
+      admin: {
+        ...defaultCollection.admin,
+        defaultColumns: ["title", "category", "priceInCOP", "_status"],
+        useAsTitle: "title",
+      },
+      fields: [
+        {
+          name: "title",
+          type: "text",
+          label: "Nombre",
+          required: true,
+        },
+        {
+          name: "image",
+          type: "upload",
+          label: "Imagen",
+          relationTo: "media",
+          required: true,
+        },
+        {
+          name: "category",
+          type: "select",
+          label: "Categoría",
+          options: [
+            { label: "Camisetas", value: "camisetas" },
+            { label: "Hoodies", value: "hoodies" },
+            { label: "Camisa", value: "camisa" },
+            { label: "Gorras", value: "gorras" },
+          ],
+          required: true,
+        },
+        {
+          name: "material",
+          type: "text",
+          label: "Material",
+          required: true,
+        },
+        ...(defaultCollection.fields ?? []),
+      ],
+    }),
+    variants: true,
+  },
   transactions: false,
 };
 
@@ -49,12 +93,44 @@ const configureEcommerce = ecommercePlugin(ecommerceConfig);
  */
 export const ecommercePluginForCatalog: Plugin = async (incomingConfig) => {
   const existingSlugs = new Set(incomingConfig.collections?.map(({ slug }) => slug) ?? []);
+  const existingSchemaFns = incomingConfig.typescript?.schema ?? [];
   const configured = await configureEcommerce(incomingConfig);
+
+  // The plugin registers a typescript.schema mapper that emits a $ref per
+  // collection in its slug map, including disabled commerce collections.
+  // Wrap the mappers it added so dangling refs never reach generate:types.
+  const collections = configured.collections?.filter(
+    ({ slug }) => slug !== "addresses" || existingSlugs.has(slug),
+  );
+  const collectionSlugs = new Set(collections?.map(({ slug }) => slug));
+  const schema = configured.typescript?.schema?.map((fn, index) => {
+    if (index < existingSchemaFns.length) {
+      return fn;
+    }
+    return ((args) => {
+      const jsonSchema = fn(args);
+      const collectionsSchema = jsonSchema?.properties?.ecommerce?.properties?.collections;
+      if (collectionsSchema?.properties) {
+        for (const key of Object.keys(collectionsSchema.properties)) {
+          if (!collectionSlugs.has(key)) {
+            delete collectionsSchema.properties[key];
+          }
+        }
+        if (Array.isArray(collectionsSchema.required)) {
+          collectionsSchema.required = collectionsSchema.required.filter((slug) =>
+            collectionSlugs.has(slug),
+          );
+        }
+      }
+      return jsonSchema;
+    }) as typeof fn;
+  });
 
   return {
     ...configured,
-    collections: configured.collections?.filter(
-      ({ slug }) => slug !== "addresses" || existingSlugs.has(slug),
-    ),
+    collections,
+    typescript: configured.typescript
+      ? { ...configured.typescript, schema }
+      : configured.typescript,
   };
 };
