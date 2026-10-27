@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type ProfileInput, parseProfileInput } from "./profile";
+import { isEmailChange, type ProfileInput, parseProfileInput } from "./profile";
 
 describe("parseProfileInput (HU-04)", () => {
   it("normaliza nombre, correo y teléfono", () => {
@@ -65,5 +65,29 @@ describe("parseProfileInput (HU-04)", () => {
       data: { email: "ana@ejemplo.com", name: "Ana", phone: null },
       ok: true,
     });
+  });
+
+  it("no incluye la contraseña actual en los datos que se guardan", () => {
+    const result = parseProfileInput({
+      currentPassword: "contrasenaActual1",
+      email: "ana@ejemplo.com",
+      name: "Ana",
+    });
+
+    expect(result).toEqual({
+      data: { email: "ana@ejemplo.com", name: "Ana", phone: null },
+      ok: true,
+    });
+    expect(result).not.toHaveProperty("data.currentPassword");
+  });
+});
+
+describe("isEmailChange (HU-04)", () => {
+  it("no considera cambio cuando solo difieren mayúsculas o espacios", () => {
+    expect(isEmailChange("ana@ejemplo.com", "  ANA@Ejemplo.COM ")).toBe(false);
+  });
+
+  it("detecta un correo distinto", () => {
+    expect(isEmailChange("ana@ejemplo.com", "ana.nueva@ejemplo.com")).toBe(true);
   });
 });

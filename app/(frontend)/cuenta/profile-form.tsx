@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import type { ProfileFormState } from "@/services/customers/profile";
+import type { ProfileFieldValues, ProfileFormState } from "@/services/customers/profile";
 import { saveProfile } from "./actions";
 
 const INITIAL_STATE: ProfileFormState = { status: "idle" };
@@ -18,6 +18,11 @@ type ProfileFormProps = {
 export const ProfileForm = ({ profile }: ProfileFormProps) => {
   const [state, formAction, pending] = useActionState(saveProfile, INITIAL_STATE);
   const fieldErrors = state.fieldErrors ?? {};
+  const values: ProfileFieldValues = state.values ?? {
+    email: profile.email,
+    name: profile.name,
+    phone: profile.phone ?? "",
+  };
 
   return (
     <form className="form" action={formAction}>
@@ -39,7 +44,7 @@ export const ProfileForm = ({ profile }: ProfileFormProps) => {
           name="name"
           type="text"
           autoComplete="name"
-          defaultValue={profile.name}
+          defaultValue={values.name}
           required
           minLength={2}
           maxLength={80}
@@ -60,16 +65,45 @@ export const ProfileForm = ({ profile }: ProfileFormProps) => {
           name="email"
           type="email"
           autoComplete="email"
-          defaultValue={profile.email}
+          defaultValue={values.email}
           required
           aria-invalid={Boolean(fieldErrors.email)}
-          aria-describedby={fieldErrors.email ? "profile-email-error" : undefined}
+          aria-describedby={fieldErrors.email ? "profile-email-error" : "profile-email-hint"}
         />
         {fieldErrors.email ? (
           <p className="form-field-error" id="profile-email-error">
             {fieldErrors.email}
           </p>
-        ) : null}
+        ) : (
+          <p className="form-hint" id="profile-email-hint">
+            Si cambias el correo, te pediremos tu contraseña actual.
+          </p>
+        )}
+      </div>
+
+      <div className="form-field">
+        <label htmlFor="profile-current-password">Contraseña actual</label>
+        <input
+          id="profile-current-password"
+          name="currentPassword"
+          type="password"
+          autoComplete="current-password"
+          aria-invalid={Boolean(fieldErrors.currentPassword)}
+          aria-describedby={
+            fieldErrors.currentPassword
+              ? "profile-current-password-error"
+              : "profile-current-password-hint"
+          }
+        />
+        {fieldErrors.currentPassword ? (
+          <p className="form-field-error" id="profile-current-password-error">
+            {fieldErrors.currentPassword}
+          </p>
+        ) : (
+          <p className="form-hint" id="profile-current-password-hint">
+            Solo es necesaria para cambiar el correo electrónico.
+          </p>
+        )}
       </div>
 
       <div className="form-field">
@@ -81,7 +115,7 @@ export const ProfileForm = ({ profile }: ProfileFormProps) => {
           autoComplete="tel"
           inputMode="tel"
           maxLength={20}
-          defaultValue={profile.phone ?? ""}
+          defaultValue={values.phone}
           aria-invalid={Boolean(fieldErrors.phone)}
           aria-describedby={fieldErrors.phone ? "profile-phone-error" : undefined}
         />

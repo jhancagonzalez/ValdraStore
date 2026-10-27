@@ -15,6 +15,7 @@ se atribuyen requisitos sin confirmar.
 | --- | --- | --- |
 | Correo saliente de HU-03 | Brevo por SMTP, adaptador `@payloadcms/email-nodemailer` con variables de servidor | C-15, aprobada por el usuario el 2026-10-26 |
 | Campos editables de HU-04 | Nombre, correo y teléfono | Aprobado por el usuario el 2026-10-26 |
+| Cambio de correo | Exige la contraseña actual, validada en el servidor | C-16, aprobada por el usuario el 2026-10-26 |
 | Canal de correo en desarrollo | Consola de Payload; `SMTP_USE_ETHEREAL=true` para una bandeja temporal | Decisión técnica, sin costo |
 
 Supabase no expone credenciales SMTP reutilizables: su servicio integrado solo entrega a
@@ -33,6 +34,19 @@ Auth. Por eso el correo de HU-03 sale desde Payload con un proveedor externo.
 
 `delete` sigue restringido a administradores y `role` sigue bloqueado con `isAdminField`
 más el hook `beforeChange`, así que un cliente no puede escalar privilegios.
+
+### Cambio de correo (C-16)
+
+El correo es el identificador de acceso, así que cambiarlo pide la contraseña actual:
+
+- La Server Action la recibe, la verifica con la operación de login de Payload (que además
+  aplica el mismo límite de intentos que el formulario de acceso) y descarta el token
+  resultante.
+- El hook `beforeChange` de `customers` rechaza cualquier cambio de correo que no traiga
+  la marca `emailChangeVerified` en `req.context`. Esa marca solo puede ponerla el código
+  de servidor: una llamada REST directa con la cookie del cliente recibe `400`.
+- Cambiar nombre o teléfono no pide contraseña, y un administrador sigue editando
+  cualquier dato desde el panel.
 
 ### Migración
 
@@ -62,6 +76,10 @@ Comprobación contra la API real (12/12):
 
 Comprobación en navegador: registro, `/cuenta` con los datos actuales, edición de nombre y
 teléfono, mensaje «Guardamos tus datos.» y persistencia tras recargar.
+
+Cambio de correo: sin contraseña el servidor responde `400` y el correo no cambia; con
+contraseña incorrecta el formulario muestra el error y el correo tampoco cambia; con la
+contraseña correcta el cambio se guarda y el acceso pasa a usar el correo nuevo.
 
 ## HU-03 — Recuperar contraseña
 
@@ -109,16 +127,10 @@ criterio 1 no puede darse por cumplido todavía.
 
 ## Decisiones abiertas
 
-1. **Cambiar el correo sin verificarlo.** HU-04 permite editar el correo y Payload cambia
-   el identificador de acceso de inmediato. Un error de digitación deja al cliente sin
-   forma de recuperar la cuenta, y una sesión robada podría cambiar el correo y luego la
-   contraseña. Alternativas: pedir la contraseña actual para cambiar el correo, o activar
-   `auth.verify` (hoy desactivado porque HU-01 y HU-02 no lo prevén). Requiere decisión
-   del equipo.
-2. **Reglas de contraseña.** Se aplica el mínimo de 8 caracteres que ya usa el registro.
+1. **Reglas de contraseña.** Se aplica el mínimo de 8 caracteres que ya usa el registro.
    Si el equipo define requisitos de complejidad, se cambian en un solo archivo
    (`src/services/customers/password.ts`).
-3. **Datos de prueba en Supabase.** Quedaron tres cuentas de verificación
+2. **Datos de prueba en Supabase.** Quedaron tres cuentas de verificación
    (`prueba-a-1793073549998@valdra.test`, `prueba-b-1793073549998@valdra.test`,
    `ui-1793073661780@valdra.test`). Un administrador debe eliminarlas desde el panel.
 
