@@ -53,9 +53,33 @@ const ecommerceConfig: EcommercePluginConfig = {
         {
           name: "image",
           type: "upload",
-          label: "Imagen",
+          label: "Imagen principal",
           relationTo: "media",
-          required: true,
+          admin: {
+            description:
+              "Imagen que representa la prenda en el catálogo. Si falta, se muestra la imagen por defecto.",
+          },
+        },
+        {
+          name: "gallery",
+          type: "upload",
+          hasMany: true,
+          label: "Imágenes adicionales",
+          relationTo: "media",
+          admin: {
+            description: "Otras vistas de la prenda que se muestran en el detalle (HU-08).",
+          },
+        },
+        {
+          name: "designs",
+          type: "upload",
+          hasMany: true,
+          label: "Diseños asociados",
+          relationTo: "media",
+          admin: {
+            description:
+              "Diseños disponibles para esta prenda. Se muestran en el detalle del catálogo (HU-08).",
+          },
         },
         {
           name: "category",

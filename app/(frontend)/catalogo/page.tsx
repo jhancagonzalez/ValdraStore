@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { getPublishedProducts } from "@/lib/catalog";
 import { formatCop } from "@/lib/format";
-import type { Media } from "../../../payload-types";
+import { collectProductImages } from "@/lib/media";
+import { ProductImage } from "../_components/product-image";
 import { CatalogScrollMemory } from "./catalog-scroll-memory";
 
 export const metadata: Metadata = { title: "Catálogo" };
@@ -37,7 +37,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       ) : (
         <ul className="product-grid">
           {products.docs.map((product) => {
-            const image = typeof product.image === "object" ? (product.image as Media) : null;
+            const [image] = collectProductImages(product);
             const price = formatCop(product.priceInCOP);
             return (
               <li key={product.id}>
@@ -47,15 +47,11 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                   aria-label={`Ver ${product.title}`}
                 >
                   <span className="product-image">
-                    {image?.url ? (
-                      <Image
-                        src={image.url}
-                        alt={image.alt}
-                        fill
-                        sizes="(max-width: 760px) 100vw, 230px"
-                        style={{ objectFit: "cover" }}
-                      />
-                    ) : null}
+                    <ProductImage
+                      src={image?.url ?? null}
+                      alt={image?.alt ?? product.title}
+                      sizes="(max-width: 520px) 100vw, (max-width: 800px) 45vw, 230px"
+                    />
                   </span>
                   <span className="product-info">
                     <span className="product-name">{product.title}</span>
