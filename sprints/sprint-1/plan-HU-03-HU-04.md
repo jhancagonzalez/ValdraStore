@@ -112,27 +112,44 @@ Con el adaptador en modo consola (sin credenciales todavía):
 
 ### Pendiente para cerrar el criterio 1
 
-Crear la cuenta en Brevo, verificar el remitente y cargar en `.env.local`:
+Las credenciales SMTP de Brevo ya están en `.env.local` (cuenta gratuita, remitente
+verificado). Al probarlas aparecieron dos bloqueos distintos, ambos del lado de Brevo:
+
+1. **Certificado TLS.** `smtp-relay.brevo.com` resuelve al relay regional
+   `1.179.117.2`, cuyo certificado solo cubre `smtp-relay.sendinblue.com` y
+   `smtp-relay-offshore-southamerica-east-v2.sendinblue.com`. Nodemailer rechaza la
+   conexión con `ERR_TLS_CERT_ALTNAME_INVALID`. No se desactiva la validación TLS:
+   se usa el nombre heredado `smtp-relay.sendinblue.com`, que apunta al mismo relay y
+   sí valida contra su certificado.
+2. **IP no autorizada.** Con el certificado resuelto, la autenticación responde
+   `525 5.7.1 Unauthorized IP address` (`code: EAUTH`). Brevo tiene activo el bloqueo
+   de IP desconocidas para claves SMTP; hay que autorizar la IP de salida
+   (`191.95.167.150` en la red del equipo) o desactivar ese bloqueo para SMTP.
 
 ```text
-SMTP_HOST=smtp-relay.brevo.com
+SMTP_HOST=smtp-relay.sendinblue.com
 SMTP_PORT=587
+SMTP_SECURE=false
 SMTP_USER=
 SMTP_PASS=
 SMTP_FROM_ADDRESS=
 ```
 
-Sin esas variables el correo solo se escribe en la consola del servidor, así que el
-criterio 1 no puede darse por cumplido todavía.
+Mientras la IP no esté autorizada no sale ningún correo y `/recuperar` devuelve un
+error genérico, sin simular éxito. Por eso el criterio 1 sigue pendiente.
+
+El bloqueo por IP también rompería la demo en Vercel, cuyas IP de salida son
+dinámicas: conviene dejarlo desactivado para SMTP en lugar de autorizar una sola IP.
 
 ## Decisiones abiertas
 
 1. **Reglas de contraseña.** Se aplica el mínimo de 8 caracteres que ya usa el registro.
    Si el equipo define requisitos de complejidad, se cambian en un solo archivo
    (`src/services/customers/password.ts`).
-2. **Datos de prueba en Supabase.** Quedaron tres cuentas de verificación
-   (`prueba-a-1793073549998@valdra.test`, `prueba-b-1793073549998@valdra.test`,
-   `ui-1793073661780@valdra.test`). Un administrador debe eliminarlas desde el panel.
+2. **Datos de prueba en Supabase.** Las tres cuentas de verificación
+   (`prueba-a-…`, `prueba-b-…`, `ui-…@valdra.test`) fueron eliminadas. Quedan tres
+   cuentas `@valdra.test` (`ana.gomez@`, `carlos.ruiz@`, `laura.perez@`) creadas por
+   otra persona del equipo: no se tocan.
 
 ## Cómo verificarlo
 
