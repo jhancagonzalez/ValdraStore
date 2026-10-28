@@ -110,24 +110,44 @@ Con el adaptador en modo consola (sin credenciales todavía):
 - Reutilizar el mismo enlace: rechazado con «El enlace es inválido, ya expiró o ya fue utilizado».
 - Inicio de sesión con la contraseña anterior: rechazado. Con la nueva: correcto y redirige a `/cuenta`.
 
-### Pendiente para cerrar el criterio 1
+Con Brevo ya habilitado (2026-10-27, envío real):
 
-Las credenciales SMTP de Brevo ya están en `.env.local` (cuenta gratuita, remitente
-verificado). Al probarlas aparecieron dos bloqueos distintos, ambos del lado de Brevo:
+- La verificación del transporte SMTP pasa en los cuatro puertos de Brevo
+  (587, 2525, 465) sin `525` ni errores de certificado.
+- `POST /api/customers/forgot-password` responde `200` y la operación espera la
+  confirmación SMTP sin lanzar excepción: Brevo aceptó el mensaje para entrega.
+- El token guardado en `customers.reset_password_token` es el mismo que viaja en el
+  enlace `/restablecer?token=…` del correo.
+- Con ese token: la pantalla `/restablecer` acepta la nueva contraseña, el formulario
+  desaparece y muestra el enlace a `/login`.
+- El mismo enlace, reutilizado: «El enlace es inválido, ya expiró o ya fue utilizado».
+- `reset_password_expiration` queda en el pasado tras el cambio, así que el token
+  no vuelve a servir.
+- Inicio de sesión: con la contraseña nueva responde `200` y en el navegador entra a
+  `/cuenta`; con la anterior responde `401`.
+
+La recepción en la bandeja de destino la confirma el destinatario: el agente no tiene
+acceso a esa cuenta de correo. El envío, en cambio, está aceptado por Brevo sin error.
+
+## Bloqueos de Brevo resueltos
+
+Al conectar el adaptador aparecieron dos bloqueos, ambos del lado de Brevo:
 
 1. **Certificado TLS.** `smtp-relay.brevo.com` resuelve al relay regional
-   `1.179.117.2`, cuyo certificado solo cubre `smtp-relay.sendinblue.com` y
-   `smtp-relay-offshore-southamerica-east-v2.sendinblue.com`. Nodemailer rechaza la
-   conexión con `ERR_TLS_CERT_ALTNAME_INVALID`. No se desactiva la validación TLS:
-   se usa el nombre heredado `smtp-relay.sendinblue.com`, que apunta al mismo relay y
-   sí valida contra su certificado.
-2. **IP no autorizada.** Con el certificado resuelto, la autenticación responde
-   `525 5.7.1 Unauthorized IP address` (`code: EAUTH`). Brevo tiene activo el bloqueo
-   de IP desconocidas para claves SMTP; hay que autorizar la IP de salida
-   (`191.95.167.150` en la red del equipo) o desactivar ese bloqueo para SMTP.
+   `1.179.117.2`. En ese momento el certificado solo cubría
+   `smtp-relay.sendinblue.com` y `smtp-relay-offshore-southamerica-east-v2.sendinblue.com`,
+   y Nodemailer rechazaba la conexión con `ERR_TLS_CERT_ALTNAME_INVALID`. No se
+   desactivó la validación TLS: se usó el nombre heredado
+   `smtp-relay.sendinblue.com`, que apunta al mismo relay. Después Brevo actualizó el
+   certificado para incluir `smtp-relay.brevo.com` y se volvió al nombre documentado.
+2. **IP no autorizada.** La autenticación respondía `525 5.7.1 Unauthorized IP address`
+   (`code: EAUTH`) porque la cuenta tenía activo el bloqueo de IP desconocidas para
+   claves SMTP. Jhan desactivó ese bloqueo el 2026-10-27 y el error desapareció.
+
+Configuración final en `.env.local` (solo variables de servidor):
 
 ```text
-SMTP_HOST=smtp-relay.sendinblue.com
+SMTP_HOST=smtp-relay.brevo.com
 SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=
@@ -135,11 +155,8 @@ SMTP_PASS=
 SMTP_FROM_ADDRESS=
 ```
 
-Mientras la IP no esté autorizada no sale ningún correo y `/recuperar` devuelve un
-error genérico, sin simular éxito. Por eso el criterio 1 sigue pendiente.
-
-El bloqueo por IP también rompería la demo en Vercel, cuyas IP de salida son
-dinámicas: conviene dejarlo desactivado para SMTP en lugar de autorizar una sola IP.
+El bloqueo por IP habría roto también la demo en Vercel, cuyas IP de salida son
+dinámicas; por eso se dejó desactivado en lugar de autorizar una sola IP.
 
 ## Decisiones abiertas
 
@@ -150,6 +167,10 @@ dinámicas: conviene dejarlo desactivado para SMTP en lugar de autorizar una sol
    (`prueba-a-…`, `prueba-b-…`, `ui-…@valdra.test`) fueron eliminadas. Quedan tres
    cuentas `@valdra.test` (`ana.gomez@`, `carlos.ruiz@`, `laura.perez@`) creadas por
    otra persona del equipo: no se tocan.
+3. **Cuenta de prueba con correo real.** Para cerrar el criterio 1 se creó
+   `kevinburgos808@gmail.com` (id 9, rol `customer`, «Kevin Burgos (prueba HU-03)»).
+   Un administrador debe eliminarla desde el panel cuando Kevin confirme la recepción
+   del correo.
 
 ## Cómo verificarlo
 
@@ -160,4 +181,5 @@ pnpm dev
 ```
 
 Luego: `/registro` → `/cuenta` → editar y guardar → recargar; y
-`/recuperar` → revisar la consola del servidor o la bandeja de Brevo → `/restablecer?token=…`.
+`/recuperar` → revisar la bandeja del destinatario → `/restablecer?token=…` → `/login`.
+
