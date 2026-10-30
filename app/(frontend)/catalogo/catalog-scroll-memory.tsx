@@ -3,13 +3,14 @@
 import { useEffect } from "react";
 
 /**
- * Remembers the catalog scroll position per page so returning from a product
- * detail restores the visitor's place (HU-07, third criterion). The position is
- * captured on the card click, before Next.js scrolls the detail page to top.
+ * Remembers the catalog scroll position per page and filter set (`scope`) so
+ * returning from a product detail restores the visitor's place (HU-07, third
+ * criterion). The position is captured on the card click, before Next.js
+ * scrolls the detail page to top.
  */
-export const CatalogScrollMemory = ({ page }: { page: number }) => {
+export const CatalogScrollMemory = ({ scope }: { scope: string }) => {
   useEffect(() => {
-    const key = `catalogo-scroll:${page}`;
+    const key = `catalogo-scroll:${scope}`;
     const saved = sessionStorage.getItem(key);
     if (saved) {
       requestAnimationFrame(() => {
@@ -27,7 +28,7 @@ export const CatalogScrollMemory = ({ page }: { page: number }) => {
 
     document.addEventListener("click", remember, true);
     return () => document.removeEventListener("click", remember, true);
-  }, [page]);
+  }, [scope]);
 
   return null;
 };

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getProductVariants, getPublishedProductById } from "@/lib/catalog";
 import { formatCop } from "@/lib/format";
-import type { Media, Variant, VariantOption, VariantType } from "../../../../payload-types";
+import { collectProductImages } from "@/lib/media";
+import type { Variant, VariantOption, VariantType } from "../../../../payload-types";
+import { ProductGallery } from "../../_components/product-gallery";
 import { BackToCatalogButton } from "./back-to-catalog-button";
 import { VariantSelector } from "./variant-selector";
 
@@ -63,7 +64,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
     }
   }
 
-  const image = typeof product.image === "object" ? (product.image as Media) : null;
+  const images = collectProductImages(product);
   const basePrice = formatCop(product.priceInCOP);
   const parsedPage = Number.parseInt(pageParam ?? "1", 10);
   const catalogPage = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
@@ -71,18 +72,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
   return (
     <main className="page">
       <article className="product-detail">
-        <div className="product-image">
-          {image?.url ? (
-            <Image
-              src={image.url}
-              alt={image.alt}
-              fill
-              priority
-              sizes="(max-width: 760px) 100vw, 520px"
-              style={{ objectFit: "cover" }}
-            />
-          ) : null}
-        </div>
+        <ProductGallery images={images} fallbackAlt={product.title} />
         <div className="product-meta">
           <div className="detail-row">
             <span className="detail-label">

@@ -289,7 +289,18 @@ export interface Variant {
 export interface Product {
   id: number;
   title: string;
-  image: number | Media;
+  /**
+   * Imagen que representa la prenda en el catálogo. Si falta, se muestra la imagen por defecto.
+   */
+  image?: (number | null) | Media;
+  /**
+   * Otras vistas de la prenda que se muestran en el detalle (HU-08).
+   */
+  gallery?: (number | Media)[] | null;
+  /**
+   * Diseños disponibles para esta prenda. Se muestran en el detalle del catálogo (HU-08).
+   */
+  designs?: (number | Media)[] | null;
   category: 'camisetas' | 'hoodies' | 'camisa' | 'gorras';
   material: string;
   enableVariants?: boolean | null;
@@ -580,6 +591,8 @@ export interface VariantOptionsSelect<T extends boolean = true> {
 export interface ProductsSelect<T extends boolean = true> {
   title?: T;
   image?: T;
+  gallery?: T;
+  designs?: T;
   category?: T;
   material?: T;
   enableVariants?: T;
