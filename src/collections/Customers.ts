@@ -1,10 +1,37 @@
-import type { CollectionConfig } from "payload";
-import { canAccessAdminPanel, isAdmin, isAdminField } from "@/access/roles";
+import { APIError, type CollectionConfig } from "payload";
+import {
+  canAccessAdminPanel,
+  hasAdminRole,
+  isAdmin,
+  isAdminField,
+  isAdminOrSelf,
+} from "@/access/roles";
+import { isEmailChange } from "@/services/customers/profile";
+import { passwordResetEmailHtml, resolveBaseUrl } from "@/services/email/templates";
 
-/** Customer accounts; public self-registration with server-assigned role (HU-01). */
+/** Accepts digits with optional country prefix, spaces, hyphens or parentheses. */
+const PHONE_PATTERN = /^\+?[\d\s()-]{7,20}$/;
+
+const RESET_TOKEN_LIFETIME_MS = 60 * 60 * 1000;
+
+/**
+ * Customer accounts; public self-registration with server-assigned role (HU-01).
+ * A customer reads and updates only their own document (HU-04).
+ */
 export const Customers: CollectionConfig = {
   slug: "customers",
-  auth: true,
+  auth: {
+    forgotPassword: {
+      expiration: RESET_TOKEN_LIFETIME_MS,
+      generateEmailHTML: (args) =>
+        passwordResetEmailHtml({
+          baseUrl: resolveBaseUrl(args?.req?.headers),
+          name: args?.user?.name,
+          token: args?.token ?? "",
+        }),
+      generateEmailSubject: () => "Restablece tu contraseña — Valdra Store",
+    },
+  },
   admin: {
     defaultColumns: ["name", "email", "createdAt"],
     useAsTitle: "email",
@@ -13,8 +40,8 @@ export const Customers: CollectionConfig = {
     admin: canAccessAdminPanel,
     create: () => true,
     delete: isAdmin,
-    read: isAdmin,
-    update: isAdmin,
+    read: isAdminOrSelf,
+    update: isAdminOrSelf,
   },
   fields: [
     {
@@ -22,6 +49,24 @@ export const Customers: CollectionConfig = {
       type: "text",
       label: "Nombre",
       required: true,
+    },
+    {
+      name: "phone",
+      type: "text",
+      label: "Teléfono",
+      admin: {
+        description: "Opcional. Incluye el indicativo del país si aplica.",
+      },
+      validate: (value: string | null | undefined) => {
+        if (!value) {
+          return true;
+        }
+
+        return (
+          PHONE_PATTERN.test(value.trim()) ||
+          "El teléfono debe tener entre 7 y 20 caracteres: dígitos, espacios, guiones o paréntesis."
+        );
+      },
     },
     {
       name: "role",
@@ -39,10 +84,35 @@ export const Customers: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [
-      ({ data }) => ({
-        ...data,
-        role: "customer",
-      }),
+      ({ data, originalDoc, req }) => {
+        const nextEmail = typeof data.email === "string" ? data.email : undefined;
+        const previousEmail =
+          originalDoc && typeof originalDoc === "object" && "email" in originalDoc
+            ? (originalDoc as { email?: unknown }).email
+            : undefined;
+
+        // The email is the login identifier: changing it requires the current
+        // password, which only the profile server action verifies. The flag
+        // travels in the server-side request context, so a direct REST call
+        // cannot set it. Administrators keep editing freely from the panel.
+        if (
+          nextEmail &&
+          typeof previousEmail === "string" &&
+          isEmailChange(previousEmail, nextEmail) &&
+          !hasAdminRole(req.user) &&
+          req.context?.emailChangeVerified !== true
+        ) {
+          throw new APIError(
+            "Para cambiar el correo electrónico confirma tu contraseña actual desde Mi cuenta.",
+            400,
+          );
+        }
+
+        return {
+          ...data,
+          role: "customer",
+        };
+      },
     ],
   },
   labels: {
