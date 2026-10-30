@@ -229,7 +229,7 @@ img {
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr));
   gap: 20px;
   list-style: none;
   margin: 0;
@@ -254,6 +254,8 @@ img {
 
 .product-card .product-image {
   position: relative;
+  display: block;
+  overflow: hidden;
   aspect-ratio: 1;
   background: var(--surface-raised);
 }
@@ -341,13 +343,82 @@ img {
   align-items: start;
 }
 
-.product-detail .product-image {
+.product-gallery {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.product-gallery-main {
   position: relative;
   aspect-ratio: 1;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-raised);
+}
+
+.product-gallery-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 10px;
+  border: 1px solid rgb(154 168 255 / 0.45);
+  border-radius: 999px;
+  background: rgb(11 11 16 / 0.78);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.product-gallery-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-gallery-thumb {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  cursor: pointer;
+  transition: border-color 140ms ease;
+}
+
+.product-gallery-thumb:hover {
+  border-color: var(--accent);
+}
+
+.product-gallery-thumb[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.product-gallery-thumb-badge {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgb(11 11 16 / 0.82);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.product-gallery-caption {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
 }
 
 .product-detail .product-meta {
@@ -419,9 +490,25 @@ img {
   color: var(--text);
 }
 
+@media (max-width: 900px) {
+  .product-detail {
+    gap: 28px;
+  }
+}
+
 @media (max-width: 760px) {
   .product-detail {
     grid-template-columns: 1fr;
+  }
+
+  .product-gallery-thumbs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .product-gallery-thumb {
+    flex: 0 0 auto;
   }
 
   .hero-orbit {
