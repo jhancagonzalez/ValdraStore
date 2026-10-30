@@ -87,9 +87,9 @@ Responsable registrado: Daniel Cárdenas.
 
 Responsable registrado: Emanuel Giraldo.
 
-- [ ] Cada prenda muestra sus imágenes y diseños asociados sin enlaces rotos.
-- [ ] Las imágenes se ven correctamente en computador, tablet y móvil.
-- [ ] Si una prenda no tiene imagen, se muestra una imagen por defecto.
+- [x] Cada prenda muestra sus imágenes y diseños asociados sin enlaces rotos.
+- [x] Las imágenes se ven correctamente en computador, tablet y móvil.
+- [x] Si una prenda no tiene imagen, se muestra una imagen por defecto.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481349b7fe87d84e69253).
 

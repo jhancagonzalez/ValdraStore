@@ -6,9 +6,14 @@
 - El plugin está registrado en `payload.config.ts` mediante
   `src/plugins/ecommerce.ts`.
 - Se habilitan las colecciones de productos y variantes para el catálogo inicial.
-  `products` añade `title`, `image` (relación con `media`), `category` y `material`
-  mediante `productsCollectionOverride`; la imagen del catálogo se guarda en el bucket
-  público `valdra-catalog-media` y su URL pública se genera en servidor.
+  `products` añade `title`, `image` (relación con `media`), `gallery` y `designs`
+  (relaciones múltiples con `media`), `category` y `material` mediante
+  `productsCollectionOverride`; la imagen del catálogo se guarda en el bucket público
+  `valdra-catalog-media` y su URL pública se genera en servidor. `image` es opcional:
+  cuando falta o su archivo no carga, el catálogo y el detalle muestran la imagen por
+  defecto `src/assets/product-placeholder.png` (HU-08). `gallery` reúne vistas
+  adicionales y `designs`, los diseños asociados que se muestran en el detalle; la
+  colección administrable de diseños corresponde a HU-23 (Sprint 3).
 - El plugin usa `customers` como colección de clientes, con autenticación propia de
   Payload. El panel está restringido a la colección `admins`.
 - La moneda predeterminada y única configurada es COP, con cero decimales para su
