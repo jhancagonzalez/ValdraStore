@@ -46,12 +46,6 @@ export async function down({ db }: MigrateDownArgs): Promise<void> {
   await db.execute(sql`
    ALTER TABLE "media" DISABLE ROW LEVEL SECURITY;
   DROP TABLE "media" CASCADE;
-  ALTER TABLE "products" DROP CONSTRAINT "products_image_id_media_id_fk";
-  
-  ALTER TABLE "_products_v" DROP CONSTRAINT "_products_v_version_image_id_media_id_fk";
-  
-  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_media_fk";
-  
   DROP INDEX "products_image_idx";
   DROP INDEX "_products_v_version_version_image_idx";
   DROP INDEX "payload_locked_documents_rels_media_id_idx";

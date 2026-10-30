@@ -16,3 +16,5 @@ test-results/
 .codex-tools/
 .DS_Store
 Thumbs.db
+/private-spike-media/
+/media/

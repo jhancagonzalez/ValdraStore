@@ -1,0 +1,260 @@
+@media (max-width: 900px) {
+  .product-detail {
+    grid-template-columns: 1fr;
+  }
+
+  .product-detail .product-meta {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    margin-right: 0;
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 860px) {
+  .catalog-body {
+    grid-template-columns: 1fr;
+    grid-template-areas: "filters" "results";
+    gap: 36px;
+  }
+
+  .catalog-aside {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding: 0 0 24px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .filters-title {
+    margin-bottom: 16px;
+  }
+
+  .catalog-filters {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .catalog-filters > .form-field {
+    grid-column: span 2;
+  }
+
+  .catalog-price-fields {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .catalog-filters-actions {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* The 264px sidebar appears at 861px; keep two columns until auto-fill fits them again. */
+@media (min-width: 861px) and (max-width: 1023px) {
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 40px 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --gutter: 18px;
+  }
+
+  .site-header {
+    flex-wrap: wrap;
+    gap: 0;
+    padding-top: 10px;
+  }
+
+  .site-header .brand {
+    padding-bottom: 10px;
+  }
+
+  .site-header .brand img {
+    display: none;
+  }
+
+  .site-header .brand-name {
+    display: inline;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+  }
+
+  .site-nav {
+    flex: 1 0 100%;
+    justify-content: space-between;
+    gap: 0;
+    padding: 2px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .site-nav a,
+  .site-nav button {
+    min-height: 40px;
+    padding: 0 8px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+  }
+
+  .site-nav a:first-child {
+    margin-left: -8px;
+  }
+
+  .site-nav .nav-cta {
+    margin-left: 0;
+    padding: 0 14px;
+  }
+
+  .catalog-search-bar {
+    gap: 12px;
+  }
+
+  .catalog-search-bar input[type="search"] {
+    height: 46px;
+  }
+
+  .catalog-search-bar .button {
+    min-width: 100px;
+    height: 46px;
+    padding: 0 18px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.25rem, 11vw, 3.25rem);
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px 12px;
+  }
+
+  .product-card .product-name {
+    font-size: 0.8125rem;
+  }
+
+  .product-card .product-info {
+    gap: 4px;
+    padding-top: 10px;
+  }
+
+  .product-card .product-price {
+    margin-top: 5px;
+  }
+
+  .product-gallery-thumbs {
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 6px 6px 10px;
+  }
+
+  .product-gallery-thumb {
+    width: 70px;
+    height: 90px;
+    flex: 0 0 auto;
+  }
+
+  .product-detail .product-meta {
+    gap: 20px;
+  }
+
+  .product-detail .product-meta > .detail-row:first-child {
+    padding-bottom: 20px;
+  }
+
+  .catalog-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 12px;
+  }
+
+  .catalog-filters > .form-field {
+    grid-column: span 1;
+  }
+
+  .catalog-filters > .form-field.filter-field-category {
+    grid-column: 1 / -1;
+  }
+
+  .catalog-price-fields {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .catalog-filters-actions {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr;
+  }
+
+  .pagination .button {
+    flex: 1 1 auto;
+  }
+
+  .site-footer-inner {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .footer-social {
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-card .product-image img,
+  .product-card .product-name,
+  .back-link::before,
+  .button,
+  .option-chip,
+  .site-nav a,
+  .site-nav button {
+    transition: none;
+  }
+
+  .product-card:hover .product-image img,
+  .product-card:focus-visible .product-image img,
+  .back-link:hover::before {
+    transform: none;
+  }
+
+  .marquee-track {
+    animation: none;
+  }
+
+  .route-progress.is-active::after {
+    width: 100%;
+    animation: none;
+    transform: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .site-nav a,
+  .site-nav button {
+    padding: 0 4px;
+    letter-spacing: 0.06em;
+  }
+
+  .site-nav .nav-cta {
+    padding: 0 8px;
+  }
+
+  .catalog-search-bar {
+    gap: 10px;
+  }
+
+  .catalog-search-bar .button {
+    min-width: 104px;
+    padding: 0 14px;
+    letter-spacing: 0.12em;
+  }
+}

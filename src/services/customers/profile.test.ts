@@ -6,30 +6,48 @@ describe("parseProfileInput (HU-04)", () => {
     expect(
       parseProfileInput({
         email: "  CLIENTE@Ejemplo.COM ",
+        lastName: "  Pérez  ",
         name: "  Ana  ",
         phone: " +57 300 123 4567 ",
       }),
     ).toEqual({
-      data: { email: "cliente@ejemplo.com", name: "Ana", phone: "+57 300 123 4567" },
+      data: {
+        email: "cliente@ejemplo.com",
+        lastName: "Pérez",
+        name: "Ana",
+        phone: "+57 300 123 4567",
+      },
       ok: true,
     });
   });
 
   it("trata el teléfono vacío como nulo", () => {
-    expect(parseProfileInput({ email: "ana@ejemplo.com", name: "Ana", phone: "   " })).toEqual({
-      data: { email: "ana@ejemplo.com", name: "Ana", phone: null },
+    expect(
+      parseProfileInput({ email: "ana@ejemplo.com", lastName: "Pérez", name: "Ana", phone: "   " }),
+    ).toEqual({
+      data: { email: "ana@ejemplo.com", lastName: "Pérez", name: "Ana", phone: null },
       ok: true,
     });
   });
 
   it("rechaza un nombre vacío o demasiado corto", () => {
-    const result = parseProfileInput({ email: "ana@ejemplo.com", name: " A " });
+    const result = parseProfileInput({ email: "ana@ejemplo.com", lastName: "Pérez", name: " A " });
     expect(result.ok).toBe(false);
     expect(result).toHaveProperty("fieldErrors.name");
   });
 
+  it("rechaza apellidos vacíos", () => {
+    const result = parseProfileInput({ email: "ana@ejemplo.com", lastName: " ", name: "Ana" });
+    expect(result.ok).toBe(false);
+    expect(result).toHaveProperty("fieldErrors.lastName");
+  });
+
   it("rechaza un correo sin formato válido", () => {
-    const result = parseProfileInput({ email: "ana-arroba-ejemplo", name: "Ana" });
+    const result = parseProfileInput({
+      email: "ana-arroba-ejemplo",
+      lastName: "Pérez",
+      name: "Ana",
+    });
     expect(result.ok).toBe(false);
     expect(result).toHaveProperty("fieldErrors.email");
   });
@@ -37,6 +55,7 @@ describe("parseProfileInput (HU-04)", () => {
   it("rechaza un teléfono con caracteres no permitidos", () => {
     const result = parseProfileInput({
       email: "ana@ejemplo.com",
+      lastName: "Pérez",
       name: "Ana",
       phone: "abc1234567",
     });
@@ -45,9 +64,15 @@ describe("parseProfileInput (HU-04)", () => {
   });
 
   it("acumula todos los errores de campo", () => {
-    const result = parseProfileInput({ email: "no-es-correo", name: "", phone: "!!" });
+    const result = parseProfileInput({
+      email: "no-es-correo",
+      lastName: "",
+      name: "",
+      phone: "!!",
+    });
     expect(result.ok).toBe(false);
     expect(result).toHaveProperty("fieldErrors.name");
+    expect(result).toHaveProperty("fieldErrors.lastName");
     expect(result).toHaveProperty("fieldErrors.email");
     expect(result).toHaveProperty("fieldErrors.phone");
   });
@@ -56,13 +81,14 @@ describe("parseProfileInput (HU-04)", () => {
     const input = {
       email: "ana@ejemplo.com",
       id: 99,
+      lastName: "Pérez",
       name: "Ana",
       password: "secreto",
       role: "admin",
     } as unknown as ProfileInput;
 
     expect(parseProfileInput(input)).toEqual({
-      data: { email: "ana@ejemplo.com", name: "Ana", phone: null },
+      data: { email: "ana@ejemplo.com", lastName: "Pérez", name: "Ana", phone: null },
       ok: true,
     });
   });
@@ -71,11 +97,12 @@ describe("parseProfileInput (HU-04)", () => {
     const result = parseProfileInput({
       currentPassword: "contrasenaActual1",
       email: "ana@ejemplo.com",
+      lastName: "Pérez",
       name: "Ana",
     });
 
     expect(result).toEqual({
-      data: { email: "ana@ejemplo.com", name: "Ana", phone: null },
+      data: { email: "ana@ejemplo.com", lastName: "Pérez", name: "Ana", phone: null },
       ok: true,
     });
     expect(result).not.toHaveProperty("data.currentPassword");

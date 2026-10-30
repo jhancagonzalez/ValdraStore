@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { PasswordStrength } from "../_components/password-strength";
 import type { ResetPasswordState } from "./actions";
 import { submitNewPassword } from "./actions";
 
@@ -14,6 +15,7 @@ type ResetPasswordFormProps = {
 /** Step 2 of HU-03: choose a new password for the token from the email link. */
 export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
   const [state, formAction, pending] = useActionState(submitNewPassword, INITIAL_STATE);
+  const [password, setPassword] = useState("");
 
   if (state.status === "success") {
     return (
@@ -48,7 +50,10 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
           required
           minLength={8}
           maxLength={100}
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
         />
+        <PasswordStrength value={password} />
       </div>
 
       <div className="form-field">

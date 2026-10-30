@@ -1,9 +1,29 @@
 import { ecommercePlugin } from "@payloadcms/plugin-ecommerce";
 import type { EcommercePluginConfig } from "@payloadcms/plugin-ecommerce/types";
-import type { Access, Plugin } from "payload";
+import type { Access, Plugin, Where } from "payload";
 import { hasAdminRole, isAdmin, isAdminField, isCustomer } from "@/access/roles";
+import { revalidateCatalog } from "@/hooks/revalidate-catalog";
 
 const isAuthenticated: Access = ({ req }) => Boolean(req.user);
+
+/**
+ * Variants of a draft product must not be readable by the public API, even when
+ * the variant itself is published (database audit 2.1).
+ */
+const readPublishedVariants: Access = ({ req }) => {
+  if (hasAdminRole(req.user)) {
+    return true;
+  }
+
+  const where: Where = {
+    and: [
+      { _status: { equals: "published" } },
+      { "product._status": { equals: "published" } },
+    ],
+  };
+
+  return where;
+};
 
 const ecommerceConfig: EcommercePluginConfig = {
   access: {
@@ -38,10 +58,19 @@ const ecommerceConfig: EcommercePluginConfig = {
   products: {
     productsCollectionOverride: ({ defaultCollection }) => ({
       ...defaultCollection,
+      access: {
+        ...defaultCollection.access,
+        readVersions: isAdmin,
+      },
       admin: {
         ...defaultCollection.admin,
+        group: "Catálogo",
         defaultColumns: ["title", "category", "priceInCOP", "_status"],
         useAsTitle: "title",
+      },
+      labels: {
+        plural: "Prendas",
+        singular: "Prenda",
       },
       fields: [
         {
@@ -123,9 +152,49 @@ export const ecommercePluginForCatalog: Plugin = async (incomingConfig) => {
   // The plugin registers a typescript.schema mapper that emits a $ref per
   // collection in its slug map, including disabled commerce collections.
   // Wrap the mappers it added so dangling refs never reach generate:types.
-  const collections = configured.collections?.filter(
-    ({ slug }) => slug !== "addresses" || existingSlugs.has(slug),
-  );
+  const collectionLabels: Record<string, { plural: string; singular: string }> = {
+    variants: { plural: "Variantes", singular: "Variante" },
+    variantTypes: { plural: "Tipos de variante", singular: "Tipo de variante" },
+    variantOptions: { plural: "Opciones de variante", singular: "Opción de variante" },
+  };
+
+  const catalogSlugs = new Set(["products", "variants", "variantTypes", "variantOptions"]);
+
+  const collections = configured.collections
+    ?.filter(({ slug }) => slug !== "addresses" || existingSlugs.has(slug))
+    .map((collection) => {
+      const labels = collectionLabels[collection.slug];
+      const base = {
+        ...collection,
+        ...(labels ? { labels } : {}),
+      };
+      const next = catalogSlugs.has(collection.slug)
+        ? { ...base, admin: { ...collection.admin, group: "Catálogo" } }
+        : base;
+
+      // Variant types and options also feed the cached catalog filters.
+      const cacheSlugs = new Set(["products", "variants", "variantTypes", "variantOptions"]);
+
+      if (!cacheSlugs.has(collection.slug)) {
+        return next;
+      }
+
+      const withCacheHooks = {
+        ...next,
+        hooks: {
+          ...collection.hooks,
+          afterChange: [...(collection.hooks?.afterChange ?? []), () => revalidateCatalog()],
+          afterDelete: [...(collection.hooks?.afterDelete ?? []), () => revalidateCatalog()],
+        },
+      };
+
+      return collection.slug === "variants"
+        ? {
+            ...withCacheHooks,
+            access: { ...collection.access, read: readPublishedVariants, readVersions: isAdmin },
+          }
+        : withCacheHooks;
+    });
   const collectionSlugs = new Set(collections?.map(({ slug }) => slug));
   const schema = configured.typescript?.schema?.map((fn, index) => {
     if (index < existingSchemaFns.length) {

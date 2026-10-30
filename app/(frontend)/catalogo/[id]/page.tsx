@@ -89,7 +89,9 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
           ) : basePrice ? (
             <span className="detail-price">{basePrice}</span>
           ) : null}
-          <BackToCatalogButton page={catalogPage} />
+          <div className="detail-back">
+            <BackToCatalogButton page={catalogPage} />
+          </div>
         </div>
       </article>
     </main>

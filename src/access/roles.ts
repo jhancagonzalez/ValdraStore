@@ -53,26 +53,41 @@ export const isAdminOrSelf: Access = ({ req }) => {
 };
 
 /**
+ * Panel access: only a signed-in administrator gets in. The local bootstrap
+ * check lives in `isAdminOrLocalBootstrap`; running it here made every anonymous
+ * page view query the admin collection.
+ */
+export const canAccessAdminPanel = ({ req }: { req: PayloadRequest }): boolean =>
+  hasAdminRole(req.user);
+
+export const isLocalBootstrapEnabled = (): boolean =>
+  process.env.NODE_ENV !== "production" && process.env.ALLOW_ADMIN_BOOTSTRAP === "true";
+
+/**
  * Allow initial administrator setup only in a local, non-production
  * environment and only while the administrator collection is empty.
  */
-export const canAccessAdminPanel = async ({ req }: { req: PayloadRequest }): Promise<boolean> => {
+export const isAdminOrLocalBootstrap: Access = async ({ req }) => {
   if (hasAdminRole(req.user)) {
     return true;
   }
 
-  if (process.env.NODE_ENV === "production" || process.env.ALLOW_ADMIN_BOOTSTRAP !== "true") {
+  if (!isLocalBootstrapEnabled()) {
     return false;
   }
 
-  const { totalDocs } = await req.payload.count({
-    collection: "admins",
-    overrideAccess: true,
-  });
+  try {
+    const { totalDocs } = await req.payload.count({
+      collection: "admins",
+      overrideAccess: true,
+    });
 
-  return totalDocs === 0;
+    return totalDocs === 0;
+  } catch {
+    // If the database is unreachable, never expose the bootstrap form.
+    return false;
+  }
 };
 
-export const isAdminOrLocalBootstrap: Access = canAccessAdminPanel;
 export const isAdminOrLocalBootstrapField: FieldAccess = async ({ req }) =>
-  canAccessAdminPanel({ req });
+  Boolean(await isAdminOrLocalBootstrap({ req }));

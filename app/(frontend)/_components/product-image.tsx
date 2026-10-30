@@ -9,7 +9,7 @@ type ProductImageProps = {
   src: string | null;
   alt: string;
   sizes: string;
-  priority?: boolean;
+  preload?: boolean;
 };
 
 /**
@@ -17,7 +17,7 @@ type ProductImageProps = {
  * image or the remote file cannot be loaded, the default asset is shown instead
  * (HU-08: no broken links and a fallback image).
  */
-export const ProductImage = ({ src, alt, sizes, priority = false }: ProductImageProps) => {
+export const ProductImage = ({ src, alt, sizes, preload = false }: ProductImageProps) => {
   const [failed, setFailed] = useState(false);
   const usingFallback = !src || failed;
   const imageAlt = usingFallback ? (alt.trim() === "" ? DEFAULT_PRODUCT_IMAGE_ALT : alt) : alt;
@@ -27,7 +27,7 @@ export const ProductImage = ({ src, alt, sizes, priority = false }: ProductImage
       src={usingFallback ? productPlaceholder : src}
       alt={imageAlt}
       fill
-      priority={priority}
+      preload={preload}
       sizes={sizes}
       style={{ objectFit: "cover" }}
       data-fallback={usingFallback ? "true" : undefined}

@@ -1,0 +1,15 @@
+/*
+ * Visible keyboard focus for the admin login. Payload's theme does not draw a
+ * focus ring on the email/password fields or on their links; this sheet only
+ * adds the outline and leaves the rest of the admin theme untouched.
+ */
+
+.login__form input:focus-visible,
+.login__form a:focus-visible,
+#field-email:focus-visible,
+#field-password:focus-visible,
+#field-email input:focus-visible,
+#field-password input:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

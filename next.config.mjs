@@ -6,7 +6,11 @@ const supabaseHostname = process.env.SUPABASE_URL
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    globalNotFound: true,
+  },
   images: {
+    minimumCacheTTL: 86400,
     remotePatterns: [{ hostname: supabaseHostname, protocol: "https" }],
   },
 };

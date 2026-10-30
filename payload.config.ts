@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { postgresAdapter } from "@payloadcms/db-postgres";
 import { s3Storage } from "@payloadcms/storage-s3";
+import { es } from "@payloadcms/translations/languages/es";
 import { buildConfig } from "payload";
 import { collections } from "@/collections";
 import { ecommercePluginForCatalog } from "@/plugins/ecommerce";
@@ -19,6 +20,21 @@ const requiredEnvironmentVariable = (name: string): string => {
 
   return value;
 };
+
+/**
+ * `csrf`/`cors` compare against the exact request Origin, so a trailing slash
+ * or a path in the variable breaks admin login. Normalize once and fail loudly
+ * when the value is not an absolute URL (security verification).
+ */
+const serverOrigin = (() => {
+  try {
+    return new URL(requiredEnvironmentVariable("NEXT_PUBLIC_SERVER_URL")).origin;
+  } catch {
+    throw new Error(
+      "NEXT_PUBLIC_SERVER_URL debe ser una URL absoluta, por ejemplo https://valdra.example.",
+    );
+  }
+})();
 
 const s3StorageEnabled = Boolean(
   process.env.S3_ACCESS_KEY_ID &&
@@ -76,13 +92,18 @@ const catalogS3Storage = s3Storage({
 
 export default buildConfig({
   admin: {
+    avatar: "default",
     importMap: {
       baseDir: path.resolve(dirname, "app/(payload)"),
     },
     meta: {
-      titleSuffix: " — Valdra Store",
+      titleSuffix: " - Valdra Store",
     },
     user: "admins",
+  },
+  i18n: {
+    fallbackLanguage: "es",
+    supportedLanguages: { es },
   },
   collections,
   db: postgresAdapter({
@@ -98,7 +119,11 @@ export default buildConfig({
   email: createEmailAdapter(),
   plugins: [ecommercePluginForCatalog, privateS3Storage, catalogS3Storage],
   secret: requiredEnvironmentVariable("PAYLOAD_SECRET"),
-  serverURL: process.env.NEXT_PUBLIC_SERVER_URL,
+  serverURL: serverOrigin,
+  // Payload only validates Origin against `csrf`; without it the cookie strategy
+  // accepts any origin (security audit M-01).
+  csrf: [serverOrigin],
+  cors: [serverOrigin],
   upload: {
     limits: {
       fileSize: 10 * 1024 * 1024,
