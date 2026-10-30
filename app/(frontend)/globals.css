@@ -279,6 +279,46 @@ img {
   color: var(--chrome);
 }
 
+.catalog-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  align-items: end;
+  gap: 14px;
+  margin-bottom: 32px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.catalog-search {
+  grid-column: 1 / -1;
+}
+
+.catalog-filters-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.form-field select {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.form-field select:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.state-message a {
+  color: var(--accent);
+}
+
 .pagination {
   display: flex;
   align-items: center;
