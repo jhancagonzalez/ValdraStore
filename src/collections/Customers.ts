@@ -114,10 +114,7 @@ export const Customers: CollectionConfig = {
           !hasAdminRole(req.user) &&
           req.context?.passwordChangeVerified !== true
         ) {
-          throw new APIError(
-            "Para cambiar la contraseña usa la recuperación de contraseña.",
-            400,
-          );
+          throw new APIError("Para cambiar la contraseña usa la recuperación de contraseña.", 400);
         }
 
         const nextEmail = typeof data.email === "string" ? data.email : undefined;

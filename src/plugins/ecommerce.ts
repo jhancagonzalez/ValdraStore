@@ -16,10 +16,7 @@ const readPublishedVariants: Access = ({ req }) => {
   }
 
   const where: Where = {
-    and: [
-      { _status: { equals: "published" } },
-      { "product._status": { equals: "published" } },
-    ],
+    and: [{ _status: { equals: "published" } }, { "product._status": { equals: "published" } }],
   };
 
   return where;

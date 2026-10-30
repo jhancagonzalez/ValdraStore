@@ -19,16 +19,8 @@ export const CatalogSearchForm = ({ filters }: { filters: CatalogFilters }) => (
       <label className="sr-only" htmlFor="q">
         Buscar prendas
       </label>
-      <input
-        id="q"
-        name="q"
-        type="search"
-        placeholder="Buscar prendas"
-        defaultValue={filters.q}
-      />
-      {filters.category ? (
-        <input type="hidden" name="category" value={filters.category} />
-      ) : null}
+      <input id="q" name="q" type="search" placeholder="Buscar prendas" defaultValue={filters.q} />
+      {filters.category ? <input type="hidden" name="category" value={filters.category} /> : null}
       {filters.size ? <input type="hidden" name="size" value={filters.size} /> : null}
       {filters.color ? <input type="hidden" name="color" value={filters.color} /> : null}
       {filters.minPrice !== null ? (

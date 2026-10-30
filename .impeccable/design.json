@@ -66,10 +66,19 @@
       }
     },
     "typographyMeta": {
-      "display": { "displayName": "Display", "purpose": "Hero de portada, máximo 15 caracteres por línea." },
-      "headline": { "displayName": "Headline", "purpose": "Títulos de página y nombre de producto." },
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero de portada, máximo 15 caracteres por línea."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Títulos de página y nombre de producto."
+      },
       "body": { "displayName": "Body", "purpose": "Párrafos, descripciones y ayudas." },
-      "label": { "displayName": "Label", "purpose": "Etiquetas, navegación, categorías y metadatos." }
+      "label": {
+        "displayName": "Label",
+        "purpose": "Etiquetas, navegación, categorías y metadatos."
+      }
     },
     "shadows": [],
     "motion": [
@@ -157,12 +166,36 @@
       "Líneas de 1 px y espacio negativo como único sistema de separación."
     ],
     "rules": [
-      { "name": "The Ink-Only Rule", "body": "El color saturado está prohibido en la interfaz; solo los estados de error y éxito usan color.", "section": "colors" },
-      { "name": "The Readable Border Rule", "body": "Un borde que identifica un control nunca baja de 3:1 contra el fondo.", "section": "colors" },
-      { "name": "The Two-Tracking Rule", "body": "El tracking solo tiene dos valores: negativo y apretado en display, amplio en etiquetas.", "section": "typography" },
-      { "name": "The No-Gradient-Text Rule", "body": "El énfasis se logra con tamaño y peso; el texto nunca lleva degradado ni contorno.", "section": "typography" },
-      { "name": "The One-Column Rule", "body": "Cada pantalla tiene una sola columna de lectura salvo el detalle de producto y el catálogo.", "section": "layout" },
-      { "name": "The Flat-By-Default Rule", "body": "Si un elemento necesita una sombra para distinguirse, el problema es de jerarquía o de espaciado.", "section": "elevation" }
+      {
+        "name": "The Ink-Only Rule",
+        "body": "El color saturado está prohibido en la interfaz; solo los estados de error y éxito usan color.",
+        "section": "colors"
+      },
+      {
+        "name": "The Readable Border Rule",
+        "body": "Un borde que identifica un control nunca baja de 3:1 contra el fondo.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Tracking Rule",
+        "body": "El tracking solo tiene dos valores: negativo y apretado en display, amplio en etiquetas.",
+        "section": "typography"
+      },
+      {
+        "name": "The No-Gradient-Text Rule",
+        "body": "El énfasis se logra con tamaño y peso; el texto nunca lleva degradado ni contorno.",
+        "section": "typography"
+      },
+      {
+        "name": "The One-Column Rule",
+        "body": "Cada pantalla tiene una sola columna de lectura salvo el detalle de producto y el catálogo.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "Si un elemento necesita una sombra para distinguirse, el problema es de jerarquía o de espaciado.",
+        "section": "elevation"
+      }
     ],
     "dos": [
       "Do usar Ink sobre Paper como combinación por defecto.",

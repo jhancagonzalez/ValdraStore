@@ -20,8 +20,8 @@ export default function TermsPage() {
         <h2>2. Cuentas de cliente</h2>
         <p>
           Para personalizar prendas y realizar pedidos necesitas una cuenta. Eres responsable de la
-          veracidad de los datos que registres y de mantener tu contraseña bajo custodia. Avísanos si
-          detectas un uso no autorizado de tu cuenta.
+          veracidad de los datos que registres y de mantener tu contraseña bajo custodia. Avísanos
+          si detectas un uso no autorizado de tu cuenta.
         </p>
 
         <h2>3. Prendas y personalización</h2>
@@ -59,8 +59,7 @@ export default function TermsPage() {
           >
             Instagram
           </a>{" "}
-          o vuelve al{" "}
-          <Link href="/catalogo">catálogo</Link>.
+          o vuelve al <Link href="/catalogo">catálogo</Link>.
         </p>
       </section>
     </main>

@@ -38,8 +38,7 @@ export const VariantSelector = ({ basePrice, optionTypes, variants }: VariantSel
     return map;
   }, [optionTypes, variants]);
 
-  const selectionComplete =
-    optionTypes.length > 0 && optionTypes.every((type) => selected[type]);
+  const selectionComplete = optionTypes.length > 0 && optionTypes.every((type) => selected[type]);
 
   const matchingVariant = selectionComplete
     ? variants.find((variant) =>
@@ -85,9 +84,7 @@ export const VariantSelector = ({ basePrice, optionTypes, variants }: VariantSel
           matchingVariant ? (
             <>
               Opción elegida:{" "}
-              <strong>
-                {optionTypes.map((type) => `${type} ${selected[type]}`).join(" · ")}
-              </strong>
+              <strong>{optionTypes.map((type) => `${type} ${selected[type]}`).join(" · ")}</strong>
             </>
           ) : (
             "Esta combinación no está disponible."
