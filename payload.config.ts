@@ -5,6 +5,7 @@ import { s3Storage } from "@payloadcms/storage-s3";
 import { buildConfig } from "payload";
 import { collections } from "@/collections";
 import { ecommercePluginForCatalog } from "@/plugins/ecommerce";
+import { createEmailAdapter } from "@/services/email/mailer";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -94,8 +95,10 @@ export default buildConfig({
     // Prevent Payload/Drizzle from changing the hosted schema at application startup.
     push: false,
   }),
+  email: createEmailAdapter(),
   plugins: [ecommercePluginForCatalog, privateS3Storage, catalogS3Storage],
   secret: requiredEnvironmentVariable("PAYLOAD_SECRET"),
+  serverURL: process.env.NEXT_PUBLIC_SERVER_URL,
   upload: {
     limits: {
       fileSize: 10 * 1024 * 1024,

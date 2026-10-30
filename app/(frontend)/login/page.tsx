@@ -18,6 +18,9 @@ export default async function LoginPage() {
       <p className="section-subtitle">Ingresa con el correo y la contraseña de tu cuenta.</p>
       <LoginForm />
       <p className="form-footer">
+        <Link href="/recuperar">¿Olvidaste tu contraseña?</Link>
+      </p>
+      <p className="form-footer">
         ¿No tienes cuenta? <Link href="/registro">Crea una aquí</Link>
       </p>
     </main>
