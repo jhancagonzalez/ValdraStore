@@ -1,16 +1,26 @@
 import type { Access, FieldAccess, PayloadRequest } from "payload";
 
 type RoleBearingUser = {
+  collection?: unknown;
   role?: unknown;
   roles?: unknown;
 };
 
+/**
+ * The administrator role lives only in the `admins` collection (HU-05). A session
+ * from another auth collection is never an administrator, even if its document
+ * carried an admin-looking role value.
+ */
 export const hasAdminRole = (user: unknown): user is RoleBearingUser => {
   if (!user || typeof user !== "object") {
     return false;
   }
 
   const roleBearingUser = user as RoleBearingUser;
+
+  if (roleBearingUser.collection !== undefined && roleBearingUser.collection !== "admins") {
+    return false;
+  }
 
   return (
     roleBearingUser.role === "admin" ||
