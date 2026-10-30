@@ -12,66 +12,47 @@ export const getServerUrl = (): string =>
   (process.env.NEXT_PUBLIC_SERVER_URL ?? FALLBACK_SERVER_URL).replace(/\/+$/, "");
 
 /**
- * Best available public base URL for links inside emails: the browser origin of
- * the request that triggered the mail, then the configured URL. Keeps production
- * links pointing at the deployed domain even if a variable is missing.
+ * Absolute URL of the customer-facing reset screen (never the admin panel route).
+ * The base URL always comes from configuration: deriving it from request headers
+ * would let an attacker poison the link sent by email.
  */
-export const resolveBaseUrl = (headers?: Headers | null): string => {
-  const origin = headers?.get("origin");
-  if (origin && origin !== "null") {
-    return origin.replace(/\/+$/, "");
-  }
-
-  const host = headers?.get("host");
-  if (host) {
-    const protocol = headers?.get("x-forwarded-proto") ?? "http";
-    return `${protocol}://${host}`.replace(/\/+$/, "");
-  }
-
-  return getServerUrl();
-};
-
-/** Absolute URL of the customer-facing reset screen (never the admin panel route). */
-export const buildPasswordResetUrl = (token: string, baseUrl?: string): string =>
-  `${(baseUrl ?? getServerUrl()).replace(/\/+$/, "")}/restablecer?token=${encodeURIComponent(token)}`;
+export const buildPasswordResetUrl = (token: string): string =>
+  `${getServerUrl()}/restablecer?token=${encodeURIComponent(token)}`;
 
 type PasswordResetEmailArgs = {
-  baseUrl?: string;
   name?: null | string;
   token: string;
 };
 
-export const passwordResetEmailHtml = ({
-  baseUrl,
-  name,
-  token,
-}: PasswordResetEmailArgs): string => {
-  const url = buildPasswordResetUrl(token, baseUrl);
+export const passwordResetEmailHtml = ({ name, token }: PasswordResetEmailArgs): string => {
+  const url = buildPasswordResetUrl(token);
+  const safeUrl = escapeHtml(url);
   const greeting = name ? `Hola, ${escapeHtml(name)}.` : "Hola.";
 
   return `<!doctype html>
 <html lang="es">
-  <body style="margin:0;padding:24px;background:#0b0b10;color:#f2f2f7;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;">
-    <div style="max-width:520px;margin:0 auto;padding:28px;border:1px solid #26263a;border-radius:14px;background:#15151f;">
-      <h1 style="margin:0 0 16px;font-size:20px;color:#9aa8ff;">Valdra Store</h1>
-      <p style="margin:0 0 12px;line-height:1.6;">${greeting}</p>
-      <p style="margin:0 0 20px;line-height:1.6;">
+  <body style="margin:0;padding:24px;background:#f4f4f2;color:#0d0d0d;font-family:'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;">
+    <div style="max-width:520px;margin:0 auto;padding:32px;border:1px solid #e5e5e2;background:#ffffff;">
+      <p style="margin:0 0 24px;font-size:11px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;">Valdra Store</p>
+      <h1 style="margin:0 0 16px;font-size:24px;font-weight:500;letter-spacing:-0.02em;line-height:1.15;">Restablece tu contraseña</h1>
+      <p style="margin:0 0 12px;line-height:1.6;color:#333333;">${greeting}</p>
+      <p style="margin:0 0 24px;line-height:1.6;color:#333333;">
         Recibimos una solicitud para restablecer la contraseña de tu cuenta. Usa el
         siguiente enlace para crear una contraseña nueva.
       </p>
-      <p style="margin:0 0 20px;">
-        <a href="${url}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#9aa8ff;color:#0b0b10;font-weight:600;text-decoration:none;">
+      <p style="margin:0 0 24px;">
+        <a href="${safeUrl}" style="display:inline-block;padding:14px 24px;background:#0d0d0d;color:#ffffff;font-size:11px;font-weight:600;letter-spacing:0.14em;text-decoration:none;text-transform:uppercase;">
           Crear una contraseña nueva
         </a>
       </p>
-      <p style="margin:0 0 12px;line-height:1.6;color:#a8a8b8;font-size:14px;">
+      <p style="margin:0 0 12px;line-height:1.6;color:#6f6f6f;font-size:13px;">
         El enlace vence en una hora y solo puede usarse una vez.
       </p>
-      <p style="margin:0 0 12px;line-height:1.6;color:#a8a8b8;font-size:14px;">
+      <p style="margin:0 0 12px;line-height:1.6;color:#6f6f6f;font-size:13px;">
         Si no solicitaste este cambio, ignora este mensaje: tu contraseña actual sigue vigente.
       </p>
-      <p style="margin:0;padding-top:16px;border-top:1px solid #26263a;color:#6c6c80;font-size:12px;word-break:break-all;">
-        ${url}
+      <p style="margin:0;padding-top:16px;border-top:1px solid #e5e5e2;color:#6f6f6f;font-size:11px;word-break:break-all;">
+        ${safeUrl}
       </p>
     </div>
   </body>

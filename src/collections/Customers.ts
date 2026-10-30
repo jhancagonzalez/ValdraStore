@@ -6,8 +6,12 @@ import {
   isAdminField,
   isAdminOrSelf,
 } from "@/access/roles";
+import { enforcePasswordPolicy } from "@/hooks/enforce-password-policy";
+import { requireCustomerLastName } from "@/hooks/require-customer-last-name";
+import { validateResetPassword } from "@/hooks/validate-reset-password";
+import { enforceOperationRateLimit } from "@/lib/rate-limit";
 import { isEmailChange } from "@/services/customers/profile";
-import { passwordResetEmailHtml, resolveBaseUrl } from "@/services/email/templates";
+import { passwordResetEmailHtml } from "@/services/email/templates";
 
 /** Accepts digits with optional country prefix, spaces, hyphens or parentheses. */
 const PHONE_PATTERN = /^\+?[\d\s()-]{7,20}$/;
@@ -21,11 +25,15 @@ const RESET_TOKEN_LIFETIME_MS = 60 * 60 * 1000;
 export const Customers: CollectionConfig = {
   slug: "customers",
   auth: {
+    cookies: {
+      sameSite: "Lax",
+      secure: process.env.NODE_ENV === "production",
+    },
     forgotPassword: {
       expiration: RESET_TOKEN_LIFETIME_MS,
+      minRequestInterval: 60_000,
       generateEmailHTML: (args) =>
         passwordResetEmailHtml({
-          baseUrl: resolveBaseUrl(args?.req?.headers),
           name: args?.user?.name,
           token: args?.token ?? "",
         }),
@@ -33,7 +41,8 @@ export const Customers: CollectionConfig = {
     },
   },
   admin: {
-    defaultColumns: ["name", "email", "createdAt"],
+    group: "Cuentas",
+    defaultColumns: ["name", "lastName", "email", "createdAt"],
     useAsTitle: "email",
   },
   access: {
@@ -47,8 +56,17 @@ export const Customers: CollectionConfig = {
     {
       name: "name",
       type: "text",
-      label: "Nombre",
+      label: "Nombres",
       required: true,
+      minLength: 2,
+      maxLength: 80,
+    },
+    {
+      name: "lastName",
+      type: "text",
+      label: "Apellidos",
+      minLength: 2,
+      maxLength: 80,
     },
     {
       name: "phone",
@@ -83,8 +101,22 @@ export const Customers: CollectionConfig = {
     },
   ],
   hooks: {
+    beforeOperation: [validateResetPassword, enforceOperationRateLimit],
+    beforeValidate: [enforcePasswordPolicy, requireCustomerLastName],
     beforeChange: [
-      ({ data, originalDoc, req }) => {
+      ({ data, operation, originalDoc, req }) => {
+        // A stolen session must not be able to replace the password through a
+        // direct REST PATCH (security audit M-03). The reset flow bypasses this
+        // hook, so password recovery keeps working.
+        if (
+          operation === "update" &&
+          typeof data.password === "string" &&
+          !hasAdminRole(req.user) &&
+          req.context?.passwordChangeVerified !== true
+        ) {
+          throw new APIError("Para cambiar la contraseña usa la recuperación de contraseña.", 400);
+        }
+
         const nextEmail = typeof data.email === "string" ? data.email : undefined;
         const previousEmail =
           originalDoc && typeof originalDoc === "object" && "email" in originalDoc

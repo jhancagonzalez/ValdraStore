@@ -9,6 +9,7 @@ const INITIAL_STATE: ProfileFormState = { status: "idle" };
 type ProfileFormProps = {
   profile: {
     email: string;
+    lastName: string;
     name: string;
     phone: string | null;
   };
@@ -20,6 +21,7 @@ export const ProfileForm = ({ profile }: ProfileFormProps) => {
   const fieldErrors = state.fieldErrors ?? {};
   const values: ProfileFieldValues = state.values ?? {
     email: profile.email,
+    lastName: profile.lastName,
     name: profile.name,
     phone: profile.phone ?? "",
   };
@@ -38,12 +40,12 @@ export const ProfileForm = ({ profile }: ProfileFormProps) => {
       ) : null}
 
       <div className="form-field">
-        <label htmlFor="profile-name">Nombre</label>
+        <label htmlFor="profile-name">Nombres</label>
         <input
           id="profile-name"
           name="name"
           type="text"
-          autoComplete="name"
+          autoComplete="given-name"
           defaultValue={values.name}
           required
           minLength={2}
@@ -54,6 +56,27 @@ export const ProfileForm = ({ profile }: ProfileFormProps) => {
         {fieldErrors.name ? (
           <p className="form-field-error" id="profile-name-error">
             {fieldErrors.name}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="form-field">
+        <label htmlFor="profile-last-name">Apellidos</label>
+        <input
+          id="profile-last-name"
+          name="lastName"
+          type="text"
+          autoComplete="family-name"
+          defaultValue={values.lastName}
+          required
+          minLength={2}
+          maxLength={80}
+          aria-invalid={Boolean(fieldErrors.lastName)}
+          aria-describedby={fieldErrors.lastName ? "profile-last-name-error" : undefined}
+        />
+        {fieldErrors.lastName ? (
+          <p className="form-field-error" id="profile-last-name-error">
+            {fieldErrors.lastName}
           </p>
         ) : null}
       </div>

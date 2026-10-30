@@ -1,0 +1,307 @@
+/* Forms */
+
+.form {
+  display: grid;
+  gap: 20px;
+  margin-top: 32px;
+}
+
+.form-error,
+.form-success {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  font-size: 13px;
+}
+
+.form-error {
+  border-color: #e9c8c4;
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.form-success {
+  border-color: #c6ddcd;
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.form-field-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.form-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.password-strength {
+  display: grid;
+  gap: 8px;
+}
+
+.password-meter {
+  display: flex;
+  gap: 4px;
+}
+
+.password-meter span {
+  flex: 1;
+  height: 3px;
+  background: var(--line);
+}
+
+.password-meter span.is-filled {
+  background: var(--ink);
+}
+
+.password-strength-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.password-rules {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.password-rules li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.password-rules li::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--muted-soft);
+}
+
+.password-rules li.is-met {
+  color: var(--ink);
+}
+
+.password-rules li.is-met::before {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+
+.form button[type="submit"] {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.form-terms {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.form-terms a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.form-terms a:hover {
+  text-decoration: none;
+}
+
+.form-footer {
+  margin: 20px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.form-footer a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.form-footer a:hover {
+  text-decoration: none;
+}
+
+/* States and account */
+
+.state-message {
+  margin: 0;
+  padding: 64px 24px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  text-align: center;
+}
+
+.state-message a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.account-card {
+  display: grid;
+  gap: 16px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.account-welcome {
+  margin-top: 20px;
+}
+
+.account-card form {
+  margin-top: 0;
+}
+
+.account-card .button {
+  justify-self: start;
+}
+
+.account-card .account-action {
+  width: 100%;
+  justify-self: stretch;
+}
+
+.account-danger {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.account-danger-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.site-footer {
+  margin-top: clamp(88px, 12vw, 144px);
+  padding: 40px var(--gutter) 24px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.site-footer-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  gap: 32px;
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding-bottom: 28px;
+}
+
+.footer-wordmark {
+  display: block;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.footer-note {
+  max-width: 32ch;
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.footer-nav {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.footer-social {
+  display: flex;
+  align-content: start;
+  justify-content: flex-end;
+}
+
+.footer-nav a,
+.footer-social a {
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color 160ms ease;
+}
+
+.footer-nav a:hover,
+.footer-social a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.4em;
+}
+
+.footer-legal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Long-form pages */
+.prose {
+  max-width: 68ch;
+}
+
+.prose h2 {
+  margin: 40px 0 12px;
+  font-size: 1.125rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.prose p,
+.prose li {
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+
+.prose ul {
+  margin: 0 0 16px;
+  padding-left: 20px;
+}
+
+.prose p {
+  margin: 0 0 16px;
+}
+
+.prose .form-hint {
+  margin-top: 32px;
+}

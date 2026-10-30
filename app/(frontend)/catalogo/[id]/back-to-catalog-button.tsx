@@ -10,7 +10,14 @@ export const BackToCatalogButton = ({ page }: { page: number }) => {
   const router = useRouter();
 
   const goBack = () => {
-    if (window.history.length > 1) {
+    // CatalogScrollMemory stores the scroll before the card click, so an entry
+    // proves the visitor came from the catalog inside this tab. document.referrer
+    // does not update on client-side navigations.
+    const cameFromCatalog = Object.keys(sessionStorage).some((key) =>
+      key.startsWith("catalogo-scroll:"),
+    );
+
+    if (cameFromCatalog && window.history.length > 1) {
       router.back();
       return;
     }
@@ -18,7 +25,7 @@ export const BackToCatalogButton = ({ page }: { page: number }) => {
   };
 
   return (
-    <button type="button" className="button button-secondary" onClick={goBack}>
+    <button type="button" className="back-link" onClick={goBack}>
       Volver al catálogo
     </button>
   );

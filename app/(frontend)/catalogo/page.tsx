@@ -4,40 +4,46 @@ import { CATEGORY_LABELS, type CatalogFilters, getPublishedProducts } from "@/li
 import { formatCop } from "@/lib/format";
 import { collectProductImages } from "@/lib/media";
 import { ProductImage } from "../_components/product-image";
-import { CatalogFiltersForm } from "./catalog-filters";
+import { CatalogFiltersForm, CatalogSearchForm } from "./catalog-filters";
 import { CatalogScrollMemory } from "./catalog-scroll-memory";
 
 export const metadata: Metadata = { title: "Catálogo" };
 
-const parsePrice = (value: string | undefined): number | null => {
-  const parsed = Number.parseInt(value ?? "", 10);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+type SearchParam = string | string[] | undefined;
+
+/** Next delivers string[] when a query parameter is repeated; take the first value. */
+const firstValue = (value: SearchParam): string => {
+  if (Array.isArray(value)) {
+    return value[0] ?? "";
+  }
+  return value ?? "";
+};
+
+const parsePrice = (value: string): number | null => {
+  const raw = value.trim();
+  if (!raw) {
+    return null;
+  }
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
 };
 
 type CatalogPageProps = {
-  searchParams: Promise<{
-    category?: string;
-    color?: string;
-    max?: string;
-    min?: string;
-    page?: string;
-    q?: string;
-    size?: string;
-  }>;
+  searchParams: Promise<Record<string, SearchParam>>;
 };
 
 export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const params = await searchParams;
-  const parsedPage = Number.parseInt(params.page ?? "1", 10);
+  const parsedPage = Number.parseInt(firstValue(params.page), 10);
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 
   const filters: CatalogFilters = {
-    category: params.category ?? "",
-    color: params.color ?? "",
-    maxPrice: parsePrice(params.max),
-    minPrice: parsePrice(params.min),
-    q: (params.q ?? "").trim(),
-    size: params.size ?? "",
+    category: firstValue(params.category),
+    color: firstValue(params.color),
+    maxPrice: parsePrice(firstValue(params.max)),
+    minPrice: parsePrice(firstValue(params.min)),
+    q: firstValue(params.q).trim(),
+    size: firstValue(params.size),
   };
   const hasFilters = Object.values(filters).some((value) => value !== "" && value !== null);
 
@@ -65,74 +71,92 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   };
 
   return (
-    <main className="page">
+    <main className="page page-catalog">
       <CatalogScrollMemory scope={pageHref(products.page)} />
-      <h1 className="section-title">Catálogo</h1>
-      <p className="section-subtitle">Prendas disponibles para personalizar</p>
+      <div className="catalog-head">
+        <div>
+          <h1 className="section-title">Catálogo</h1>
+          <p className="section-subtitle">Prendas disponibles para personalizar</p>
+        </div>
+        <span className="catalog-count">
+          {products.totalDocs} {products.totalDocs === 1 ? "prenda" : "prendas"}
+        </span>
+      </div>
 
-      <CatalogFiltersForm facets={products.facets} filters={filters} />
+      <CatalogSearchForm filters={filters} />
 
-      {products.docs.length === 0 ? (
-        hasFilters && products.unfilteredCount > 0 ? (
-          <p className="state-message" role="status">
-            {filters.q
-              ? `No encontramos prendas para “${filters.q}” con los filtros aplicados.`
-              : "No encontramos prendas con los filtros aplicados."}{" "}
-            <Link href="/catalogo">Limpiar filtros</Link>
-          </p>
-        ) : (
-          <p className="state-message">No hay prendas disponibles por ahora. Vuelve pronto.</p>
-        )
-      ) : (
-        <ul className="product-grid">
-          {products.docs.map((product) => {
-            const [image] = collectProductImages(product);
-            const price = formatCop(product.priceInCOP);
-            return (
-              <li key={product.id}>
-                <Link
-                  href={`/catalogo/${product.id}?page=${products.page}`}
-                  className="product-card"
-                  aria-label={`Ver ${product.title}`}
-                >
-                  <span className="product-image">
-                    <ProductImage
-                      src={image?.url ?? null}
-                      alt={image?.alt ?? product.title}
-                      sizes="(max-width: 520px) 100vw, (max-width: 800px) 45vw, 230px"
-                    />
-                  </span>
-                  <span className="product-info">
-                    <span className="product-name">{product.title}</span>
-                    <span className="product-category">
-                      {CATEGORY_LABELS[product.category] ?? product.category}
-                    </span>
-                    {price ? <span className="product-price">{price}</span> : null}
-                  </span>
+      <div className="catalog-body">
+        <aside className="catalog-aside" aria-labelledby="filters-title">
+          <h2 className="filters-title" id="filters-title">
+            Filtros
+          </h2>
+          <CatalogFiltersForm facets={products.facets} filters={filters} />
+        </aside>
+
+        <div className="catalog-results">
+          {products.docs.length === 0 ? (
+            hasFilters && products.unfilteredCount > 0 ? (
+              <p className="state-message" role="status">
+                {filters.q
+                  ? `No encontramos prendas para “${filters.q}”.`
+                  : "No encontramos prendas con los filtros aplicados."}{" "}
+                <Link href="/catalogo">Limpiar filtros</Link>
+              </p>
+            ) : (
+              <p className="state-message">No hay prendas disponibles por ahora. Vuelve pronto.</p>
+            )
+          ) : (
+            <ul className="product-grid">
+              {products.docs.map((product, index) => {
+                const [image] = collectProductImages(product);
+                const price = formatCop(product.priceInCOP);
+                return (
+                  <li key={product.id}>
+                    <Link
+                      href={`/catalogo/${product.id}?page=${products.page}`}
+                      className="product-card"
+                    >
+                      <span className="product-image">
+                        <ProductImage
+                          src={image?.url ?? null}
+                          alt=""
+                          sizes="(max-width: 860px) 45vw, 280px"
+                          preload={index === 0}
+                        />
+                      </span>
+                      <span className="product-info">
+                        <span className="product-name">{product.title}</span>
+                        <span className="product-category">
+                          {CATEGORY_LABELS[product.category] ?? product.category}
+                        </span>
+                        {price ? <span className="product-price">{price}</span> : null}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {products.totalPages > 1 ? (
+            <nav className="pagination" aria-label="Paginación del catálogo">
+              {products.hasPrevPage ? (
+                <Link className="button button-secondary" href={pageHref(products.page - 1)}>
+                  Anterior
                 </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      {products.totalPages > 1 ? (
-        <nav className="pagination" aria-label="Paginación del catálogo">
-          {products.hasPrevPage ? (
-            <Link className="button button-secondary" href={pageHref(products.page - 1)}>
-              Anterior
-            </Link>
+              ) : null}
+              <span className="page-status">
+                Página {products.page} de {products.totalPages} · {products.totalDocs} prendas
+              </span>
+              {products.hasNextPage ? (
+                <Link className="button button-secondary" href={pageHref(products.page + 1)}>
+                  Siguiente
+                </Link>
+              ) : null}
+            </nav>
           ) : null}
-          <span className="page-status">
-            Página {products.page} de {products.totalPages} · {products.totalDocs} prendas
-          </span>
-          {products.hasNextPage ? (
-            <Link className="button button-secondary" href={pageHref(products.page + 1)}>
-              Siguiente
-            </Link>
-          ) : null}
-        </nav>
-      ) : null}
+        </div>
+      </div>
     </main>
   );
 }

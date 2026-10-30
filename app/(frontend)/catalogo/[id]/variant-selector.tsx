@@ -38,7 +38,7 @@ export const VariantSelector = ({ basePrice, optionTypes, variants }: VariantSel
     return map;
   }, [optionTypes, variants]);
 
-  const selectionComplete = optionTypes.every((type) => selected[type]);
+  const selectionComplete = optionTypes.length > 0 && optionTypes.every((type) => selected[type]);
 
   const matchingVariant = selectionComplete
     ? variants.find((variant) =>
@@ -55,10 +55,8 @@ export const VariantSelector = ({ basePrice, optionTypes, variants }: VariantSel
   return (
     <>
       {optionTypes.map((type) => (
-        <fieldset key={type} className="detail-row" style={{ border: 0, margin: 0, padding: 0 }}>
-          <legend className="detail-label" style={{ padding: 0 }}>
-            {type}
-          </legend>
+        <fieldset key={type} className="detail-fieldset">
+          <legend className="detail-label">{type}</legend>
           <ul className="option-chips">
             {(optionsByType.get(type) ?? []).map((value) => {
               const active = selected[type] === value;
@@ -81,18 +79,18 @@ export const VariantSelector = ({ basePrice, optionTypes, variants }: VariantSel
 
       {price ? <span className="detail-price">{price}</span> : null}
 
-      {selectionComplete ? (
-        <p className="variant-summary" role="status">
-          {matchingVariant ? (
+      <p className="variant-summary" role="status">
+        {selectionComplete ? (
+          matchingVariant ? (
             <>
               Opción elegida:{" "}
               <strong>{optionTypes.map((type) => `${type} ${selected[type]}`).join(" · ")}</strong>
             </>
           ) : (
             "Esta combinación no está disponible."
-          )}
-        </p>
-      ) : null}
+          )
+        ) : null}
+      </p>
     </>
   );
 };

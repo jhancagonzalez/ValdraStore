@@ -9,7 +9,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^\+?[\d\s()-]{7,20}$/;
 
 /** Fields a customer is allowed to edit on their own profile (HU-04). */
-export const EDITABLE_PROFILE_FIELDS = ["name", "email", "phone"] as const;
+export const EDITABLE_PROFILE_FIELDS = ["name", "lastName", "email", "phone"] as const;
 
 export type EditableProfileField = (typeof EDITABLE_PROFILE_FIELDS)[number];
 
@@ -19,6 +19,7 @@ export type ProfileFieldErrors = Partial<Record<EditableProfileField | "currentP
 export type CustomerProfile = {
   email: string;
   id: number;
+  lastName: string;
   name: string;
   phone: string | null;
 };
@@ -26,6 +27,7 @@ export type CustomerProfile = {
 export type ProfileInput = {
   currentPassword?: unknown;
   email?: unknown;
+  lastName?: unknown;
   name?: unknown;
   phone?: unknown;
 };
@@ -33,7 +35,7 @@ export type ProfileInput = {
 export type ParsedProfile =
   | {
       ok: true;
-      data: { email: string; name: string; phone: string | null };
+      data: { email: string; lastName: string; name: string; phone: string | null };
     }
   | { ok: false; fieldErrors: ProfileFieldErrors };
 
@@ -49,6 +51,7 @@ export type ProfileUpdateResult =
 /** Fields as typed by the customer, echoed back when a save fails. */
 export type ProfileFieldValues = {
   email: string;
+  lastName: string;
   name: string;
   phone: string;
 };
@@ -72,7 +75,12 @@ export const parseProfileInput = (input: ProfileInput): ParsedProfile => {
 
   const name = typeof input.name === "string" ? input.name.trim() : "";
   if (name.length < PROFILE_NAME_MIN_LENGTH || name.length > PROFILE_NAME_MAX_LENGTH) {
-    fieldErrors.name = `El nombre debe tener entre ${PROFILE_NAME_MIN_LENGTH} y ${PROFILE_NAME_MAX_LENGTH} caracteres.`;
+    fieldErrors.name = `Los nombres deben tener entre ${PROFILE_NAME_MIN_LENGTH} y ${PROFILE_NAME_MAX_LENGTH} caracteres.`;
+  }
+
+  const lastName = typeof input.lastName === "string" ? input.lastName.trim() : "";
+  if (lastName.length < PROFILE_NAME_MIN_LENGTH || lastName.length > PROFILE_NAME_MAX_LENGTH) {
+    fieldErrors.lastName = `Los apellidos deben tener entre ${PROFILE_NAME_MIN_LENGTH} y ${PROFILE_NAME_MAX_LENGTH} caracteres.`;
   }
 
   const email = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
@@ -95,12 +103,13 @@ export const parseProfileInput = (input: ProfileInput): ParsedProfile => {
     return { fieldErrors, ok: false };
   }
 
-  return { data: { email, name, phone }, ok: true };
+  return { data: { email, lastName, name, phone }, ok: true };
 };
 
 const toProfile = (customer: Customer): CustomerProfile => ({
   email: customer.email,
   id: customer.id,
+  lastName: customer.lastName ?? "",
   name: customer.name,
   phone: customer.phone ?? null,
 });
@@ -182,7 +191,7 @@ export const updateCustomerProfile = async (
     return { fieldErrors: parsed.fieldErrors, ok: false, reason: "invalid" };
   }
 
-  const { email, name, phone } = parsed.data;
+  const { email, lastName, name, phone } = parsed.data;
   const emailChanged = isEmailChange(customer.email, email);
 
   if (emailChanged) {
@@ -223,7 +232,7 @@ export const updateCustomerProfile = async (
     const updated = await payload.update({
       collection: "customers",
       context: { emailChangeVerified: emailChanged },
-      data: { email, name, phone },
+      data: { email, lastName, name, phone },
       depth: 0,
       id: customer.id,
       overrideAccess: false,

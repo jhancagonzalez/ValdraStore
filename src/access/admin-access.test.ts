@@ -51,13 +51,13 @@ describe("HU-05 criterio 2 — un cliente es rechazado en funciones administrati
     vi.stubEnv("ALLOW_ADMIN_BOOTSTRAP", "true");
     vi.stubEnv("NODE_ENV", "development");
 
-    await expect(canAccessAdminPanel({ req: requestFor(customerSession, 1) })).resolves.toBe(false);
+    expect(await canAccessAdminPanel({ req: requestFor(customerSession, 1) })).toBe(false);
   });
 
   it("niega el panel a un cliente con el bootstrap desactivado", async () => {
     vi.stubEnv("ALLOW_ADMIN_BOOTSTRAP", "false");
 
-    await expect(canAccessAdminPanel({ req: requestFor(customerSession, 0) })).resolves.toBe(false);
-    await expect(canAccessAdminPanel({ req: requestFor(adminSession) })).resolves.toBe(true);
+    expect(await canAccessAdminPanel({ req: requestFor(customerSession, 0) })).toBe(false);
+    expect(await canAccessAdminPanel({ req: requestFor(adminSession) })).toBe(true);
   });
 });

@@ -3,15 +3,24 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-/** Signs the customer out through Payload's REST endpoint and refreshes the shell. */
-export const LogoutButton = () => {
+type LogoutButtonProps = {
+  /** Payload auth collection endpoint: customers by default, admins from the panel link. */
+  endpoint?: string;
+  className?: string;
+};
+
+/** Signs the current user out through Payload's REST endpoint and refreshes the shell. */
+export const LogoutButton = ({
+  endpoint = "/api/customers/logout",
+  className,
+}: LogoutButtonProps) => {
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
   const logout = async () => {
     setPending(true);
     try {
-      await fetch("/api/customers/logout", { credentials: "include", method: "POST" });
+      await fetch(endpoint, { credentials: "include", method: "POST" });
     } finally {
       router.push("/");
       router.refresh();
@@ -19,7 +28,7 @@ export const LogoutButton = () => {
   };
 
   return (
-    <button type="button" onClick={logout} disabled={pending}>
+    <button type="button" className={className} onClick={logout} disabled={pending}>
       {pending ? "Cerrando…" : "Cerrar sesión"}
     </button>
   );

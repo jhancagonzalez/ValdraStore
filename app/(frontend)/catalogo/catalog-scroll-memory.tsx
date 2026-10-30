@@ -13,9 +13,14 @@ export const CatalogScrollMemory = ({ scope }: { scope: string }) => {
     const key = `catalogo-scroll:${scope}`;
     const saved = sessionStorage.getItem(key);
     if (saved) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => window.scrollTo(0, Number(saved)));
-      });
+      // Consumed on return so later visits through the header start at the top.
+      sessionStorage.removeItem(key);
+      const position = Number(saved);
+      if (Number.isFinite(position) && position > 0) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => window.scrollTo(0, position));
+        });
+      }
     }
 
     const remember = (event: MouseEvent) => {

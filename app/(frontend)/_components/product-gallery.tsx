@@ -25,7 +25,7 @@ export const ProductGallery = ({ images, fallbackAlt }: ProductGalleryProps) => 
           src={activeImage?.url ?? null}
           alt={activeImage?.alt ?? fallbackAlt}
           sizes="(max-width: 760px) 100vw, 520px"
-          priority
+          preload
         />
         {activeImage?.kind === "design" ? (
           <span className="product-gallery-badge">Diseño</span>

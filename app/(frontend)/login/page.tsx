@@ -6,7 +6,13 @@ import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Iniciar sesión" };
 
-export default async function LoginPage() {
+type LoginPageProps = {
+  searchParams: Promise<{ next?: string }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const next = typeof params.next === "string" ? params.next : undefined;
   const customer = await getSessionCustomer();
   if (customer) {
     redirect("/cuenta");
@@ -16,7 +22,7 @@ export default async function LoginPage() {
     <main className="page page-narrow">
       <h1 className="section-title">Iniciar sesión</h1>
       <p className="section-subtitle">Ingresa con el correo y la contraseña de tu cuenta.</p>
-      <LoginForm />
+      <LoginForm next={next} />
       <p className="form-footer">
         <Link href="/recuperar">¿Olvidaste tu contraseña?</Link>
       </p>

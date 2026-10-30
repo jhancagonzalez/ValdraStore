@@ -9,6 +9,30 @@ import {
   updateCustomerProfile,
 } from "@/services/customers/profile";
 
+export type DeleteAccountState = { message?: string; status: "error" | "idle" | "success" };
+
+/** Deletes the signed-in customer's own account only; the id always comes from the session. */
+export const deleteAccount = async (): Promise<DeleteAccountState> => {
+  const customer = await getSessionCustomer();
+
+  if (!customer) {
+    return { message: "Tu sesión expiró. Inicia sesión de nuevo.", status: "error" };
+  }
+
+  const payload = await getPayloadClient();
+
+  try {
+    await payload.delete({
+      collection: "customers",
+      id: customer.id,
+      overrideAccess: true,
+    });
+    return { status: "success" };
+  } catch {
+    return { message: "No se pudo eliminar la cuenta. Inténtalo de nuevo.", status: "error" };
+  }
+};
+
 const readText = (formData: FormData, field: string): string => {
   const value = formData.get(field);
   return typeof value === "string" ? value : "";
@@ -25,6 +49,7 @@ export const saveProfile = async (
 ): Promise<ProfileFormState> => {
   const values: ProfileFieldValues = {
     email: readText(formData, "email"),
+    lastName: readText(formData, "lastName"),
     name: readText(formData, "name"),
     phone: readText(formData, "phone"),
   };
@@ -44,6 +69,7 @@ export const saveProfile = async (
   const result = await updateCustomerProfile(payload, customer, {
     currentPassword: formData.get("currentPassword"),
     email: values.email,
+    lastName: values.lastName,
     name: values.name,
     phone: values.phone,
   });

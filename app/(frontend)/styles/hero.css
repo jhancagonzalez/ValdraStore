@@ -1,0 +1,113 @@
+/* Hero */
+
+.hero {
+  display: grid;
+  align-content: end;
+  gap: 20px;
+  padding: clamp(56px, 12vw, 152px) 0 clamp(40px, 6vw, 72px);
+}
+
+.hero h1 {
+  max-width: 15ch;
+  margin: 0;
+  font-size: clamp(2.6rem, 7vw, 5rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.hero p {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.0625rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.page-home {
+  padding-bottom: clamp(32px, 6vw, 72px);
+}
+
+/* Marquee */
+
+.marquee {
+  overflow: hidden;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 32s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Stop the track at its start so the focused link stays inside the viewport. */
+.marquee:focus-within .marquee-track {
+  animation: none;
+}
+
+.marquee-group {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin: 0;
+  padding: 0 28px 0 0;
+  list-style: none;
+}
+
+.marquee-group li {
+  display: inline-flex;
+  align-items: center;
+  gap: 28px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.marquee-group li + li::before {
+  content: "✦";
+  font-size: 10px;
+  color: var(--ink);
+}
+
+.marquee-group a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.marquee-group a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.4em;
+}
+
+.marquee-group span {
+  color: var(--muted);
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}

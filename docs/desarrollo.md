@@ -41,6 +41,9 @@ Pega el resultado en `PAYLOAD_SECRET` dentro de `.env.local`. Completa también:
 - `DATABASE_URL_MIGRATIONS`: cadena del mismo Session Pooler, reservada para crear
   y ejecutar migraciones.
 - `NEXT_PUBLIC_SERVER_URL`: conserva `http://localhost:3000` para desarrollo local.
+  Payload usa este valor para `serverURL`, `csrf` y `cors`, así que debe coincidir
+  exactamente con el origen (sin barra final ni ruta) en cada entorno; si no, el
+  panel rechaza el inicio de sesión por cookie.
 - `ALLOW_ADMIN_BOOTSTRAP=true`: permite crear el primer administrador únicamente
   en desarrollo local y mientras la colección de administradores esté vacía. El
   código lo bloquea en producción.
@@ -67,6 +70,12 @@ Las imágenes del catálogo usan la colección `media` y el bucket público
 `S3_CATALOG_BUCKET` y `SUPABASE_URL` deben existir en `.env.local`; `SUPABASE_URL` solo
 se usa en servidor para construir la URL pública del objeto. Solo las imágenes de
 catálogo son públicas; referencias, propuestas y mockups permanecen privados.
+
+Límite efectivo en despliegue: `media` sube los bytes a través del servidor, y
+Vercel Hobby corta el cuerpo de una función en 4,5 MB, por debajo del límite
+configurado de 10 MB. En local se aceptan hasta 10 MB. Si se necesita el límite
+completo en producción, hay que habilitar `clientUploads` en el adaptador de
+catálogo y configurar CORS del bucket; queda pendiente de aprobación.
 
 Usa el Session Pooler en modo de sesión, puerto `5432`, para ambas cadenas. Mantén
 `sslmode=verify-full` y `sslrootcert` con la ruta local al certificado raíz descargado
@@ -114,6 +123,20 @@ siguiente: entorno no productivo, `ALLOW_ADMIN_BOOTSTRAP=true` y colección vac�
 El hook asigna el rol de administrador en el servidor. Al terminar, cambia la variable
 a `false` en `.env.local` y reinicia el servidor. Los clientes se registran desde
 `/registro` (HU-01); su rol lo asigna el servidor y no acceden al panel.
+
+El cambio de contraseña con sesión iniciada no está implementado: la recuperación
+por correo es el único flujo. El hook `beforeChange` de `customers` rechaza un
+`password` enviado por `PATCH` REST salvo la marca interna
+`passwordChangeVerified`, reservada para una futura acción que verifique la
+contraseña actual. Esa marca vive en el contexto del servidor y nunca debe llegar
+desde el cliente.
+
+Los intentos de registro, inicio de sesión y recuperación se limitan por IP con
+una ventana fija en la tabla `rate_limit_hits`: 30 registros por hora, 30 inicios
+de sesión cada 15 minutos y 3 recuperaciones cada 15 minutos. El límite de
+recuperación mantiene una IP por debajo de los 300 correos diarios de Brevo. En
+desarrollo, las peticiones desde `localhost` no se limitan para no bloquear las
+pruebas. Es una defensa básica; no sustituye los límites del proveedor de correo.
 
 No despliegues un proyecto vacío con una cuenta administradora pendiente de crear.
 La configuración de producción siempre bloquea el modo de bootstrap.

@@ -6,7 +6,20 @@ import { type FormEvent, useState } from "react";
 const GENERIC_ERROR = "Correo o contraseña incorrectos. Inténtalo de nuevo.";
 
 /** Signs in via Payload REST; never reveals which credential failed (HU-02). */
-export const LoginForm = () => {
+type LoginFormProps = {
+  next?: string;
+};
+
+/** Only same-origin paths are accepted, so `next` cannot become an open redirect. */
+const safeNext = (next?: string): string => {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) {
+    return "/catalogo";
+  }
+
+  return next;
+};
+
+export const LoginForm = ({ next }: LoginFormProps) => {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -33,7 +46,7 @@ export const LoginForm = () => {
         return;
       }
 
-      router.push("/cuenta");
+      router.push(safeNext(next));
       router.refresh();
     } catch {
       setError("No pudimos conectar con el servidor. Inténtalo de nuevo.");
