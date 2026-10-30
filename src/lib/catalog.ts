@@ -28,11 +28,7 @@ export type CatalogFacets = {
 
 /** Lowercases and strips diacritics so searches ignore case and accents (HU-09). */
 export const normalizeText = (value: string): string =>
-  value
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .trim();
+  value.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
 
 type ProductAttributes = { colors: string[]; prices: number[]; sizes: string[] };
 
@@ -78,7 +74,11 @@ const groupVariantAttributes = (variants: Variant[]) => {
 const sortedUnique = (values: string[]) =>
   [...new Set(values)].sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
 
-const matchesFilters = (product: Product, attributes: ProductAttributes, filters: CatalogFilters) => {
+const matchesFilters = (
+  product: Product,
+  attributes: ProductAttributes,
+  filters: CatalogFilters,
+) => {
   const query = normalizeText(filters.q);
   if (query) {
     const haystack = normalizeText(
@@ -91,7 +91,10 @@ const matchesFilters = (product: Product, attributes: ProductAttributes, filters
   if (filters.category && product.category !== filters.category) {
     return false;
   }
-  if (filters.size && !attributes.sizes.some((size) => normalizeText(size) === normalizeText(filters.size))) {
+  if (
+    filters.size &&
+    !attributes.sizes.some((size) => normalizeText(size) === normalizeText(filters.size))
+  ) {
     return false;
   }
   if (
@@ -143,7 +146,8 @@ export const getPublishedProducts = async (page: number, filters: CatalogFilters
   ]);
 
   const attributesByProduct = groupVariantAttributes(variantResult.docs);
-  const attributesOf = (product: Product) => attributesByProduct.get(product.id) ?? emptyAttributes();
+  const attributesOf = (product: Product) =>
+    attributesByProduct.get(product.id) ?? emptyAttributes();
 
   const facets: CatalogFacets = {
     categories: sortedUnique(productResult.docs.map((product) => product.category)),
