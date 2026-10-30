@@ -201,6 +201,10 @@ export interface Admin {
 export interface Customer {
   id: number;
   name: string;
+  /**
+   * Opcional. Incluye el indicativo del país si aplica.
+   */
+  phone?: string | null;
   role?: 'customer' | null;
   updatedAt: string;
   createdAt: string;
@@ -229,7 +233,6 @@ export interface Customer {
 export interface Media {
   id: number;
   alt: string;
-  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -248,7 +251,6 @@ export interface Media {
  */
 export interface PrivateSpikeMedia {
   id: number;
-  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -476,6 +478,7 @@ export interface AdminsSelect<T extends boolean = true> {
  */
 export interface CustomersSelect<T extends boolean = true> {
   name?: T;
+  phone?: T;
   role?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -501,7 +504,6 @@ export interface CustomersSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
-  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -519,7 +521,6 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "private-spike-media_select".
  */
 export interface PrivateSpikeMediaSelect<T extends boolean = true> {
-  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
