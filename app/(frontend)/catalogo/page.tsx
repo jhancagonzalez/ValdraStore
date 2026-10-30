@@ -1,39 +1,88 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { getPublishedProducts } from "@/lib/catalog";
+import { CATEGORY_LABELS, type CatalogFilters, getPublishedProducts } from "@/lib/catalog";
 import { formatCop } from "@/lib/format";
 import type { Media } from "../../../payload-types";
+import { CatalogFiltersForm } from "./catalog-filters";
 import { CatalogScrollMemory } from "./catalog-scroll-memory";
 
 export const metadata: Metadata = { title: "Catálogo" };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  camisa: "Camisa",
-  camisetas: "Camisetas",
-  gorras: "Gorras",
-  hoodies: "Hoodies",
+const parsePrice = (value: string | undefined): number | null => {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 };
 
 type CatalogPageProps = {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    color?: string;
+    max?: string;
+    min?: string;
+    page?: string;
+    q?: string;
+    size?: string;
+  }>;
 };
 
 export default async function CatalogPage({ searchParams }: CatalogPageProps) {
-  const { page: pageParam } = await searchParams;
-  const parsedPage = Number.parseInt(pageParam ?? "1", 10);
+  const params = await searchParams;
+  const parsedPage = Number.parseInt(params.page ?? "1", 10);
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 
-  const products = await getPublishedProducts(page);
+  const filters: CatalogFilters = {
+    category: params.category ?? "",
+    color: params.color ?? "",
+    maxPrice: parsePrice(params.max),
+    minPrice: parsePrice(params.min),
+    q: (params.q ?? "").trim(),
+    size: params.size ?? "",
+  };
+  const hasFilters = Object.values(filters).some((value) => value !== "" && value !== null);
+
+  const products = await getPublishedProducts(page, filters);
+
+  // Keeps search and filters in pagination links; the page number is added per link.
+  const baseQuery = new URLSearchParams();
+  const activeFilters: [string, string][] = [
+    ["q", filters.q],
+    ["category", filters.category],
+    ["size", filters.size],
+    ["color", filters.color],
+    ["min", filters.minPrice?.toString() ?? ""],
+    ["max", filters.maxPrice?.toString() ?? ""],
+  ];
+  for (const [key, value] of activeFilters) {
+    if (value) {
+      baseQuery.set(key, value);
+    }
+  }
+  const pageHref = (target: number) => {
+    const query = new URLSearchParams(baseQuery);
+    query.set("page", String(target));
+    return `/catalogo?${query.toString()}`;
+  };
 
   return (
     <main className="page">
-      <CatalogScrollMemory page={page} />
+      <CatalogScrollMemory scope={pageHref(products.page)} />
       <h1 className="section-title">Catálogo</h1>
       <p className="section-subtitle">Prendas disponibles para personalizar</p>
 
+      <CatalogFiltersForm facets={products.facets} filters={filters} />
+
       {products.docs.length === 0 ? (
-        <p className="state-message">No hay prendas disponibles por ahora. Vuelve pronto.</p>
+        hasFilters && products.unfilteredCount > 0 ? (
+          <p className="state-message" role="status">
+            {filters.q
+              ? `No encontramos prendas para “${filters.q}” con los filtros aplicados.`
+              : "No encontramos prendas con los filtros aplicados."}{" "}
+            <Link href="/catalogo">Limpiar filtros</Link>
+          </p>
+        ) : (
+          <p className="state-message">No hay prendas disponibles por ahora. Vuelve pronto.</p>
+        )
       ) : (
         <ul className="product-grid">
           {products.docs.map((product) => {
@@ -42,7 +91,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             return (
               <li key={product.id}>
                 <Link
-                  href={`/catalogo/${product.id}?page=${page}`}
+                  href={`/catalogo/${product.id}?page=${products.page}`}
                   className="product-card"
                   aria-label={`Ver ${product.title}`}
                 >
@@ -74,7 +123,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       {products.totalPages > 1 ? (
         <nav className="pagination" aria-label="Paginación del catálogo">
           {products.hasPrevPage ? (
-            <Link className="button button-secondary" href={`/catalogo?page=${page - 1}`}>
+            <Link className="button button-secondary" href={pageHref(products.page - 1)}>
               Anterior
             </Link>
           ) : null}
@@ -82,7 +131,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             Página {products.page} de {products.totalPages} · {products.totalDocs} prendas
           </span>
           {products.hasNextPage ? (
-            <Link className="button button-secondary" href={`/catalogo?page=${page + 1}`}>
+            <Link className="button button-secondary" href={pageHref(products.page + 1)}>
               Siguiente
             </Link>
           ) : null}
