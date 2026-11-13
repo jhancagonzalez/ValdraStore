@@ -2,12 +2,15 @@
 
 Las tareas de esta lista transcriben los criterios de aceptación y responsables del
 [Product Backlog de Notion](https://app.notion.com/p/4ea53e76abd442718800c1c4aeba29e1),
-consultado el 22 de octubre de 2026. Las diez historias figuran como «En construcción».
-No se agregan subtareas técnicas que no estén en las fuentes.
+consultado el 12 de noviembre de 2026. Las diez historias figuran como «Hecho» en Notion.
+
+**Estado sincronizado:** Notion marca las diez historias del Sprint 1 como terminadas.
+Las evidencias técnicas están en `plan-HU-03-HU-04.md`, `plan-HU-05.md` y el informe del
+Sprint 1. Notion conserva la fuente de verdad.
 
 ## Jhancarlos Gonzalez — Developer Backend
 
-### HU-01 — Registro de cliente · 3 puntos · Must Have · En construcción
+### HU-01 — Registro de cliente · 3 puntos · Must Have · Hecho
 
 Responsable registrado: Jhancarlos Gonzalez.
 
@@ -17,7 +20,7 @@ Responsable registrado: Jhancarlos Gonzalez.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481469a1bd2b4776f544f).
 
-### HU-02 — Inicio y cierre de sesión · 3 puntos · Must Have · En construcción
+### HU-02 — Inicio y cierre de sesión · 3 puntos · Must Have · Hecho
 
 Responsable registrado: Jhancarlos Gonzalez.
 
@@ -27,7 +30,7 @@ Responsable registrado: Jhancarlos Gonzalez.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481999ac1d06bc9215d2b).
 
-### HU-06 — Consultar el catálogo · 3 puntos · Must Have · En construcción
+### HU-06 — Consultar el catálogo · 3 puntos · Must Have · Hecho
 
 Responsable registrado: Jhancarlos Gonzalez.
 
@@ -37,7 +40,7 @@ Responsable registrado: Jhancarlos Gonzalez.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481a5adc2d063df72909d).
 
-### HU-07 — Consultar características de una prenda · 2 puntos · Must Have · En construcción
+### HU-07 — Consultar características de una prenda · 2 puntos · Must Have · Hecho
 
 Responsable registrado: Jhancarlos Gonzalez.
 
@@ -49,41 +52,41 @@ Responsable registrado: Jhancarlos Gonzalez.
 
 ## Kevin Burgos — Developer Full Stack
 
-### HU-03 — Recuperar contraseña · 3 puntos · Should Have · En construcción
+### HU-03 — Recuperar contraseña · 3 puntos · Should Have · Hecho
 
 Responsable registrado: Kevin Burgos.
 
-- [ ] El usuario solicita la recuperación con su correo registrado y recibe un enlace o código para restablecer la contraseña.
-- [ ] El enlace o código tiene vigencia limitada y deja de funcionar después de usarse.
-- [ ] La nueva contraseña cumple las reglas de validación y permite iniciar sesión de inmediato.
+- [x] El usuario solicita la recuperación con su correo registrado y recibe un enlace o código para restablecer la contraseña.
+- [x] El enlace o código tiene vigencia limitada y deja de funcionar después de usarse.
+- [x] La nueva contraseña cumple las reglas de validación y permite iniciar sesión de inmediato.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481f0a554d04cb49aa0fc).
 
-### HU-04 — Consultar y editar información personal · 2 puntos · Could Have · En construcción
+### HU-04 — Consultar y editar información personal · 2 puntos · Could Have · Hecho
 
 Responsable registrado: Kevin Burgos.
 
-- [ ] El usuario ve sus datos personales actuales en su perfil.
-- [ ] Puede editar sus datos y los cambios se guardan solo si pasan la validación.
-- [ ] Un usuario solo puede ver y modificar su propia información.
+- [x] El usuario ve sus datos personales actuales en su perfil.
+- [x] Puede editar sus datos y los cambios se guardan solo si pasan la validación.
+- [x] Un usuario solo puede ver y modificar su propia información.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481e68e49f1aca0ad75d1).
 
 ## Daniel Cárdenas — Developer Backend
 
-### HU-05 — Gestionar roles de usuario · 5 puntos · Must Have · En construcción
+### HU-05 — Gestionar roles de usuario · 5 puntos · Must Have · Hecho
 
 Responsable registrado: Daniel Cárdenas.
 
-- [ ] El sistema maneja los roles cliente y administrador y asigna cliente por defecto al registrarse.
-- [ ] Un cliente que intente acceder a una función administrativa es rechazado.
-- [ ] El administrador puede cambiar el rol de un usuario y el cambio se aplica en su siguiente inicio de sesión.
+- [x] El sistema maneja los roles cliente y administrador y asigna cliente por defecto al registrarse.
+- [x] Un cliente que intente acceder a una función administrativa es rechazado.
+- [x] El administrador puede cambiar el rol de un usuario y el cambio se aplica en su siguiente inicio de sesión.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef364819ba03cdacad51fdbe0).
 
 ## Emanuel Giraldo — Product Owner, Developer Frontend
 
-### HU-08 — Visualizar diseños e imágenes de prendas · 3 puntos · Must Have · En construcción
+### HU-08 — Visualizar diseños e imágenes de prendas · 3 puntos · Must Have · Hecho
 
 Responsable registrado: Emanuel Giraldo.
 
@@ -95,22 +98,22 @@ Responsable registrado: Emanuel Giraldo.
 
 ## Andrés Valencia — Developer Frontend
 
-### HU-09 — Buscar prendas · 2 puntos · Should Have · En construcción
+### HU-09 — Buscar prendas · 2 puntos · Should Have · Hecho
 
 Responsable registrado: Andrés Valencia.
 
-- [ ] El buscador devuelve prendas cuyo nombre o categoría coincide con el término ingresado.
-- [ ] La búsqueda no distingue mayúsculas ni tildes.
-- [ ] Si no hay resultados, se muestra un mensaje claro en lugar de una página vacía.
+- [x] El buscador devuelve prendas cuyo nombre o categoría coincide con el término ingresado.
+- [x] La búsqueda no distingue mayúsculas ni tildes.
+- [x] Si no hay resultados, se muestra un mensaje claro en lugar de una página vacía.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481da9336c63283aa20cf).
 
-### HU-10 — Filtrar catálogo · 3 puntos · Could Have · En construcción
+### HU-10 — Filtrar catálogo · 3 puntos · Could Have · Hecho
 
 Responsable registrado: Andrés Valencia.
 
-- [ ] El cliente puede filtrar por categoría, talla, color y precio.
-- [ ] Los filtros se pueden combinar y el resultado cumple todos los criterios aplicados.
-- [ ] El cliente puede limpiar los filtros y volver al listado completo.
+- [x] El cliente puede filtrar por categoría, talla, color y precio.
+- [x] Los filtros se pueden combinar y el resultado cumple todos los criterios aplicados.
+- [x] El cliente puede limpiar los filtros y volver al listado completo.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481148e06f0610988acc5).
