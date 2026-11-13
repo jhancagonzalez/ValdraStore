@@ -3,10 +3,19 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 import { getSessionCustomer } from "@/lib/auth";
 import { getMockupBase, getMockupBaseName, isMockupSize } from "@/lib/mockup-bases";
+import {
+  DEFAULT_REVISION_SELECTION,
+  parseMockupSelection,
+} from "@/lib/mockup-selection";
+import { buildInpaintingMask, type InpaintingMask } from "@/services/personalization/revision";
 
 export const runtime = "nodejs";
 
 const MODEL = "@cf/black-forest-labs/flux-2-klein-4b";
+const INPAINTING_MODEL = "@cf/runwayml/stable-diffusion-v1-5-inpainting";
+const TRANSLATION_MODEL = "@cf/meta/m2m100-1.2b";
+const INPAINTING_NEGATIVE_PROMPT =
+  "person, mannequin, body, hands, text, logo, photo, 3d, shadow, background change";
 const MAX_IDEA_LENGTH = 600;
 const MAX_REFERENCE_BYTES = 3_000_000;
 const ALLOWED_REFERENCE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -16,6 +25,7 @@ type MockupRequest = {
   idea?: unknown;
   mode?: unknown;
   referenceImage?: unknown;
+  selection?: unknown;
   size?: unknown;
 };
 
@@ -24,32 +34,88 @@ type CloudflareImageResponse = {
   result?: { image?: unknown };
 };
 
+type ImagePayload = {
+  buffer: Buffer;
+  mimeType: string;
+};
+
+type ProviderResult =
+  | { ok: true; image: ImagePayload }
+  | { ok: false; status: number; message: string };
+
 const errorResponse = (message: string, status: number) =>
   NextResponse.json({ error: message }, { status });
 
-/**
- * Turns the short customer idea into a complete art direction. The model needs
- * composition, palette and negative constraints to produce a clean print.
- */
-const buildPrompt = (garmentName: string, idea: string, revise: boolean) =>
+const buildCreatePrompt = (garmentName: string, idea: string) =>
   [
-    revise
-      ? "La primera imagen es la prenda base y define la ropa: conserva exactamente su silueta, cuello, mangas, color, fondo, iluminación y encuadre. La segunda imagen es la propuesta anterior y define únicamente el estampado."
-      : `Crea una propuesta de estampado para una ${garmentName.toLowerCase()}.`,
-    revise ? `Cambio solicitado: ${idea}.` : `Idea principal: ${idea}.`,
-    revise
-      ? "Copia el estampado de la segunda imagen y intégralo sobre la prenda de la primera. Conserva todos sus elementos, colores, composición y estilo; si el cliente pide agregar algo, añádelo sin borrar lo anterior. No generes un estampado nuevo desde cero. No copies la ropa de la segunda imagen."
-      : "Construye el estampado completo a partir de la descripción.",
+    `Crea una propuesta de estampado para una ${garmentName.toLowerCase()}.`,
+    `Idea principal: ${idea}.`,
+    "Construye el estampado completo a partir de la descripción.",
     "Estilo visual: ilustración vectorial limpia, composición centrada, alto contraste, detalles nítidos y acabado profesional de estampado.",
     "Composición: motivo principal centrado en el pecho, escala equilibrada, legible a distancia, sin repeticiones ni bordes.",
     "Paleta: 2 a 4 colores coherentes que contrasten con el color de la prenda.",
     "Fondo de estudio liso, sin sombras, sin textura de tela, sin cuadrícula de transparencia y sin marco rectangular.",
-    revise
-      ? `El resultado debe mostrar la misma prenda de la primera imagen (${garmentName.toLowerCase()}), no una prenda nueva. La segunda imagen solo aporta el estampado.`
-      : "Conserva exactamente la silueta, el cuello, las mangas, el color, el fondo, la iluminación y el encuadre de la prenda de referencia.",
+    "Conserva exactamente la silueta, el cuello, las mangas, el color, el fondo, la iluminación y el encuadre de la prenda de referencia.",
     "Muestra solo la prenda sobre el fondo liso: no incluyas personas, maniquíes, cuellos humanos, brazos, manos ni partes del cuerpo.",
     "No añadas logos ni texto que no se haya pedido.",
   ].join(" ");
+
+const buildInpaintingPrompt = (garmentName: string, idea: string) => {
+  const element = idea.replace(/^add\s+/i, "").trim();
+
+  return [
+    `Design printed on a ${garmentName.toLowerCase()}: ${element}.`,
+    "Flat vector illustration, clean edges, high contrast, professional print, matching the existing design style.",
+    "Printed on fabric with the same lighting, perspective and garment color.",
+  ].join(" ");
+};
+
+/**
+ * El modelo de inpainting entiende mejor el inglés. Si la traducción falla,
+ * se conserva la idea original para no bloquear la revisión.
+ */
+const translateIdea = async (idea: string): Promise<string> => {
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+
+  if (!accountId || !apiToken) {
+    return idea;
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${TRANSLATION_MODEL}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: idea,
+          source_lang: "es",
+          target_lang: "en",
+        }),
+        signal: AbortSignal.timeout(30_000),
+      },
+    );
+
+    if (!response.ok) {
+      return idea;
+    }
+
+    const body = (await response.json()) as {
+      result?: { translated_text?: unknown };
+    };
+    const translated = body.result?.translated_text;
+
+    return typeof translated === "string" && translated.trim().length > 0
+      ? translated.trim()
+      : idea;
+  } catch {
+    return idea;
+  }
+};
 
 const detectImageMime = (buffer: Buffer) => {
   if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
@@ -64,9 +130,7 @@ const detectImageMime = (buffer: Buffer) => {
   return "image/jpeg";
 };
 
-const parseReferenceImage = (
-  value: unknown,
-): { buffer: Buffer; mimeType: string } | null => {
+const parseReferenceImage = (value: unknown): ImagePayload | null => {
   if (typeof value !== "string" || !value.startsWith("data:image/")) {
     return null;
   }
@@ -90,6 +154,222 @@ const parseReferenceImage = (
   }
 
   return { buffer, mimeType };
+};
+
+const decodeProviderImage = async (value: unknown): Promise<ImagePayload | null> => {
+  if (typeof value !== "string" || value.length === 0) {
+    return null;
+  }
+
+  if (value.startsWith("data:")) {
+    const comma = value.indexOf(",");
+
+    if (comma === -1) {
+      return null;
+    }
+
+    const mimeType = value.slice(5, comma).split(";")[0];
+
+    if (!ALLOWED_REFERENCE_MIME_TYPES.has(mimeType)) {
+      return null;
+    }
+
+    const buffer = Buffer.from(value.slice(comma + 1), "base64");
+    return buffer.length > 0 ? { buffer, mimeType } : null;
+  }
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    try {
+      const response = await fetch(value, { signal: AbortSignal.timeout(30_000) });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      return buffer.length > 0 ? { buffer, mimeType: detectImageMime(buffer) } : null;
+    } catch {
+      return null;
+    }
+  }
+
+  const buffer = Buffer.from(value, "base64");
+  return buffer.length > 0 ? { buffer, mimeType: detectImageMime(buffer) } : null;
+};
+
+const runModel = async (form: FormData): Promise<ProviderResult> => {
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+
+  if (!accountId || !apiToken) {
+    return { ok: false, status: 503, message: "El servicio de diseño no está configurado." };
+  }
+
+  let providerResponse: Response;
+
+  try {
+    providerResponse = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${MODEL}`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiToken}` },
+        body: form,
+        signal: AbortSignal.timeout(120_000),
+      },
+    );
+  } catch {
+    return {
+      ok: false,
+      status: 502,
+      message: "El servicio de diseño no respondió. Inténtalo de nuevo.",
+    };
+  }
+
+  const rawBody = await providerResponse.text();
+  let providerBody: CloudflareImageResponse | null = null;
+
+  try {
+    providerBody = JSON.parse(rawBody) as CloudflareImageResponse;
+  } catch {
+    // Cloudflare puede devolver texto plano en un error de proxy.
+  }
+
+  if (providerResponse.status === 429) {
+    return {
+      ok: false,
+      status: 429,
+      message: "La cuota gratuita de diseño se agotó por hoy. Inténtalo de nuevo más tarde.",
+    };
+  }
+
+  if (rawBody.includes("flagged") || rawBody.includes("moderation")) {
+    return {
+      ok: false,
+      status: 400,
+      message: "No pudimos aplicar ese cambio. Prueba con otra descripción.",
+    };
+  }
+
+  if (!providerResponse.ok || providerBody?.success !== true) {
+    return {
+      ok: false,
+      status: 502,
+      message: "No pudimos generar la propuesta. Inténtalo de nuevo.",
+    };
+  }
+
+  const image = await decodeProviderImage(providerBody.result?.image);
+
+  if (!image) {
+    return {
+      ok: false,
+      status: 502,
+      message: "La propuesta no llegó con una imagen válida.",
+    };
+  }
+
+  return { ok: true, image };
+};
+
+const runInpainting = async (
+  image: ImagePayload,
+  prompt: string,
+  mask: InpaintingMask,
+): Promise<ProviderResult> => {
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+
+  if (!accountId || !apiToken) {
+    return { ok: false, status: 503, message: "El servicio de diseño no está configurado." };
+  }
+
+  let providerResponse: Response;
+
+  try {
+    providerResponse = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${INPAINTING_MODEL}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt,
+          negative_prompt: INPAINTING_NEGATIVE_PROMPT,
+          image: Array.from(image.buffer),
+          mask: Array.from(mask.buffer),
+          num_steps: 20,
+          strength: 1,
+          guidance: 7.5,
+          width: mask.width,
+          height: mask.height,
+        }),
+        signal: AbortSignal.timeout(180_000),
+      },
+    );
+  } catch {
+    return {
+      ok: false,
+      status: 502,
+      message: "El servicio de diseño no respondió. Inténtalo de nuevo.",
+    };
+  }
+
+  if (!providerResponse.ok) {
+    const rawBody = await providerResponse.text();
+
+    if (providerResponse.status === 429) {
+      return {
+        ok: false,
+        status: 429,
+        message: "La cuota gratuita de diseño se agotó por hoy. Inténtalo de nuevo más tarde.",
+      };
+    }
+
+    if (rawBody.includes("flagged") || rawBody.includes("moderation")) {
+      return {
+        ok: false,
+        status: 400,
+        message: "No pudimos aplicar ese cambio. Prueba con otra descripción.",
+      };
+    }
+
+    return {
+      ok: false,
+      status: 502,
+      message: "No pudimos generar la propuesta. Inténtalo de nuevo.",
+    };
+  }
+
+  const contentType = providerResponse.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    const body = (await providerResponse.json()) as CloudflareImageResponse;
+    const decoded = await decodeProviderImage(body.result?.image);
+
+    if (!decoded) {
+      return {
+        ok: false,
+        status: 502,
+        message: "La propuesta no llegó con una imagen válida.",
+      };
+    }
+
+    return { ok: true, image: decoded };
+  }
+
+  const buffer = Buffer.from(await providerResponse.arrayBuffer());
+
+  if (buffer.length === 0) {
+    return {
+      ok: false,
+      status: 502,
+      message: "La propuesta no llegó con una imagen válida.",
+    };
+  }
+
+  return { ok: true, image: { buffer, mimeType: detectImageMime(buffer) } };
 };
 
 export async function POST(request: Request) {
@@ -129,23 +409,39 @@ export async function POST(request: Request) {
     return errorResponse("La idea es demasiado larga.", 400);
   }
 
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+  const garmentName = getMockupBaseName(base);
 
-  if (!accountId || !apiToken) {
-    return errorResponse("El servicio de diseño no está configurado.", 503);
-  }
+  if (mode === "revise") {
+    const referenceImage = body.referenceImage
+      ? parseReferenceImage(body.referenceImage)
+      : null;
 
-  const referenceImage = body.referenceImage
-    ? parseReferenceImage(body.referenceImage)
-    : null;
+    if (!referenceImage) {
+      return errorResponse("Falta la propuesta anterior para aplicar cambios.", 400);
+    }
 
-  if (body.referenceImage && !referenceImage) {
-    return errorResponse("La propuesta anterior no es una imagen válida.", 400);
-  }
+    const selection = parseMockupSelection(body.selection) ?? DEFAULT_REVISION_SELECTION;
+    const translatedIdea = await translateIdea(idea);
+    const prompt = buildInpaintingPrompt(garmentName, translatedIdea);
 
-  if (mode === "revise" && !referenceImage) {
-    return errorResponse("Falta la propuesta anterior para aplicar cambios.", 400);
+    let mask: InpaintingMask;
+
+    try {
+      mask = await buildInpaintingMask(referenceImage.buffer, selection);
+    } catch {
+      return errorResponse("No pudimos preparar la máscara de edición.", 500);
+    }
+
+    const result = await runInpainting(referenceImage, prompt, mask);
+
+    if (!result.ok) {
+      return errorResponse(result.message, result.status);
+    }
+
+    return NextResponse.json({
+      image: `data:${result.image.mimeType};base64,${result.image.buffer.toString("base64")}`,
+      prompt,
+    });
   }
 
   const basePath = path.join(process.cwd(), "public", base.file.replace(/^\//, ""));
@@ -157,80 +453,23 @@ export async function POST(request: Request) {
     return errorResponse("No pudimos cargar la prenda seleccionada.", 500);
   }
 
-  const prompt = buildPrompt(getMockupBaseName(base), idea, mode === "revise");
+  const prompt = buildCreatePrompt(garmentName, idea);
   const form = new FormData();
   form.append("prompt", prompt);
+  form.append(
+    "input_image",
+    new Blob([new Uint8Array(baseImage)], { type: "image/jpeg" }),
+    `${base.id}.jpg`,
+  );
 
-  if (mode === "revise" && referenceImage) {
-    const referenceExtension =
-      referenceImage.mimeType === "image/png"
-        ? "png"
-        : referenceImage.mimeType === "image/webp"
-          ? "webp"
-          : "jpg";
+  const result = await runModel(form);
 
-    // The base garment is primary so the model keeps the product silhouette;
-    // the previous design is the secondary reference for the print only.
-    form.append(
-      "input_image",
-      new Blob([new Uint8Array(baseImage)], { type: "image/jpeg" }),
-      `${base.id}.jpg`,
-    );
-    form.append(
-      "input_image_2",
-      new Blob([new Uint8Array(referenceImage.buffer)], {
-        type: referenceImage.mimeType,
-      }),
-      `${base.id}-anterior.${referenceExtension}`,
-    );
-  } else {
-    form.append(
-      "input_image",
-      new Blob([new Uint8Array(baseImage)], { type: "image/jpeg" }),
-      `${base.id}.jpg`,
-    );
+  if (!result.ok) {
+    return errorResponse(result.message, result.status);
   }
 
-  let providerResponse: Response;
-
-  try {
-    providerResponse = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${MODEL}`,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiToken}` },
-        body: form,
-        signal: AbortSignal.timeout(120_000),
-      },
-    );
-  } catch {
-    return errorResponse("El servicio de diseño no respondió. Inténtalo de nuevo.", 502);
-  }
-
-  const rawBody = await providerResponse.text();
-  let providerBody: CloudflareImageResponse | null = null;
-
-  try {
-    providerBody = JSON.parse(rawBody) as CloudflareImageResponse;
-  } catch {
-    // Cloudflare puede devolver texto plano en un error de proxy.
-  }
-
-  if (!providerResponse.ok || providerBody?.success !== true) {
-    return errorResponse("No pudimos generar la propuesta. Inténtalo de nuevo.", 502);
-  }
-
-  const image = providerBody.result?.image;
-
-  if (typeof image !== "string" || image.length === 0) {
-    return errorResponse("La propuesta no llegó con una imagen válida.", 502);
-  }
-
-  const imageUrl = image.startsWith("http")
-    ? image
-    : image.startsWith("data:")
-      ? image
-      : `data:${detectImageMime(Buffer.from(image, "base64"))};base64,${image}`;
-
-  return NextResponse.json({ image: imageUrl, prompt });
+  return NextResponse.json({
+    image: `data:${result.image.mimeType};base64,${result.image.buffer.toString("base64")}`,
+    prompt,
+  });
 }

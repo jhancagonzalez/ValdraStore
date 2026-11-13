@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, type PointerEvent, useEffect, useRef, useState } from "react";
 import {
   getMockupBase,
   getMockupBaseName,
@@ -11,6 +11,10 @@ import {
   type MockupCategory,
   type MockupSize,
 } from "@/lib/mockup-bases";
+import {
+  type MockupSelection,
+  REVISION_ZONE_PRESETS,
+} from "@/lib/mockup-selection";
 
 const IDEA_MAX_LENGTH = 600;
 const IDEA_SUGGESTIONS = ["Floral minimalista", "Geométrico", "Retro", "Tipografía pequeña"];
@@ -20,6 +24,10 @@ const CATEGORY_LABELS: Record<MockupCategory, string> = {
   camisetas: "Camisetas",
   hoodies: "Hoodies",
 };
+
+const clamp01 = (value: number) => Math.min(Math.max(value, 0), 1);
+
+const MIN_SELECTION_SIZE = 0.02;
 
 type GarmentSelectorProps = {
   initialBaseId: string;
@@ -49,6 +57,10 @@ export const GarmentSelector = ({
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [previousImage, setPreviousImage] = useState<string | null>(null);
   const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
+  const [selection, setSelection] = useState<MockupSelection | null>(null);
+  const [selectionZone, setSelectionZone] = useState<string | null>(null);
+  const [lastZoneLabel, setLastZoneLabel] = useState<string | null>(null);
+  const [selectionDrag, setSelectionDrag] = useState<{ x: number; y: number } | null>(null);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const ideaRef = useRef<HTMLTextAreaElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
@@ -167,6 +179,10 @@ export const GarmentSelector = ({
     setGeneratedImage(null);
     setPreviousImage(null);
     setGeneratedPrompt(null);
+    setSelection(null);
+    setSelectionZone(null);
+    setLastZoneLabel(null);
+    setSelectionDrag(null);
   };
 
   useEffect(() => {
@@ -282,6 +298,64 @@ export const GarmentSelector = ({
     ideaRef.current?.focus();
   };
 
+  const selectZone = (zone: { id: string; selection: MockupSelection }) => {
+    setSelection({ ...zone.selection });
+    setSelectionZone(zone.id);
+    setIdeaError(null);
+  };
+
+  const selectionPoint = (event: PointerEvent<HTMLDivElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return {
+      x: clamp01((event.clientX - rect.left) / rect.width),
+      y: clamp01((event.clientY - rect.top) / rect.height),
+    };
+  };
+
+  const handleSelectionPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (!previousImage || generatedImage) {
+      return;
+    }
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const point = selectionPoint(event);
+    setSelectionDrag(point);
+    setSelectionZone("custom");
+    setSelection({ x: point.x, y: point.y, width: 0, height: 0 });
+    setIdeaError(null);
+  };
+
+  const handleSelectionPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!selectionDrag) {
+      return;
+    }
+    const point = selectionPoint(event);
+    setSelection({
+      x: Math.min(selectionDrag.x, point.x),
+      y: Math.min(selectionDrag.y, point.y),
+      width: Math.abs(point.x - selectionDrag.x),
+      height: Math.abs(point.y - selectionDrag.y),
+    });
+  };
+
+  const handleSelectionPointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    if (!selectionDrag) {
+      return;
+    }
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setSelectionDrag(null);
+
+    if (
+      !selection ||
+      selection.width < MIN_SELECTION_SIZE ||
+      selection.height < MIN_SELECTION_SIZE
+    ) {
+      setSelection(null);
+      setSelectionZone(null);
+    }
+  };
+
   const handleIdeaSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedIdea = idea.trim();
@@ -297,10 +371,28 @@ export const GarmentSelector = ({
       return;
     }
 
+    if (
+      previousImage &&
+      (!selection ||
+        selection.width < MIN_SELECTION_SIZE ||
+        selection.height < MIN_SELECTION_SIZE)
+    ) {
+      setIdeaError("Marca la zona del diseño que quieres cambiar.");
+      return;
+    }
+
+    const zoneLabel =
+      selectionZone && selectionZone !== "custom"
+        ? (REVISION_ZONE_PRESETS.find((zone) => zone.id === selectionZone)?.label ?? null)
+        : previousImage
+          ? "Zona personalizada"
+          : null;
+
     setIdeaError(null);
     setGenerationError(null);
     setGeneratedImage(null);
     setGeneratedPrompt(null);
+    setLastZoneLabel(zoneLabel);
     setGenerating(true);
 
     try {
@@ -312,6 +404,7 @@ export const GarmentSelector = ({
           idea: trimmedIdea,
           mode: previousImage ? "revise" : "create",
           referenceImage: previousImage ?? undefined,
+          selection: previousImage ? selection : undefined,
           size: selectedSize,
         }),
       });
@@ -353,6 +446,10 @@ export const GarmentSelector = ({
     setGenerationError(null);
     setIdeaError(null);
     setIdea("");
+    setSelection(null);
+    setSelectionZone(null);
+    setLastZoneLabel(null);
+    setSelectionDrag(null);
   };
 
   return (
@@ -373,6 +470,29 @@ export const GarmentSelector = ({
                 sizes="(max-width: 900px) 70vw, 480px"
                 unoptimized={Boolean(previousImage)}
               />
+              {previousImage && !generatedImage ? (
+                <div
+                  className="design-selection-layer"
+                  aria-hidden="true"
+                  title="Marca la zona que quieres cambiar"
+                  onPointerDown={handleSelectionPointerDown}
+                  onPointerMove={handleSelectionPointerMove}
+                  onPointerUp={handleSelectionPointerUp}
+                  onPointerCancel={handleSelectionPointerUp}
+                >
+                  {selection && selection.width > 0 && selection.height > 0 ? (
+                    <span
+                      className="design-selection-box"
+                      style={{
+                        left: `${selection.x * 100}%`,
+                        top: `${selection.y * 100}%`,
+                        width: `${selection.width * 100}%`,
+                        height: `${selection.height * 100}%`,
+                      }}
+                    />
+                  ) : null}
+                </div>
+              ) : null}
             </div>
             <p className="design-preview-name">
               {previousImage ? "Propuesta anterior" : selectedName}
@@ -380,6 +500,28 @@ export const GarmentSelector = ({
             <p className="design-preview-meta">
               {previousImage ? `${selectedName} · Talla ${selectedSize}` : `Talla ${selectedSize} · ${selectedBase.categoryLabel}`}
             </p>
+            {previousImage && !generatedImage ? (
+              <fieldset className="design-zone-picker">
+                <legend>Zona a cambiar</legend>
+                <div className="design-zone-options">
+                  {REVISION_ZONE_PRESETS.map((zone) => (
+                    <button
+                      key={zone.id}
+                      type="button"
+                      className="design-zone"
+                      aria-pressed={selectionZone === zone.id}
+                      onClick={() => selectZone(zone)}
+                    >
+                      {zone.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="form-hint">
+                  Marca solo la zona que quieres cambiar. La IA la integrará con la tela y
+                  conservará el resto.
+                </p>
+              </fieldset>
+            ) : null}
             <button type="button" className="design-back" onClick={closeIdeaPanel}>
               <span aria-hidden="true">←</span> Cambiar prenda
             </button>
@@ -402,10 +544,12 @@ export const GarmentSelector = ({
                   <h2 id="design-workspace-title">Así se ve tu idea</h2>
                   <p className="design-result-meta">
                     {selectedName} · Talla {selectedSize}
+                    {lastZoneLabel ? ` · Zona: ${lastZoneLabel}` : ""}
                   </p>
                   <p className="design-result-idea">“{idea.trim()}”</p>
                   <p className="design-result-note">
-                    Vista previa de prueba. No se guarda en la base de datos: si sales de esta
+                    Vista previa de prueba. El cambio se integró en la zona marcada; el resto del
+                    diseño anterior se conservó. No se guarda en la base de datos: si sales de esta
                     página, se perderá. Descárgala si quieres conservarla.
                   </p>
                   {generatedPrompt ? (
@@ -452,7 +596,7 @@ export const GarmentSelector = ({
                   </h2>
                   <p className="design-lead">
                     {previousImage
-                      ? "Describe qué quieres ajustar. Usaremos tu propuesta anterior como referencia para mantener el estilo."
+                      ? "Marca la zona que quieres cambiar y describe el ajuste. La IA reconstruirá solo esa zona y la integrará con la tela; el resto de tu diseño se conserva."
                       : "Describe el diseño que imaginas. Lo aplicaremos sobre la prenda y la talla que elegiste."}
                   </p>
                 </header>
@@ -466,7 +610,7 @@ export const GarmentSelector = ({
                 <form className="design-form" onSubmit={handleIdeaSubmit} noValidate>
                   <div className="design-prompt-box">
                     <label htmlFor="design-idea">
-                      {previousImage ? "Describe los cambios" : "Describe tu idea"}
+                      {previousImage ? "Describe el cambio en la zona marcada" : "Describe tu idea"}
                     </label>
                     <textarea
                       id="design-idea"
@@ -475,7 +619,7 @@ export const GarmentSelector = ({
                       maxLength={IDEA_MAX_LENGTH}
                       placeholder={
                         previousImage
-                          ? "Ejemplo: haz el diseño más minimalista y cambia la montaña por un bosque nevado."
+                          ? "Ejemplo: agrega árboles de Navidad blancos en esta zona."
                           : "Ejemplo: un paisaje andino al atardecer, con líneas finas en el pecho."
                       }
                       aria-invalid={ideaError ? true : undefined}
@@ -491,7 +635,9 @@ export const GarmentSelector = ({
                     />
                     <div className="design-form-meta">
                       <p id="design-idea-hint" className="form-hint">
-                        La IA ampliará tu idea con composición, estilo y restricciones.
+                        {previousImage
+                          ? "Solo se reconstruirá la zona marcada. El resto del diseño se conserva."
+                          : "La IA ampliará tu idea con composición, estilo y restricciones."}
                       </p>
                       <span className="design-form-count" aria-hidden="true">
                         {idea.length}/{IDEA_MAX_LENGTH}

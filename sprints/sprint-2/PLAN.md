@@ -1,10 +1,12 @@
 # Plan de trabajo — Sprint 2
 
-> **Actualización (12-nov-2026):** el reparto de responsables está sincronizado con
+> **Actualización (13-nov-2026):** el reparto de responsables está sincronizado con
 > Notion. El enfoque técnico queda definido: **Cloudflare Workers AI** con
 > `@cf/black-forest-labs/flux-2-klein-4b`, **prendas base predefinidas** y generación
-> del **mockup completo** sobre la base. No se genera un diseño aislado ni se usa
-> composición CSS/Canvas (overlay).
+> del **mockup completo** sobre la base. La generación inicial no usa un diseño aislado
+> ni composición CSS/Canvas. Las revisiones se hacen por zona: el cliente marca el área,
+> el servidor construye una máscara y el modelo de inpainting reconstruye solo esa zona
+> integrándola con la tela.
 
 ## 1. Lectura del sprint
 
@@ -30,8 +32,9 @@ confirmar privacidad y términos del modelo.
    `CLOUDFLARE_API_TOKEN` en `.env.local`; la demo desplegada usa una cuenta de equipo.
 2. **Prendas base predefinidas.** Usar 5 camisetas y 5 hoodies en negro, blanco, rojo,
    beige y azul, con el mismo encuadre, fondo e iluminación. El cliente elige una base
-   y el modelo genera el mockup completo con el diseño descrito. No se genera un diseño
-   aislado ni se compone con overlay.
+   y el modelo genera el mockup completo con el diseño descrito. La generación inicial
+   no usa un diseño aislado ni overlay; las revisiones usan el inpainting por zona
+   descrito en la sección 7.
 3. **Alcance completo.** Se mantienen las 7 HU y los 27 puntos; no se recorta el
    alcance. Must primero es solo el orden de riesgo: HU-11, HU-12, HU-14, HU-15 y HU-17
    (21 puntos) se atienden antes, pero HU-13 y HU-16 también son compromiso del sprint.
@@ -205,10 +208,23 @@ Las diez imágenes están en `public/mockups/` y el mapa de rutas en
 4. El servidor envía a Cloudflare el prompt y la base seleccionada como `input_image`.
 5. El modelo devuelve el mockup completo.
 6. El mockup se guarda como archivo privado y se muestra con URL firmada.
-7. El cliente pide cambios o aprueba.
+7. El cliente pide cambios marcando una zona del mockup anterior, o aprueba.
 
-No hay una etapa separada de “generar solo el diseño” ni una etapa de overlay. El
-mockup final es la salida del modelo sobre la prenda base.
+No hay una etapa separada de “generar solo el diseño” ni una etapa de overlay CSS.
+El mockup inicial es la salida del modelo sobre la prenda base.
+
+### Revisiones por zona (decisión del 2026-11-13)
+
+Para que una revisión no borre el diseño anterior, el cliente marca una zona del
+mockup (pecho, bajo, manga o un rectángulo). El servidor construye una máscara con
+`sharp` y usa `@cf/runwayml/stable-diffusion-v1-5-inpainting`: el modelo reconstruye
+solo la zona blanca de la máscara y conserva el resto de la imagen. No es un overlay
+CSS: la imagen final se genera en el servidor y el cliente recibe el PNG completo.
+
+El modelo de inpainting es el único gratuito con máscara en Cloudflare y está marcado
+para deprecación el **20-nov-2026**. Antes de la demo del 15-dic hay que migrar a un
+reemplazo o dejar documentado el fallback; no se cambia a un modelo pagado sin
+aprobación.
 
 ### Cuota y costo
 
@@ -224,14 +240,16 @@ mockup final es la salida del modelo sobre la prenda base.
 La prueba con una imagen de referencia mostró que el modelo puede cambiar la forma de
 la prenda. Con bases predefinidas el punto de partida es consistente, pero hay que
 probar cada base y ajustar el prompt. Si la fidelidad no alcanza, se corrige la base o
-el prompt; **no se cambia silenciosamente a overlay**.
+el prompt; **no se cambia silenciosamente a un overlay CSS**. Las revisiones usan el
+inpainting por zona aprobado arriba.
 
 ## 8. Riesgos
 
 | Riesgo | Impacto | Mitigación | Responsable |
 | --- | --- | --- | --- |
 | Cuota gratuita de Cloudflare agotada | HU-14 bloqueada temporalmente | Contador de 3/día por usuario; error claro; no pagar | Kevin / Jhancarlos |
-| Calidad o fidelidad del mockup con la base | HU-15 parcial | Probar cada base, ajustar prompt y encuadre; no cambiar a overlay sin decisión | Andrés / Emanuel |
+| Calidad o fidelidad del mockup con la base | HU-15 parcial | Probar cada base, ajustar prompt y encuadre; revisar el inpainting por zona | Andrés / Emanuel |
+| Modelo de inpainting deprecado el 20-nov-2026 | Revisiones sin soporte antes de la demo | Migrar a un reemplazo o documentar fallback antes del 15-dic | Jhancarlos |
 | Enviar imágenes privadas sin política aprobada | Incumplimiento de privacidad | Usar datos sintéticos hasta aprobación; bloquear imágenes reales | Jhancarlos |
 | Storage privado de clientes sin validar (C-08) | HU-13 bloqueada | Cerrar pruebas negativas antes de habilitar; si no, mover a Sprint 3 | Emanuel / Daniel |
 | 27 puntos en 4 días hábiles | Sprint incompleto | Mantener alcance; priorizar Must, apoyar Should y revisar avance a diario | Emanuel / equipo |
