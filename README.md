@@ -4,12 +4,15 @@ Prototipo web para personalizar y gestionar prendas con inteligencia artificial.
 
 ## Estado
 
-El Sprint 1 está «En construcción» en el backlog. Su carpeta local registra las diez
-historias, sus criterios de aceptación y responsables. Ya existe el scaffold integrado
-Next.js + Payload, con autenticación base, roles separados y el plugin oficial
-Ecommerce configurado para el catálogo en COP. Las migraciones base de Payload ya se
-aplicaron a Supabase; las historias funcionales del Sprint 1 siguen pendientes.
-Consulta la [guía para el equipo](docs/guia-inicio-equipo.md) y la guía para
+El Sprint 1 (Usuarios y catálogo) está marcado como «Hecho» en Notion: las diez
+historias, sus criterios de aceptación y responsables quedaron registrados en
+[sprints/sprint-1](sprints/sprint-1/README.md).
+
+El Sprint 2 (Personalización con IA) está «En construcción»: comprende HU-11 a HU-17,
+27 puntos. Su alcance, responsables y criterios están en
+[sprints/sprint-2](sprints/sprint-2/README.md). El scaffold integrado Next.js + Payload
+sigue siendo la base, con autenticación, roles y catálogo en COP. Consulta la
+[guía para el equipo](docs/guia-inicio-equipo.md) y la guía para
 [instalar, configurar y levantar el proyecto](docs/desarrollo.md).
 
 ## Stack aprobado
@@ -20,6 +23,7 @@ Consulta la [guía para el equipo](docs/guia-inicio-equipo.md) y la guía para
 | Lógica de negocio | Payload CMS sobre Next.js | Servicios, hooks, autenticación Payload y permisos por rol |
 | Datos | PostgreSQL alojado en Supabase | Colecciones de Payload y persistencia relacional |
 | Archivos | Supabase Storage vía adaptador S3 de Payload | Medios privados y medios públicos del catálogo |
+| IA | Cloudflare Workers AI (`flux-2-klein-4b`) | Generación de mockups de personalización; cuota gratuita y sin fallback pagado |
 | Hosting inicial | Vercel Hobby gratuito | Alojamiento de la demo no comercial; no contratar servicios pagos |
 | Gestor de paquetes | pnpm | Instalación reproducible con lockfile |
 
@@ -36,6 +40,7 @@ El alcance aprobado comprende HU-01 a HU-29 y HU-31 (prioridad Could, aprobada p
 - [docs/git-workflow.md](docs/git-workflow.md): ramas de trabajo e integración.
 - specs/000-sprint0/: constitución, especificación, plan, tareas y clarificaciones de preparación.
 - [sprints/sprint-1/README.md](sprints/sprint-1/README.md): objetivo y responsables; [TODO](sprints/sprint-1/TODO.md) con criterios de aceptación.
+- [sprints/sprint-2/README.md](sprints/sprint-2/README.md): alcance y responsables; [TODO](sprints/sprint-2/TODO.md) con criterios de aceptación.
 
 ## Requisitos locales
 
