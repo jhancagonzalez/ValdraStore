@@ -18,3 +18,7 @@ test-results/
 Thumbs.db
 /private-spike-media/
 /media/
+
+# Pruebas locales de generación con IA
+test-flux-*.jpg
+test-flux-*.png

@@ -83,6 +83,53 @@ desde **Supabase Dashboard → Database Settings → SSL Configuration**. No ign
 errores de certificado. Si la contraseña de Postgres contiene caracteres reservados,
 codifícala para URL en ambas cadenas.
 
+## Cloudflare Workers AI para personalización
+
+El Sprint 2 usa **Cloudflare Workers AI** con el modelo
+`@cf/black-forest-labs/flux-2-klein-4b` para generar el mockup completo sobre una
+prenda base predefinida. Hay 5 camisetas y 5 hoodies en negro, blanco, rojo, beige y
+azul; las imágenes y el mapa de rutas están en `public/mockups/`. No se genera un
+diseño aislado ni se compone con overlay.
+
+Cada integrante debe crear su propia cuenta gratuita de Cloudflare:
+
+1. Crear una cuenta en Cloudflare. La cuota de Workers AI del plan gratuito no exige
+   tarjeta: incluye 10.000 neuronos por día.
+2. Entrar a **Workers AI → Use REST API**.
+3. Copiar el **Account ID**.
+4. Crear un **Workers AI API Token** con permisos de Workers AI y copiarlo.
+5. Agregar estas variables a `.env.local`:
+
+   ```text
+   CLOUDFLARE_ACCOUNT_ID=tu_account_id
+   CLOUDFLARE_API_TOKEN=tu_token
+   ```
+
+Las dos variables son de servidor. No usar `NEXT_PUBLIC_`, no ponerlas en componentes
+de cliente y no subirlas a Git. Para la demo desplegada se usa una cuenta de equipo en
+Vercel, no el token personal de un integrante.
+
+Probar la conexión con:
+
+```powershell
+node scripts/test-flux-klein.mjs
+```
+
+El script guarda `test-flux-klein.jpg` en la raíz. Para probar una prenda base:
+
+```powershell
+$env:REFERENCE_IMAGE="public/mockups/tshirt-black.jpg"
+$env:FLUX_OUTPUT="test-flux-klein-edit.jpg"
+node scripts/test-flux-klein.mjs
+```
+
+Las diez bases disponibles están en `public/mockups/` y se listan en
+`public/mockups/manifest.json`.
+
+Por ahora no se implementa el contador de 3 propuestas por usuario al día; se activará
+más adelante. No hay fallback pagado. Si se agota la cuota gratuita de Cloudflare, la
+petición falla; no se cambia a un modelo pagado.
+
 ## Crear y aplicar el esquema Payload
 
 Payload tiene `push: false`: arrancar la aplicación no altera el esquema de Supabase.
