@@ -44,10 +44,7 @@ const prompt =
   process.env.FLUX_PROMPT ??
   "camiseta negra con diseño floral minimalista, fondo blanco, mockup de estudio";
 
-const outputPath = path.resolve(
-  projectRoot,
-  process.env.FLUX_OUTPUT ?? "test-flux-klein.jpg",
-);
+const outputPath = path.resolve(projectRoot, process.env.FLUX_OUTPUT ?? "test-flux-klein.jpg");
 
 const referencePath = process.env.REFERENCE_IMAGE
   ? path.resolve(projectRoot, process.env.REFERENCE_IMAGE)
