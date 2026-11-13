@@ -5,17 +5,30 @@ import { RegisterForm } from "./register-form";
 
 export const metadata: Metadata = { title: "Crear cuenta" };
 
-export default async function RegisterPage() {
+const safeNext = (value: string | undefined): string | undefined => {
+  if (!value?.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
+    return undefined;
+  }
+  return value;
+};
+
+type RegisterPageProps = {
+  searchParams: Promise<{ next?: string }>;
+};
+
+export default async function RegisterPage({ searchParams }: RegisterPageProps) {
+  const params = await searchParams;
+  const next = safeNext(typeof params.next === "string" ? params.next : undefined);
   const customer = await getSessionCustomer();
   if (customer) {
-    redirect("/cuenta");
+    redirect(next ?? "/cuenta");
   }
 
   return (
     <main className="page page-narrow">
       <h1 className="section-title">Crear cuenta</h1>
       <p className="section-subtitle">Regístrate para personalizar prendas y hacer pedidos.</p>
-      <RegisterForm />
+      <RegisterForm next={next} />
     </main>
   );
 }

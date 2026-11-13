@@ -157,8 +157,16 @@ revisiones también consumen cuota y no deben depender de filas que luego se bor
 - Un cliente solo ve y modifica sus propias personalizaciones y medios.
 - Un administrador puede leer y moderar, pero no cambiar una aprobación sin dejar rastro.
 - Las propuestas y los medios privados nunca se leen con la Data API de Supabase.
-- Las escrituras de propuestas las hace el servidor, no el navegador.
+- Cuando se active la persistencia (Sprint 3), las escrituras de propuestas las hará el
+  servidor, no el navegador.
 - RLS activo y privilegios revocados para `anon`, `authenticated`, `service_role` y `PUBLIC`.
+
+### Propuesta en el navegador (decisión del 2026-11-13)
+
+Para no consumir espacio en la base de datos, la propuesta generada y la selección se
+mantienen solo en el estado del navegador. El resultado se puede descargar y se advierte
+antes de salir o recargar. No se crean colecciones ni migraciones de personalizaciones
+en este sprint; la persistencia y la asociación con pedidos se retoman en el Sprint 3.
 
 ## 7. IA y mockup: enfoque elegido
 
