@@ -2,31 +2,66 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { getSessionCustomer } from "@/lib/auth";
+import { MAX_DESIGN_BRIEF_LENGTH } from "@/lib/design-brief";
+import { extractDesignText } from "@/lib/design-text";
 import { getMockupBase, getMockupBaseName, isMockupSize } from "@/lib/mockup-bases";
+import { normalizeReferenceImage } from "@/lib/mockup-image";
 import {
   DEFAULT_REVISION_SELECTION,
   parseMockupSelection,
 } from "@/lib/mockup-selection";
-import { buildInpaintingMask, type InpaintingMask } from "@/services/personalization/revision";
+import { stripControlCharacters } from "@/lib/sanitize";
+import {
+  buildInpaintingMask,
+  hasVisibleSelectionChange,
+  type InpaintingMask,
+} from "@/services/personalization/revision";
+import { renderTextOverlay } from "@/services/personalization/text-overlay";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 const MODEL = "@cf/black-forest-labs/flux-2-klein-4b";
 const INPAINTING_MODEL = "@cf/runwayml/stable-diffusion-v1-5-inpainting";
-const TRANSLATION_MODEL = "@cf/meta/m2m100-1.2b";
+const REWRITE_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+const REWRITE_SYSTEM_PROMPT = `You convert Spanish t-shirt design edit requests into short English descriptions of the requested visual change inside a marked zone.
+Rules:
+- Preserve the existing subject. Do not add objects, holidays, colors, or themes the user did not mention.
+- Describe only the requested change, not the old content.
+- Resolve vague references like "eso" by describing the replacement content.
+- Never use "that", "it", "existing", "remove", or "add".
+- Keep text exactly as written.
+- Output one comma-separated phrase, no quotes, no explanations.
+
+Examples:
+User: Quita eso y agrega la palabra I LOVE YOU
+Assistant: bold black lettering reading I LOVE YOU, centered, clean vector text
+User: agrega tres árboles al fondo
+Assistant: three trees in the background, clean vector shapes
+User: haz los árboles realistas
+Assistant: realistic trees with natural foliage and detailed trunks, same composition
+User: agrega árboles de Navidad blancos en la parte de abajo
+Assistant: white Christmas trees, clean vector shapes, centered
+User: hazlo más minimalista
+Assistant: minimalist artwork, simple shapes, reduced detail, clean vector style
+User: cambia el color del diseño a azul
+Assistant: blue artwork, clean vector shapes, same composition`;
 const INPAINTING_NEGATIVE_PROMPT =
   "person, mannequin, body, hands, text, logo, photo, 3d, shadow, background change";
 const MAX_IDEA_LENGTH = 600;
 const MAX_REFERENCE_BYTES = 3_000_000;
+const MAX_PROVIDER_IMAGE_BYTES = 3_000_000;
 const ALLOWED_REFERENCE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 type MockupRequest = {
   baseId?: unknown;
+  designBrief?: unknown;
   idea?: unknown;
   mode?: unknown;
   referenceImage?: unknown;
   selection?: unknown;
   size?: unknown;
+  strategy?: unknown;
 };
 
 type CloudflareImageResponse = {
@@ -45,6 +80,46 @@ type ProviderResult =
 
 const errorResponse = (message: string, status: number) =>
   NextResponse.json({ error: message }, { status });
+
+const cleanInput = (value: string) => stripControlCharacters(value).trim();
+
+const hasValidOrigin = (request: Request) => {
+  const fetchSite = request.headers.get("sec-fetch-site");
+
+  if (fetchSite === "cross-site") {
+    return false;
+  }
+
+  const origin = request.headers.get("origin");
+
+  if (!origin) {
+    return true;
+  }
+
+  const allowedOrigins = new Set<string>();
+
+  try {
+    allowedOrigins.add(new URL(request.url).origin);
+  } catch {
+    return false;
+  }
+
+  const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL;
+
+  if (serverUrl) {
+    try {
+      allowedOrigins.add(new URL(serverUrl).origin);
+    } catch {
+      return false;
+    }
+  }
+
+  try {
+    return allowedOrigins.has(new URL(origin).origin);
+  } catch {
+    return false;
+  }
+};
 
 const buildCreatePrompt = (garmentName: string, idea: string) =>
   [
@@ -67,14 +142,21 @@ const buildInpaintingPrompt = (garmentName: string, idea: string) => {
     `Design printed on a ${garmentName.toLowerCase()}: ${element}.`,
     "Flat vector illustration, clean edges, high contrast, professional print, matching the existing design style.",
     "Printed on fabric with the same lighting, perspective and garment color.",
+    "No other artwork inside the marked area.",
   ].join(" ");
 };
 
+const buildRedesignPrompt = (garmentName: string, designBrief: string, idea: string) =>
+  buildCreatePrompt(
+    garmentName,
+    `${designBrief || "el diseño anterior"}. Ajuste solicitado: ${idea}. El estampado va impreso en el pecho de la camiseta, no en el fondo de la foto.`,
+  );
+
 /**
- * El modelo de inpainting entiende mejor el inglés. Si la traducción falla,
- * se conserva la idea original para no bloquear la revisión.
+ * Reescribe la petición del cliente como una descripción concreta en inglés.
+ * Evita referencias ambiguas como "eso" y mejora la adherencia del inpainting.
  */
-const translateIdea = async (idea: string): Promise<string> => {
+const rewriteIdea = async (idea: string): Promise<string> => {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   const apiToken = process.env.CLOUDFLARE_API_TOKEN;
 
@@ -84,7 +166,7 @@ const translateIdea = async (idea: string): Promise<string> => {
 
   try {
     const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${TRANSLATION_MODEL}`,
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${REWRITE_MODEL}`,
       {
         method: "POST",
         headers: {
@@ -92,11 +174,14 @@ const translateIdea = async (idea: string): Promise<string> => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          text: idea,
-          source_lang: "es",
-          target_lang: "en",
+          messages: [
+            { role: "system", content: REWRITE_SYSTEM_PROMPT },
+            { role: "user", content: idea },
+          ],
+          max_tokens: 120,
+          temperature: 0.1,
         }),
-        signal: AbortSignal.timeout(30_000),
+        signal: AbortSignal.timeout(60_000),
       },
     );
 
@@ -105,29 +190,41 @@ const translateIdea = async (idea: string): Promise<string> => {
     }
 
     const body = (await response.json()) as {
-      result?: { translated_text?: unknown };
+      result?: {
+        response?: unknown;
+        choices?: Array<{ message?: { content?: unknown } }>;
+      };
     };
-    const translated = body.result?.translated_text;
+    const content =
+      body.result?.choices?.[0]?.message?.content ?? body.result?.response;
 
-    return typeof translated === "string" && translated.trim().length > 0
-      ? translated.trim()
+    return typeof content === "string" && content.trim().length > 0
+      ? content.trim().replace(/^["']|["']$/g, "")
       : idea;
   } catch {
     return idea;
   }
 };
 
-const detectImageMime = (buffer: Buffer) => {
+const normalizeMimeType = (value: string) => {
+  const mimeType = value.toLowerCase();
+  return mimeType === "image/jpg" ? "image/jpeg" : mimeType;
+};
+
+const detectImageMime = (buffer: Buffer): string | null => {
   if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
     return "image/png";
   }
   if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
     return "image/jpeg";
   }
-  if (buffer.subarray(0, 4).toString("ascii") === "RIFF") {
+  if (
+    buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
+    buffer.subarray(8, 12).toString("ascii") === "WEBP"
+  ) {
     return "image/webp";
   }
-  return "image/jpeg";
+  return null;
 };
 
 const parseReferenceImage = (value: unknown): ImagePayload | null => {
@@ -142,11 +239,13 @@ const parseReferenceImage = (value: unknown): ImagePayload | null => {
   }
 
   const header = value.slice(5, comma);
-  const mimeType = header.split(";")[0];
+  const mimeType = normalizeMimeType(header.split(";")[0]);
   const buffer = Buffer.from(value.slice(comma + 1), "base64");
+  const detected = detectImageMime(buffer);
 
   if (
     !ALLOWED_REFERENCE_MIME_TYPES.has(mimeType) ||
+    detected !== mimeType ||
     buffer.length === 0 ||
     buffer.length > MAX_REFERENCE_BYTES
   ) {
@@ -168,33 +267,61 @@ const decodeProviderImage = async (value: unknown): Promise<ImagePayload | null>
       return null;
     }
 
-    const mimeType = value.slice(5, comma).split(";")[0];
+    const mimeType = normalizeMimeType(value.slice(5, comma).split(";")[0]);
+    const buffer = Buffer.from(value.slice(comma + 1), "base64");
+    const detected = detectImageMime(buffer);
 
-    if (!ALLOWED_REFERENCE_MIME_TYPES.has(mimeType)) {
+    if (
+      !ALLOWED_REFERENCE_MIME_TYPES.has(mimeType) ||
+      detected !== mimeType ||
+      buffer.length === 0 ||
+      buffer.length > MAX_PROVIDER_IMAGE_BYTES
+    ) {
       return null;
     }
 
-    const buffer = Buffer.from(value.slice(comma + 1), "base64");
-    return buffer.length > 0 ? { buffer, mimeType } : null;
+    return { buffer, mimeType };
   }
 
-  if (value.startsWith("http://") || value.startsWith("https://")) {
+  if (value.startsWith("https://")) {
     try {
-      const response = await fetch(value, { signal: AbortSignal.timeout(30_000) });
+      const response = await fetch(value, {
+        redirect: "error",
+        signal: AbortSignal.timeout(30_000),
+      });
 
       if (!response.ok) {
         return null;
       }
 
+      const contentType = response.headers.get("content-type") ?? "";
+      const contentLength = Number(response.headers.get("content-length") ?? 0);
+
+      if (!contentType.startsWith("image/") || contentLength > MAX_PROVIDER_IMAGE_BYTES) {
+        return null;
+      }
+
       const buffer = Buffer.from(await response.arrayBuffer());
-      return buffer.length > 0 ? { buffer, mimeType: detectImageMime(buffer) } : null;
+      const detected = detectImageMime(buffer);
+
+      if (!detected || buffer.length === 0 || buffer.length > MAX_PROVIDER_IMAGE_BYTES) {
+        return null;
+      }
+
+      return { buffer, mimeType: detected };
     } catch {
       return null;
     }
   }
 
   const buffer = Buffer.from(value, "base64");
-  return buffer.length > 0 ? { buffer, mimeType: detectImageMime(buffer) } : null;
+  const detected = detectImageMime(buffer);
+
+  if (!detected || buffer.length === 0 || buffer.length > MAX_PROVIDER_IMAGE_BYTES) {
+    return null;
+  }
+
+  return { buffer, mimeType: detected };
 };
 
 const runModel = async (form: FormData): Promise<ProviderResult> => {
@@ -271,6 +398,17 @@ const runModel = async (form: FormData): Promise<ProviderResult> => {
   return { ok: true, image };
 };
 
+const generateFromBase = async (baseImage: Buffer, prompt: string): Promise<ProviderResult> => {
+  const form = new FormData();
+  form.append("prompt", prompt);
+  form.append(
+    "input_image",
+    new Blob([new Uint8Array(baseImage)], { type: "image/jpeg" }),
+    "prenda.jpg",
+  );
+  return runModel(form);
+};
+
 const runInpainting = async (
   image: ImagePayload,
   prompt: string,
@@ -345,7 +483,18 @@ const runInpainting = async (
   const contentType = providerResponse.headers.get("content-type") ?? "";
 
   if (contentType.includes("application/json")) {
-    const body = (await providerResponse.json()) as CloudflareImageResponse;
+    let body: CloudflareImageResponse;
+
+    try {
+      body = (await providerResponse.json()) as CloudflareImageResponse;
+    } catch {
+      return {
+        ok: false,
+        status: 502,
+        message: "La propuesta no llegó con una imagen válida.",
+      };
+    }
+
     const decoded = await decodeProviderImage(body.result?.image);
 
     if (!decoded) {
@@ -359,6 +508,16 @@ const runInpainting = async (
     return { ok: true, image: decoded };
   }
 
+  const contentLength = Number(providerResponse.headers.get("content-length") ?? 0);
+
+  if (contentLength > MAX_PROVIDER_IMAGE_BYTES) {
+    return {
+      ok: false,
+      status: 502,
+      message: "La propuesta no llegó con una imagen válida.",
+    };
+  }
+
   const buffer = Buffer.from(await providerResponse.arrayBuffer());
 
   if (buffer.length === 0) {
@@ -369,10 +528,24 @@ const runInpainting = async (
     };
   }
 
-  return { ok: true, image: { buffer, mimeType: detectImageMime(buffer) } };
+  const detected = detectImageMime(buffer);
+
+  if (!detected) {
+    return {
+      ok: false,
+      status: 502,
+      message: "La propuesta no llegó con una imagen válida.",
+    };
+  }
+
+  return { ok: true, image: { buffer, mimeType: detected } };
 };
 
 export async function POST(request: Request) {
+  if (!hasValidOrigin(request)) {
+    return errorResponse("Origen no permitido.", 403);
+  }
+
   const customer = await getSessionCustomer();
 
   if (!customer) {
@@ -382,15 +555,27 @@ export async function POST(request: Request) {
   let body: MockupRequest;
 
   try {
-    body = (await request.json()) as MockupRequest;
+    const parsed = (await request.json()) as unknown;
+
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return errorResponse("No pudimos leer la solicitud.", 400);
+    }
+
+    body = parsed as MockupRequest;
   } catch {
     return errorResponse("No pudimos leer la solicitud.", 400);
   }
 
   const baseId = typeof body.baseId === "string" ? body.baseId : "";
-  const idea = typeof body.idea === "string" ? body.idea.trim() : "";
+  const designBrief =
+    typeof body.designBrief === "string"
+      ? stripControlCharacters(body.designBrief).slice(0, MAX_DESIGN_BRIEF_LENGTH).trim()
+      : "";
+  const idea = typeof body.idea === "string" ? cleanInput(body.idea) : "";
   const size = typeof body.size === "string" ? body.size : "";
   const mode = body.mode === "revise" ? "revise" : "create";
+  const strategy =
+    body.strategy === "redesign" || body.strategy === "text" ? body.strategy : "inpaint";
   const base = getMockupBase(baseId);
 
   if (!base) {
@@ -410,19 +595,92 @@ export async function POST(request: Request) {
   }
 
   const garmentName = getMockupBaseName(base);
+  const basePath = path.join(process.cwd(), "public", base.file.replace(/^\//, ""));
+  const loadBaseImage = async () => {
+    try {
+      return await readFile(basePath);
+    } catch {
+      return null;
+    }
+  };
 
   if (mode === "revise") {
-    const referenceImage = body.referenceImage
+    const rawReference = body.referenceImage
       ? parseReferenceImage(body.referenceImage)
       : null;
 
-    if (!referenceImage) {
+    if (!rawReference) {
       return errorResponse("Falta la propuesta anterior para aplicar cambios.", 400);
     }
 
-    const selection = parseMockupSelection(body.selection) ?? DEFAULT_REVISION_SELECTION;
-    const translatedIdea = await translateIdea(idea);
-    const prompt = buildInpaintingPrompt(garmentName, translatedIdea);
+    const referenceImage = await normalizeReferenceImage(
+      rawReference.buffer,
+      rawReference.mimeType,
+    );
+
+    if (!referenceImage) {
+      return errorResponse("La propuesta anterior tiene dimensiones no válidas.", 400);
+    }
+
+    const parsedSelection = parseMockupSelection(body.selection);
+
+    if (body.selection !== undefined && !parsedSelection) {
+      return errorResponse("La zona marcada no es válida.", 400);
+    }
+
+    const selection = parsedSelection ?? DEFAULT_REVISION_SELECTION;
+
+    if (strategy === "text") {
+      const text = extractDesignText(idea);
+
+      if (text) {
+        const baseImage = await loadBaseImage();
+
+        if (!baseImage) {
+          return errorResponse("No pudimos cargar la prenda seleccionada.", 500);
+        }
+
+        let composite: Buffer;
+
+        try {
+          composite = await renderTextOverlay(referenceImage.buffer, baseImage, selection, text, {
+            idea,
+            baseColorKey: base.colorKey,
+            clearSelection: /\b(quita|elimina|borra|remueve|remove|erase)\b/i.test(idea),
+          });
+        } catch {
+          return errorResponse("No pudimos agregar el texto sobre el diseño.", 500);
+        }
+
+        return NextResponse.json({
+          image: `data:image/png;base64,${composite.toString("base64")}`,
+          prompt: `Texto: "${text}"`,
+        });
+      }
+    }
+
+    if (strategy === "redesign") {
+      const baseImage = await loadBaseImage();
+
+      if (!baseImage) {
+        return errorResponse("No pudimos cargar la prenda seleccionada.", 500);
+      }
+
+      const prompt = buildRedesignPrompt(garmentName, designBrief, idea);
+      const result = await generateFromBase(baseImage, prompt);
+
+      if (!result.ok) {
+        return errorResponse(result.message, result.status);
+      }
+
+      return NextResponse.json({
+        image: `data:${result.image.mimeType};base64,${result.image.buffer.toString("base64")}`,
+        prompt,
+      });
+    }
+
+    const rewrittenIdea = await rewriteIdea(idea);
+    const prompt = buildInpaintingPrompt(garmentName, rewrittenIdea);
 
     let mask: InpaintingMask;
 
@@ -438,31 +696,39 @@ export async function POST(request: Request) {
       return errorResponse(result.message, result.status);
     }
 
+    let changed = true;
+
+    try {
+      changed = await hasVisibleSelectionChange(
+        referenceImage.buffer,
+        result.image.buffer,
+        selection,
+      );
+    } catch {
+      // Si la comparación falla, no bloqueamos una respuesta válida del modelo.
+    }
+
+    if (!changed) {
+      return errorResponse(
+        "La IA no aplicó un cambio visible en esa zona. Prueba con una descripción más concreta o usa “Rediseñar estampado”.",
+        422,
+      );
+    }
+
     return NextResponse.json({
       image: `data:${result.image.mimeType};base64,${result.image.buffer.toString("base64")}`,
       prompt,
     });
   }
 
-  const basePath = path.join(process.cwd(), "public", base.file.replace(/^\//, ""));
-  let baseImage: Buffer;
+  const baseImage = await loadBaseImage();
 
-  try {
-    baseImage = await readFile(basePath);
-  } catch {
+  if (!baseImage) {
     return errorResponse("No pudimos cargar la prenda seleccionada.", 500);
   }
 
   const prompt = buildCreatePrompt(garmentName, idea);
-  const form = new FormData();
-  form.append("prompt", prompt);
-  form.append(
-    "input_image",
-    new Blob([new Uint8Array(baseImage)], { type: "image/jpeg" }),
-    `${base.id}.jpg`,
-  );
-
-  const result = await runModel(form);
+  const result = await generateFromBase(baseImage, prompt);
 
   if (!result.ok) {
     return errorResponse(result.message, result.status);

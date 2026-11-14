@@ -42,16 +42,6 @@ export const REVISION_ZONE_PRESETS = [
     selection: { x: 0.22, y: 0.62, width: 0.56, height: 0.3 },
   },
   {
-    id: "left-sleeve",
-    label: "Manga izquierda",
-    selection: { x: 0.04, y: 0.24, width: 0.24, height: 0.32 },
-  },
-  {
-    id: "right-sleeve",
-    label: "Manga derecha",
-    selection: { x: 0.72, y: 0.24, width: 0.24, height: 0.32 },
-  },
-  {
     id: "all",
     label: "Toda la prenda",
     selection: { x: 0.1, y: 0.1, width: 0.8, height: 0.84 },
@@ -101,6 +91,26 @@ export const parseMockupSelection = (value: unknown): MockupSelection | null => 
  * con contexto alrededor. El modelo edita el recorte; la composición final usa
  * solo `selectionRect`, así el resto del mockup no cambia.
  */
+/**
+ * Detecta si el centro de la selección cae en la zona de una manga. Las
+ * mangas quedan fuera de "Editar la zona" porque el modelo gratuito no
+ * reproduce el detalle; se derivan a "Rediseñar estampado".
+ */
+export const isSleeveSelection = (
+  selection: MockupSelection,
+  category: "camisetas" | "hoodies",
+) => {
+  const centerX = selection.x + selection.width / 2;
+  const centerY = selection.y + selection.height / 2;
+  const side = centerX < 0.3 || centerX > 0.7;
+  const vertical =
+    category === "hoodies"
+      ? centerY > 0.3 && centerY < 0.8
+      : centerY > 0.22 && centerY < 0.62;
+
+  return side && vertical;
+};
+
 export const resolveMockupSelection = (
   selection: MockupSelection,
   imageWidth: number,

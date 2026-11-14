@@ -5,8 +5,8 @@
 > `@cf/black-forest-labs/flux-2-klein-4b`, **prendas base predefinidas** y generación
 > del **mockup completo** sobre la base. La generación inicial no usa un diseño aislado
 > ni composición CSS/Canvas. Las revisiones se hacen por zona: el cliente marca el área,
-> el servidor construye una máscara y el modelo de inpainting reconstruye solo esa zona
-> integrándola con la tela.
+> el servidor aplica inpainting por zona, rediseño con FLUX o texto con fuente según el
+> cambio solicitado.
 
 ## 1. Lectura del sprint
 
@@ -33,8 +33,8 @@ confirmar privacidad y términos del modelo.
 2. **Prendas base predefinidas.** Usar 5 camisetas y 5 hoodies en negro, blanco, rojo,
    beige y azul, con el mismo encuadre, fondo e iluminación. El cliente elige una base
    y el modelo genera el mockup completo con el diseño descrito. La generación inicial
-   no usa un diseño aislado ni overlay; las revisiones usan el inpainting por zona
-   descrito en la sección 7.
+   no usa un diseño aislado ni overlay; las revisiones usan inpainting por zona,
+   rediseño con FLUX o texto con fuente, según el cambio (sección 7).
 3. **Alcance completo.** Se mantienen las 7 HU y los 27 puntos; no se recorta el
    alcance. Must primero es solo el orden de riesgo: HU-11, HU-12, HU-14, HU-15 y HU-17
    (21 puntos) se atienden antes, pero HU-13 y HU-16 también son compromiso del sprint.
@@ -213,12 +213,23 @@ Las diez imágenes están en `public/mockups/` y el mapa de rutas en
 No hay una etapa separada de “generar solo el diseño” ni una etapa de overlay CSS.
 El mockup inicial es la salida del modelo sobre la prenda base.
 
-### Revisiones por zona (decisión del 2026-11-13)
+### Correcciones del estampado (decisión del 2026-11-13)
 
-Para que una revisión no borre el diseño anterior, el cliente marca una zona del
-mockup (pecho, bajo, manga o un rectángulo). El servidor construye una máscara con
-`sharp` y usa `@cf/runwayml/stable-diffusion-v1-5-inpainting`: el modelo reconstruye
-solo la zona blanca de la máscara y conserva el resto de la imagen. No es un overlay
+El cliente elige cómo aplicar el cambio:
+
+1. **Editar la zona.** Marca pecho, bajo o un rectángulo. El servidor construye una
+   máscara con `sharp` y usa `@cf/runwayml/stable-diffusion-v1-5-inpainting` para
+   reconstruir solo esa zona. Conserva el resto del mockup. Es ideal para agregar un
+   elemento; el modelo gratuito tiene poca adherencia en estilos y colores. Las mangas
+   no se editan por esta vía: el modelo no reproduce el detalle y se derivan a
+   «Rediseñar estampado».
+2. **Rediseñar estampado.** FLUX genera una versión nueva con el brief acumulado (idea
+   original + ajustes) sobre la misma prenda. Entiende mejor los cambios de estilo,
+   pero no conserva el estampado anterior.
+3. **Texto.** Si la petición contiene una palabra o frase, se renderiza con una fuente
+   sobre la zona marcada. El texto queda legible; no se le pide tipografía a la IA.
+
+La UI muestra el modo y advierte cuándo se pierde el diseño anterior. No es un overlay
 CSS: la imagen final se genera en el servidor y el cliente recibe el PNG completo.
 
 El modelo de inpainting es el único gratuito con máscara en Cloudflare y está marcado
@@ -248,7 +259,8 @@ inpainting por zona aprobado arriba.
 | Riesgo | Impacto | Mitigación | Responsable |
 | --- | --- | --- | --- |
 | Cuota gratuita de Cloudflare agotada | HU-14 bloqueada temporalmente | Contador de 3/día por usuario; error claro; no pagar | Kevin / Jhancarlos |
-| Calidad o fidelidad del mockup con la base | HU-15 parcial | Probar cada base, ajustar prompt y encuadre; revisar el inpainting por zona | Andrés / Emanuel |
+| Calidad o fidelidad del mockup con la base | HU-15 parcial | Probar cada base, ajustar prompt y encuadre; revisar el modo de corrección elegido | Andrés / Emanuel |
+| El rediseño no conserva el estampado anterior | El cliente puede perder su diseño | Advertir en la UI y usarlo solo para cambios de estilo; el modo zona conserva el diseño | Jhancarlos |
 | Modelo de inpainting deprecado el 20-nov-2026 | Revisiones sin soporte antes de la demo | Migrar a un reemplazo o documentar fallback antes del 15-dic | Jhancarlos |
 | Enviar imágenes privadas sin política aprobada | Incumplimiento de privacidad | Usar datos sintéticos hasta aprobación; bloquear imágenes reales | Jhancarlos |
 | Storage privado de clientes sin validar (C-08) | HU-13 bloqueada | Cerrar pruebas negativas antes de habilitar; si no, mover a Sprint 3 | Emanuel / Daniel |

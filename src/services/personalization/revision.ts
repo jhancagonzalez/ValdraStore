@@ -8,6 +8,56 @@ export type InpaintingMask = {
 };
 
 /**
+ * Detecta si el inpainting cambió de verdad la zona marcada. Evita reportar
+ * como éxito una salida que es prácticamente igual a la imagen anterior.
+ */
+export const hasVisibleSelectionChange = async (
+  previousImage: Buffer,
+  outputImage: Buffer,
+  selection: MockupSelection,
+): Promise<boolean> => {
+  const metadata = await sharp(previousImage).metadata();
+  const width = metadata.width ?? 1024;
+  const height = metadata.height ?? 1024;
+  const { selectionRect } = resolveMockupSelection(selection, width, height);
+
+  const previous = await sharp(previousImage)
+    .resize(width, height, { fit: "fill" })
+    .removeAlpha()
+    .extract(selectionRect)
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const output = await sharp(outputImage)
+    .resize(width, height, { fit: "fill" })
+    .removeAlpha()
+    .extract(selectionRect)
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  if (previous.info.channels !== output.info.channels) {
+    return true;
+  }
+
+  const pixelCount = selectionRect.width * selectionRect.height;
+  let changedPixels = 0;
+
+  for (let pixel = 0; pixel < pixelCount; pixel += 1) {
+    const offset = pixel * previous.info.channels;
+    const difference = Math.max(
+      Math.abs(previous.data[offset] - output.data[offset]),
+      Math.abs(previous.data[offset + 1] - output.data[offset + 1]),
+      Math.abs(previous.data[offset + 2] - output.data[offset + 2]),
+    );
+
+    if (difference > 16) {
+      changedPixels += 1;
+    }
+  }
+
+  return changedPixels / pixelCount > 0.01;
+};
+
+/**
  * Construye la máscara que recibe el modelo de inpainting: blanco en la zona
  * que el cliente autorizó a cambiar y negro en todo el resto del mockup.
  */

@@ -28,15 +28,10 @@ export default async function PersonalizePage({ searchParams }: PersonalizePageP
 
   return (
     <main className="page page-personalizer">
-      <div className="personalizer-atmosphere" aria-hidden="true">
-        <span className="personalizer-blob personalizer-blob-a" />
-        <span className="personalizer-blob personalizer-blob-b" />
-        <span className="personalizer-blob personalizer-blob-c" />
-      </div>
       <header className="personalizer-head">
         <h1 className="section-title">Personalizar</h1>
         <p className="section-subtitle">
-          Elige una prenda base y tu talla. Después podrás contarnos la idea que tienes para ella.
+          Elige la prenda y la talla; después damos forma a tu idea sobre ella.
         </p>
       </header>
       <GarmentSelector

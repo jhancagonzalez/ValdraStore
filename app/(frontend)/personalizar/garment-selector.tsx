@@ -3,6 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { type FormEvent, type PointerEvent, useEffect, useRef, useState } from "react";
+import { appendDesignBrief } from "@/lib/design-brief";
+import { extractDesignText } from "@/lib/design-text";
 import {
   getMockupBase,
   getMockupBaseName,
@@ -12,6 +14,7 @@ import {
   type MockupSize,
 } from "@/lib/mockup-bases";
 import {
+  isSleeveSelection,
   type MockupSelection,
   REVISION_ZONE_PRESETS,
 } from "@/lib/mockup-selection";
@@ -19,13 +22,35 @@ import {
 const IDEA_MAX_LENGTH = 600;
 const IDEA_SUGGESTIONS = ["Floral minimalista", "Geométrico", "Retro", "Tipografía pequeña"];
 const REVISION_SUGGESTIONS = ["Más minimalista", "Más color", "Cambiar composición", "Añadir textura"];
+const ZONE_SUGGESTIONS = ["Agregar elemento", "Quitar elemento", "Cambiar color", "Agregar texto"];
+const STYLE_CHANGE_PATTERN =
+  /\b(realista|realistas|realistic|acuarela|watercolor|minimalista|minimalist|estilo|style|profesional|professional|moderno|modern|vintage|retro|textura|texture|geométrico|geometric)\b/i;
 const CATEGORY_ORDER: MockupCategory[] = ["camisetas", "hoodies"];
 const CATEGORY_LABELS: Record<MockupCategory, string> = {
   camisetas: "Camisetas",
   hoodies: "Hoodies",
 };
+const STEPS = ["Prenda", "Idea", "Propuesta"] as const;
 
 const clamp01 = (value: number) => Math.min(Math.max(value, 0), 1);
+
+const ArrowLeftIcon = () => (
+  <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+    <path d="M14 8H2m5-5L2 8l5 5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
+
+const ArrowRightIcon = () => (
+  <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+    <path d="M2 8h12M9 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
+
+const ChevronDownIcon = () => (
+  <svg viewBox="0 0 12 8" width="12" height="8" aria-hidden="true" focusable="false">
+    <path d="M1 1.5 6 6.5l5-5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
 
 const MIN_SELECTION_SIZE = 0.02;
 
@@ -57,16 +82,21 @@ export const GarmentSelector = ({
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [previousImage, setPreviousImage] = useState<string | null>(null);
   const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
+  const [designBrief, setDesignBrief] = useState("");
+  const [revisionMode, setRevisionMode] = useState<"zone" | "redesign">("zone");
+  const [lastStrategy, setLastStrategy] = useState<"inpaint" | "text" | "redesign" | null>(null);
   const [selection, setSelection] = useState<MockupSelection | null>(null);
   const [selectionZone, setSelectionZone] = useState<string | null>(null);
   const [lastZoneLabel, setLastZoneLabel] = useState<string | null>(null);
   const [selectionDrag, setSelectionDrag] = useState<{ x: number; y: number } | null>(null);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const ideaRef = useRef<HTMLTextAreaElement>(null);
-  const resultRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLElement>(null);
   const customizeRef = useRef<HTMLButtonElement>(null);
   const authDialogRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLUListElement>(null);
+  const generationAbortRef = useRef<AbortController | null>(null);
+  const generationIdRef = useRef(0);
 
   const categoryBases = MOCKUP_BASES.filter((base) => base.category === activeCategory);
   const selectedBase = categoryBases.find((base) => base.id === selectedId) ?? categoryBases[0];
@@ -78,10 +108,22 @@ export const GarmentSelector = ({
     categoryBases[(currentIndex - 1 + categoryBases.length) % categoryBases.length];
   const nextBase = categoryBases[(currentIndex + 1) % categoryBases.length];
   const selectedName = getMockupBaseName(selectedBase);
-  const suggestions = previousImage ? REVISION_SUGGESTIONS : IDEA_SUGGESTIONS;
+  const detectedText =
+    previousImage && revisionMode === "zone" ? extractDesignText(idea) : null;
+  const suggestions = previousImage
+    ? revisionMode === "redesign"
+      ? REVISION_SUGGESTIONS
+      : ZONE_SUGGESTIONS
+    : IDEA_SUGGESTIONS;
   const nextPath = `/personalizar?base=${encodeURIComponent(selectedBase.id)}&size=${
     selectedSize ?? ""
   }`;
+  const downloadExtension = generatedImage?.startsWith("data:image/png")
+    ? "png"
+    : generatedImage?.startsWith("data:image/webp")
+      ? "webp"
+      : "jpg";
+  const activeStep = ideaOpen ? (generatedImage ? 2 : 1) : 0;
 
   const closeAuthPrompt = () => {
     setAuthPromptOpen(false);
@@ -174,11 +216,18 @@ export const GarmentSelector = ({
     );
 
   const resetGeneratedState = () => {
+    generationIdRef.current += 1;
+    generationAbortRef.current?.abort();
+    generationAbortRef.current = null;
+    setGenerating(false);
     setIdeaError(null);
     setGenerationError(null);
     setGeneratedImage(null);
     setPreviousImage(null);
     setGeneratedPrompt(null);
+    setDesignBrief("");
+    setRevisionMode("zone");
+    setLastStrategy(null);
     setSelection(null);
     setSelectionZone(null);
     setLastZoneLabel(null);
@@ -227,6 +276,13 @@ export const GarmentSelector = ({
     };
   }, [hasUnsavedDesign]);
 
+  useEffect(
+    () => () => {
+      generationAbortRef.current?.abort();
+    },
+    [],
+  );
+
   const selectBase = (id: string) => {
     if (id === selectedId) {
       return;
@@ -272,6 +328,10 @@ export const GarmentSelector = ({
   };
 
   const closeIdeaPanel = () => {
+    generationIdRef.current += 1;
+    generationAbortRef.current?.abort();
+    generationAbortRef.current = null;
+    setGenerating(false);
     setIdeaOpen(false);
     setIdeaError(null);
     setGenerationError(null);
@@ -290,6 +350,13 @@ export const GarmentSelector = ({
   };
 
   const appendSuggestion = (suggestion: string) => {
+    if (suggestion === "Agregar texto") {
+      setIdea("agrega la palabra ");
+      setIdeaError(null);
+      ideaRef.current?.focus();
+      return;
+    }
+
     setIdea((current) => {
       const next = current.trim() ? `${current.trim()}, ${suggestion.toLowerCase()}` : suggestion;
       return next.slice(0, IDEA_MAX_LENGTH);
@@ -302,6 +369,12 @@ export const GarmentSelector = ({
     setSelection({ ...zone.selection });
     setSelectionZone(zone.id);
     setIdeaError(null);
+  };
+
+  const changeRevisionMode = (mode: "zone" | "redesign") => {
+    setRevisionMode(mode);
+    setIdeaError(null);
+    setGenerationError(null);
   };
 
   const selectionPoint = (event: PointerEvent<HTMLDivElement>) => {
@@ -371,8 +444,12 @@ export const GarmentSelector = ({
       return;
     }
 
+    const isRedesign = revisionMode === "redesign";
+    const strategy = !previousImage ? undefined : isRedesign ? "redesign" : detectedText ? "text" : "inpaint";
+
     if (
       previousImage &&
+      !isRedesign &&
       (!selection ||
         selection.width < MIN_SELECTION_SIZE ||
         selection.height < MIN_SELECTION_SIZE)
@@ -381,18 +458,36 @@ export const GarmentSelector = ({
       return;
     }
 
-    const zoneLabel =
-      selectionZone && selectionZone !== "custom"
+    if (
+      previousImage &&
+      !isRedesign &&
+      selection &&
+      isSleeveSelection(selection, selectedBase.category)
+    ) {
+      setIdeaError("Para cambios en mangas, usa «Rediseñar estampado».");
+      return;
+    }
+
+    const zoneLabel = isRedesign
+      ? "Estampado completo"
+      : selectionZone && selectionZone !== "custom"
         ? (REVISION_ZONE_PRESETS.find((zone) => zone.id === selectionZone)?.label ?? null)
         : previousImage
           ? "Zona personalizada"
           : null;
+
+    const requestId = generationIdRef.current + 1;
+    generationIdRef.current = requestId;
+    generationAbortRef.current?.abort();
+    const controller = new AbortController();
+    generationAbortRef.current = controller;
 
     setIdeaError(null);
     setGenerationError(null);
     setGeneratedImage(null);
     setGeneratedPrompt(null);
     setLastZoneLabel(zoneLabel);
+    setLastStrategy(strategy ?? null);
     setGenerating(true);
 
     try {
@@ -401,18 +496,25 @@ export const GarmentSelector = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           baseId: selectedBase.id,
+          designBrief: previousImage ? designBrief : undefined,
           idea: trimmedIdea,
           mode: previousImage ? "revise" : "create",
           referenceImage: previousImage ?? undefined,
-          selection: previousImage ? selection : undefined,
+          selection: previousImage && !isRedesign ? selection : undefined,
           size: selectedSize,
+          strategy,
         }),
+        signal: controller.signal,
       });
       const data = (await response.json().catch(() => null)) as {
         error?: unknown;
         image?: unknown;
         prompt?: unknown;
       } | null;
+
+      if (requestId !== generationIdRef.current) {
+        return;
+      }
 
       if (!response.ok || typeof data?.image !== "string") {
         const message =
@@ -424,14 +526,26 @@ export const GarmentSelector = ({
 
       setGeneratedImage(data.image);
       setGeneratedPrompt(typeof data.prompt === "string" ? data.prompt : null);
+      setDesignBrief((current) => appendDesignBrief(current, trimmedIdea));
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+
+      if (requestId !== generationIdRef.current) {
+        return;
+      }
+
       setGenerationError(
         error instanceof Error
           ? error.message
           : "No pudimos generar la propuesta. Inténtalo de nuevo.",
       );
     } finally {
-      setGenerating(false);
+      if (requestId === generationIdRef.current) {
+        setGenerating(false);
+        generationAbortRef.current = null;
+      }
     }
   };
 
@@ -446,6 +560,8 @@ export const GarmentSelector = ({
     setGenerationError(null);
     setIdeaError(null);
     setIdea("");
+    setRevisionMode("zone");
+    setLastStrategy(null);
     setSelection(null);
     setSelectionZone(null);
     setLastZoneLabel(null);
@@ -454,7 +570,112 @@ export const GarmentSelector = ({
 
   return (
     <div className="garment-selector">
-      {ideaOpen ? (
+      <div className="personalizer-steps-wrap">
+        <ol className="personalizer-steps" aria-label="Progreso de personalización">
+          {STEPS.map((step, index) => (
+            <li
+              key={step}
+              className="personalizer-step"
+              data-state={
+                index < activeStep ? "done" : index === activeStep ? "current" : "upcoming"
+              }
+              aria-current={index === activeStep ? "step" : undefined}
+            >
+              {step}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {ideaOpen && generatedImage ? (
+        <section
+          id="design-workspace"
+          className="design-result"
+          ref={resultRef}
+          tabIndex={-1}
+          aria-labelledby="design-workspace-title"
+        >
+          <header className="design-result-head">
+            <h2 id="design-workspace-title">Así se ve tu idea</h2>
+            <p className="design-result-meta">
+              {selectedName} · Talla {selectedSize}
+              {lastZoneLabel ? ` · Zona: ${lastZoneLabel}` : ""}
+            </p>
+          </header>
+
+          <div className="design-result-compare">
+            <figure className="design-compare-item">
+              <figcaption className="design-compare-label">
+                {previousImage ? "Diseño anterior" : "Prenda base"}
+              </figcaption>
+              <div className="design-compare-frame">
+                <Image
+                  src={previousImage ?? selectedBase.file}
+                  alt={previousImage ? "Propuesta de diseño anterior" : selectedBase.alt}
+                  fill
+                  sizes="(max-width: 640px) 92vw, (max-width: 1240px) 44vw, 520px"
+                  unoptimized={Boolean(previousImage)}
+                />
+              </div>
+            </figure>
+
+            <span className="design-result-divider" aria-hidden="true" />
+
+            <figure className="design-compare-item">
+              <figcaption className="design-compare-label">Propuesta generada</figcaption>
+              <div className="design-compare-frame">
+                <Image
+                  src={generatedImage}
+                  alt={`Propuesta de diseño para ${selectedName}`}
+                  fill
+                  sizes="(max-width: 640px) 92vw, (max-width: 1240px) 44vw, 520px"
+                  unoptimized
+                />
+              </div>
+            </figure>
+          </div>
+
+          <div className="design-result-copy">
+            <p className="design-result-idea">“{idea.trim()}”</p>
+            <p className="design-result-note">
+              Vista previa de prueba.{" "}
+              {lastStrategy === "redesign"
+                ? "Se generó un estampado nuevo sobre la misma prenda; el diseño anterior no se conservó."
+                : lastStrategy === "text"
+                  ? "El texto se agregó con una fuente legible; el resto del diseño anterior se conservó."
+                  : lastStrategy === "inpaint"
+                    ? "El cambio se integró en la zona marcada; el resto del diseño anterior se conservó."
+                    : "La propuesta se generó a partir de tu idea."}{" "}
+              No se guarda en la base de datos: si sales de esta página, se perderá. Descárgala si
+              quieres conservarla.
+            </p>
+            {generatedPrompt ? (
+              <details className="design-prompt-details">
+                <summary>
+                  <span>Ver prompt mejorado para la IA</span>
+                  <ChevronDownIcon />
+                </summary>
+                <p>{generatedPrompt}</p>
+              </details>
+            ) : null}
+            <div className="design-actions">
+              <button type="button" className="button button-primary" onClick={beginRevision}>
+                Pedir cambios
+              </button>
+              <a
+                className="button button-secondary"
+                href={generatedImage}
+                download={`valdra-${selectedBase.id}-${selectedSize}.${downloadExtension}`}
+              >
+                Descargar diseño
+              </a>
+              <button type="button" className="design-text-action" onClick={closeIdeaPanel}>
+                Elegir otra prenda
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : ideaOpen ? (
         <section
           id="design-workspace"
           className="design-workspace"
@@ -470,7 +691,7 @@ export const GarmentSelector = ({
                 sizes="(max-width: 900px) 70vw, 480px"
                 unoptimized={Boolean(previousImage)}
               />
-              {previousImage && !generatedImage ? (
+              {previousImage && !generatedImage && revisionMode === "zone" ? (
                 <div
                   className="design-selection-layer"
                   aria-hidden="true"
@@ -500,7 +721,13 @@ export const GarmentSelector = ({
             <p className="design-preview-meta">
               {previousImage ? `${selectedName} · Talla ${selectedSize}` : `Talla ${selectedSize} · ${selectedBase.categoryLabel}`}
             </p>
-            {previousImage && !generatedImage ? (
+            {previousImage && !generatedImage && revisionMode === "redesign" ? (
+              <p className="design-redesign-note">
+                Se generará un estampado nuevo sobre la misma prenda. El diseño anterior no se
+                conserva.
+              </p>
+            ) : null}
+            {previousImage && !generatedImage && revisionMode === "zone" ? (
               <fieldset className="design-zone-picker">
                 <legend>Zona a cambiar</legend>
                 <div className="design-zone-options">
@@ -517,204 +744,198 @@ export const GarmentSelector = ({
                   ))}
                 </div>
                 <p className="form-hint">
-                  Marca solo la zona que quieres cambiar. La IA la integrará con la tela y
+                  Arrastra sobre la imagen o elige una zona. La IA la integrará con la tela y
                   conservará el resto.
+                </p>
+                <p className="form-hint">
+                  Para cambios en mangas, usa «Rediseñar estampado».
                 </p>
               </fieldset>
             ) : null}
-            <button type="button" className="design-back" onClick={closeIdeaPanel}>
-              <span aria-hidden="true">←</span> Cambiar prenda
+            <button
+              type="button"
+              className="design-back"
+              onClick={closeIdeaPanel}
+              disabled={generating}
+            >
+              <ArrowLeftIcon />
+              Cambiar prenda
             </button>
           </aside>
 
           <div className="design-workspace-main">
-            {generatedImage ? (
-              <div className="design-result" ref={resultRef} tabIndex={-1}>
-                <div className="design-result-image">
-                  <Image
-                    src={generatedImage}
-                    alt={`Propuesta de diseño para ${selectedName}`}
-                    width={1024}
-                    height={1024}
-                    unoptimized
-                  />
-                </div>
-                <div className="design-result-copy">
-                  <p className="design-eyebrow">Propuesta generada</p>
-                  <h2 id="design-workspace-title">Así se ve tu idea</h2>
-                  <p className="design-result-meta">
-                    {selectedName} · Talla {selectedSize}
-                    {lastZoneLabel ? ` · Zona: ${lastZoneLabel}` : ""}
-                  </p>
-                  <p className="design-result-idea">“{idea.trim()}”</p>
-                  <p className="design-result-note">
-                    Vista previa de prueba. El cambio se integró en la zona marcada; el resto del
-                    diseño anterior se conservó. No se guarda en la base de datos: si sales de esta
-                    página, se perderá. Descárgala si quieres conservarla.
-                  </p>
-                  {generatedPrompt ? (
-                    <details className="design-prompt-details">
-                      <summary>Ver prompt mejorado para la IA</summary>
-                      <p>{generatedPrompt}</p>
-                    </details>
-                  ) : null}
-                  <div className="design-actions">
+            <header className="design-workspace-head">
+              <h2 id="design-workspace-title">
+                {previousImage ? "Pide cambios sobre tu diseño" : "Cuéntanos qué quieres crear"}
+              </h2>
+              <p className="design-lead">
+                {previousImage
+                  ? revisionMode === "redesign"
+                    ? "Describe el nuevo estilo del estampado. Se generará una versión nueva sobre la misma prenda; el diseño anterior no se conserva."
+                    : "Marca la zona que quieres cambiar y describe el ajuste. La IA reconstruirá solo esa zona y la integrará con la tela; el resto de tu diseño se conserva."
+                  : "Describe el diseño que imaginas. Lo aplicaremos sobre la prenda y la talla que elegiste."}
+              </p>
+            </header>
+
+            {generationError ? (
+              <p className="form-error" role="alert">
+                {generationError}
+              </p>
+            ) : null}
+
+            <form className="design-form" onSubmit={handleIdeaSubmit} noValidate>
+              {previousImage ? (
+                <fieldset className="design-revision-mode">
+                  <legend>Cómo aplicar el cambio</legend>
+                  <div className="design-revision-options">
                     <button
                       type="button"
-                      className="button button-primary"
-                      onClick={beginRevision}
+                      className="design-revision-option"
+                      aria-pressed={revisionMode === "zone"}
+                      onClick={() => changeRevisionMode("zone")}
                     >
-                      Pedir cambios
+                      <strong>Editar la zona</strong>
+                      <span>Conserva el diseño anterior. Ideal para agregar un elemento.</span>
                     </button>
-                    <a
-                      className="button button-secondary"
-                      href={generatedImage}
-                      download={`valdra-${selectedBase.id}-${selectedSize}.${
-                        generatedImage.startsWith("data:image/png") ? "png" : "jpg"
-                      }`}
-                    >
-                      Descargar diseño
-                    </a>
                     <button
                       type="button"
-                      className="button button-secondary"
-                      onClick={closeIdeaPanel}
+                      className="design-revision-option"
+                      aria-pressed={revisionMode === "redesign"}
+                      onClick={() => changeRevisionMode("redesign")}
                     >
-                      Elegir otra prenda
+                      <strong>Rediseñar estampado</strong>
+                      <span>Crea una versión nueva. Ideal para cambiar el estilo.</span>
                     </button>
                   </div>
+                </fieldset>
+              ) : null}
+              <div className="design-prompt-box">
+                <label htmlFor="design-idea">
+                  {previousImage
+                    ? revisionMode === "redesign"
+                      ? "Describe el nuevo estilo"
+                      : detectedText
+                        ? "Texto a agregar"
+                        : "Describe el cambio en la zona marcada"
+                    : "Describe tu idea"}
+                </label>
+                <textarea
+                  id="design-idea"
+                  ref={ideaRef}
+                  value={idea}
+                  maxLength={IDEA_MAX_LENGTH}
+                  placeholder={
+                    previousImage
+                      ? revisionMode === "redesign"
+                        ? "Ejemplo: haz que los árboles se vean realistas."
+                        : detectedText
+                          ? "Ejemplo: I LOVE YOU"
+                          : "Ejemplo: agrega árboles de Navidad blancos en esta zona."
+                      : "Ejemplo: un paisaje andino al atardecer, con líneas finas en el pecho."
+                  }
+                  aria-invalid={ideaError ? true : undefined}
+                  aria-describedby={
+                    ideaError ? "design-idea-hint design-idea-error" : "design-idea-hint"
+                  }
+                  onChange={(event) => {
+                    setIdea(event.target.value);
+                    if (ideaError) {
+                      setIdeaError(null);
+                    }
+                  }}
+                />
+                <div className="design-form-meta">
+                  <p id="design-idea-hint" className="form-hint">
+                    {previousImage
+                      ? revisionMode === "redesign"
+                        ? "Se generará un estampado nuevo sobre la misma prenda; el diseño anterior no se conserva."
+                        : detectedText
+                          ? `Texto detectado: “${detectedText}”. Se agregará con una fuente legible en la zona marcada.`
+                          : STYLE_CHANGE_PATTERN.test(idea)
+                            ? "Este cambio parece de estilo. Para mejores resultados, elige “Rediseñar estampado”."
+                            : "Solo se reconstruirá la zona marcada. El resto del diseño se conserva."
+                      : "La IA ampliará tu idea con composición, estilo y restricciones."}
+                  </p>
+                  <span className="design-form-count" aria-hidden="true">
+                    {idea.length}/{IDEA_MAX_LENGTH}
+                  </span>
                 </div>
               </div>
-            ) : (
-              <>
-                <header className="design-workspace-head">
-                  <p className="design-eyebrow">
-                    {previousImage ? "Paso 2 · Ajustes" : "Paso 2 · Tu idea"}
-                  </p>
-                  <h2 id="design-workspace-title">
-                    {previousImage ? "Pide cambios sobre tu diseño" : "Cuéntanos qué quieres crear"}
-                  </h2>
-                  <p className="design-lead">
-                    {previousImage
-                      ? "Marca la zona que quieres cambiar y describe el ajuste. La IA reconstruirá solo esa zona y la integrará con la tela; el resto de tu diseño se conserva."
-                      : "Describe el diseño que imaginas. Lo aplicaremos sobre la prenda y la talla que elegiste."}
-                  </p>
-                </header>
 
-                {generationError ? (
-                  <p className="form-error" role="alert">
-                    {generationError}
-                  </p>
-                ) : null}
+              <fieldset className="design-suggestions" aria-label="Ideas de ejemplo">
+                {suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    className="design-suggestion"
+                    onClick={() => appendSuggestion(suggestion)}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </fieldset>
 
-                <form className="design-form" onSubmit={handleIdeaSubmit} noValidate>
-                  <div className="design-prompt-box">
-                    <label htmlFor="design-idea">
-                      {previousImage ? "Describe el cambio en la zona marcada" : "Describe tu idea"}
-                    </label>
-                    <textarea
-                      id="design-idea"
-                      ref={ideaRef}
-                      value={idea}
-                      maxLength={IDEA_MAX_LENGTH}
-                      placeholder={
-                        previousImage
-                          ? "Ejemplo: agrega árboles de Navidad blancos en esta zona."
-                          : "Ejemplo: un paisaje andino al atardecer, con líneas finas en el pecho."
-                      }
-                      aria-invalid={ideaError ? true : undefined}
-                      aria-describedby={
-                        ideaError ? "design-idea-hint design-idea-error" : "design-idea-hint"
-                      }
-                      onChange={(event) => {
-                        setIdea(event.target.value);
-                        if (ideaError) {
-                          setIdeaError(null);
-                        }
-                      }}
-                    />
-                    <div className="design-form-meta">
-                      <p id="design-idea-hint" className="form-hint">
-                        {previousImage
-                          ? "Solo se reconstruirá la zona marcada. El resto del diseño se conserva."
-                          : "La IA ampliará tu idea con composición, estilo y restricciones."}
-                      </p>
-                      <span className="design-form-count" aria-hidden="true">
-                        {idea.length}/{IDEA_MAX_LENGTH}
-                      </span>
-                    </div>
-                  </div>
+              {ideaError ? (
+                <p id="design-idea-error" className="form-field-error" role="alert">
+                  {ideaError}
+                </p>
+              ) : null}
 
-                  <fieldset className="design-suggestions" aria-label="Ideas de ejemplo">
-                    {suggestions.map((suggestion) => (
-                      <button
-                        key={suggestion}
-                        type="button"
-                        className="design-suggestion"
-                        onClick={() => appendSuggestion(suggestion)}
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </fieldset>
+              <div className="design-actions">
+                <button
+                  type="submit"
+                  className="button button-primary"
+                  disabled={generating}
+                  aria-busy={generating}
+                >
+                  {generating
+                    ? "Generando…"
+                    : previousImage
+                      ? revisionMode === "redesign"
+                        ? "Generar rediseño"
+                        : detectedText
+                          ? "Agregar texto"
+                          : "Aplicar en la zona"
+                      : "Generar propuesta"}
+                </button>
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={closeIdeaPanel}
+                  disabled={generating}
+                >
+                  Volver a la prenda
+                </button>
+              </div>
 
-                  {ideaError ? (
-                    <p id="design-idea-error" className="form-field-error" role="alert">
-                      {ideaError}
-                    </p>
-                  ) : null}
-
-                  <div className="design-actions">
-                    <button
-                      type="submit"
-                      className="button button-primary"
-                      disabled={generating}
-                      aria-busy={generating}
-                    >
-                      {generating ? "Generando…" : "Generar propuesta"}
-                    </button>
-                    <button
-                      type="button"
-                      className="button button-secondary"
-                      onClick={closeIdeaPanel}
-                      disabled={generating}
-                    >
-                      Volver a la prenda
-                    </button>
-                  </div>
-
-                  {generating ? (
-                    <p className="design-generating" role="status">
-                      Tu diseño se está generando…
-                    </p>
-                  ) : null}
-                </form>
-              </>
-            )}
+              {generating ? (
+                <p className="design-generating" role="status">
+                  Tu diseño se está generando…
+                </p>
+              ) : null}
+            </form>
           </div>
         </section>
       ) : (
         <>
-          <div className="garment-tabs-wrap">
-            <nav className="garment-tabs" aria-label="Tipo de prenda">
-              {CATEGORY_ORDER.map((category) => {
-                const count = MOCKUP_BASES.filter((base) => base.category === category).length;
-                const active = activeCategory === category;
-                return (
-                  <button
-                    key={category}
-                    type="button"
-                    className="garment-tab"
-                    aria-pressed={active}
-                    onClick={() => selectCategory(category)}
-                  >
-                    <span>{CATEGORY_LABELS[category]}</span>
-                    <span className="garment-tab-count">{count}</span>
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
+          <nav className="garment-tabs" aria-label="Tipo de prenda">
+            {CATEGORY_ORDER.map((category) => {
+              const count = MOCKUP_BASES.filter((base) => base.category === category).length;
+              const active = activeCategory === category;
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  className="garment-tab"
+                  aria-pressed={active}
+                  onClick={() => selectCategory(category)}
+                >
+                  <span>{CATEGORY_LABELS[category]}</span>
+                  <span className="garment-tab-count">{count}</span>
+                </button>
+              );
+            })}
+          </nav>
 
           <section className="garment-stage" aria-label="Selector de prenda">
             <button
@@ -729,7 +950,7 @@ export const GarmentSelector = ({
               <span className="garment-side-name">{getMockupBaseName(previousBase)}</span>
             </button>
 
-            <div className="garment-main">
+            <figure className="garment-main">
               <div className="garment-preview">
                 <Image
                   src={selectedBase.file}
@@ -739,14 +960,13 @@ export const GarmentSelector = ({
                   loading="eager"
                   fetchPriority="high"
                 />
-                <span className="garment-preview-badge">Vista previa</span>
                 <button
                   type="button"
                   className="garment-arrow garment-arrow-prev"
                   aria-label="Prenda anterior"
                   onClick={() => selectBase(previousBase.id)}
                 >
-                  <span aria-hidden="true">←</span>
+                  <ArrowLeftIcon />
                 </button>
                 <button
                   type="button"
@@ -754,10 +974,16 @@ export const GarmentSelector = ({
                   aria-label="Prenda siguiente"
                   onClick={() => selectBase(nextBase.id)}
                 >
-                  <span aria-hidden="true">→</span>
+                  <ArrowRightIcon />
                 </button>
               </div>
-            </div>
+              <figcaption className="garment-stage-caption">
+                <span className="garment-stage-name">{selectedName}</span>
+                <span className="garment-stage-meta">
+                  {selectedBase.categoryLabel} · Vista frontal
+                </span>
+              </figcaption>
+            </figure>
 
             <button
               type="button"
@@ -871,7 +1097,6 @@ export const GarmentSelector = ({
             aria-describedby="auth-dialog-description"
             tabIndex={-1}
           >
-            <p className="auth-dialog-eyebrow">Personalización</p>
             <h2 id="auth-dialog-title">Inicia sesión para personalizar</h2>
             <p id="auth-dialog-description">
               Conserva tu prenda, talla y color y continúa con tu idea de diseño.
