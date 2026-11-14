@@ -13,6 +13,9 @@ const nextConfig = {
     minimumCacheTTL: 86400,
     remotePatterns: [{ hostname: supabaseHostname, protocol: "https" }],
   },
+  outputFileTracingIncludes: {
+    "/api/personalization/mockup": ["./public/mockups/**/*"],
+  },
 };
 
 export default withPayload(nextConfig);

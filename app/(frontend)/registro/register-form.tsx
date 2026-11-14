@@ -79,13 +79,26 @@ const translateIssue = (field: string, message: string): string => {
   return message;
 };
 
+/** Only same-origin paths are accepted, so `next` cannot become an open redirect. */
+const safeNext = (next?: string): string | undefined => {
+  if (!next?.startsWith("/") || next.startsWith("//") || next.includes("\\")) {
+    return undefined;
+  }
+  return next;
+};
+
 /**
  * Public customer registration (HU-01). Empty or malformed fields are blocked
  * by the inputs and by Payload's own validation; duplicates and server errors
  * are reported with a specific message.
  */
-export const RegisterForm = () => {
+type RegisterFormProps = {
+  next?: string;
+};
+
+export const RegisterForm = ({ next }: RegisterFormProps) => {
   const router = useRouter();
+  const nextPath = safeNext(next);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [password, setPassword] = useState("");
@@ -163,13 +176,13 @@ export const RegisterForm = () => {
       });
 
       if (!login.ok) {
-        router.push("/login");
+        router.push(nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login");
         return;
       }
 
       // The success message lives on /cuenta: keeping it on /registro made it
       // disappear almost immediately when the authenticated page redirected.
-      router.push("/cuenta?bienvenida=1");
+      router.push(nextPath ?? "/cuenta?bienvenida=1");
       router.refresh();
     } catch {
       setError("No pudimos conectar con el servidor. Inténtalo de nuevo.");
@@ -280,7 +293,10 @@ export const RegisterForm = () => {
         </button>
       </form>
       <p className="form-footer">
-        ¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link>
+        ¿Ya tienes cuenta?{" "}
+        <Link href={nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login"}>
+          Inicia sesión
+        </Link>
       </p>
     </>
   );
