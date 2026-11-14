@@ -109,6 +109,13 @@ Las dos variables son de servidor. No usar `NEXT_PUBLIC_`, no ponerlas en compon
 de cliente y no subirlas a Git. Para la demo desplegada se usa una cuenta de equipo en
 Vercel, no el token personal de un integrante.
 
+El mismo token ejecuta la moderación `@cf/meta/llama-guard-3-8b`, que revisa cada idea
+antes de generar; no requiere variables adicionales. Las reglas deterministas de uso
+están en `src/lib/design-guard.ts` y se aplican en el navegador del personalizador y en
+`/api/personalization/mockup`. Se recomienda que cualquier otra ruta que llame al
+proveedor las evalúe antes de gastar cuota; `/api/ai/proposal` (HU-14) queda como
+propuesta para su responsable.
+
 Probar la conexión con:
 
 ```powershell
