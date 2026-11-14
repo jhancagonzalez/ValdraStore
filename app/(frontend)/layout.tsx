@@ -42,6 +42,7 @@ const FrontendLayout = async ({ children }: { children: ReactNode }) => {
           </Link>
           <nav className="site-nav" aria-label="Principal">
             <Link href="/catalogo">Catálogo</Link>
+            <Link href="/personalizar">Personalizar</Link>
             {user?.collection === "admins" ? (
               <>
                 <Link href="/admin">Panel</Link>

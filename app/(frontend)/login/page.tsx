@@ -6,16 +6,23 @@ import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Iniciar sesión" };
 
+const safeNext = (value: string | undefined): string | undefined => {
+  if (!value?.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
+    return undefined;
+  }
+  return value;
+};
+
 type LoginPageProps = {
   searchParams: Promise<{ next?: string }>;
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
-  const next = typeof params.next === "string" ? params.next : undefined;
+  const next = safeNext(typeof params.next === "string" ? params.next : undefined);
   const customer = await getSessionCustomer();
   if (customer) {
-    redirect("/cuenta");
+    redirect(next ?? "/cuenta");
   }
 
   return (
@@ -27,7 +34,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <Link href="/recuperar">¿Olvidaste tu contraseña?</Link>
       </p>
       <p className="form-footer">
-        ¿No tienes cuenta? <Link href="/registro">Crea una aquí</Link>
+        ¿No tienes cuenta?{" "}
+        <Link href={next ? `/registro?next=${encodeURIComponent(next)}` : "/registro"}>
+          Crea una aquí
+        </Link>
       </p>
     </main>
   );
