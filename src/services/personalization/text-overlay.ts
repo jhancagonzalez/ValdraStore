@@ -45,17 +45,17 @@ export const renderTextOverlay = async (
   const fill = textColor(options.idea, options.baseColorKey);
   const stroke = fill === "#111111" ? "#ffffff" : "#111111";
   const widthLimitedSize = (selectionRect.width * 0.88) / Math.max(1, text.length * 0.62);
-  const fontSize = Math.max(12, Math.round(Math.min(selectionRect.height * 0.56, widthLimitedSize)));
+  const fontSize = Math.max(
+    12,
+    Math.round(Math.min(selectionRect.height * 0.56, widthLimitedSize)),
+  );
   const strokeWidth = Math.max(2, Math.round(fontSize * 0.045));
   const mask = await selectionMask(selectionRect.width, selectionRect.height);
 
   let working = previousImage;
 
   if (options.clearSelection) {
-    const base = await sharp(baseImage)
-      .resize(width, height, { fit: "fill" })
-      .png()
-      .toBuffer();
+    const base = await sharp(baseImage).resize(width, height, { fit: "fill" }).png().toBuffer();
     const basePatch = await sharp(base).extract(selectionRect).png().toBuffer();
     const maskedBase = await sharp(basePatch)
       .ensureAlpha()

@@ -6,10 +6,7 @@ import { MAX_DESIGN_BRIEF_LENGTH } from "@/lib/design-brief";
 import { extractDesignText } from "@/lib/design-text";
 import { getMockupBase, getMockupBaseName, isMockupSize } from "@/lib/mockup-bases";
 import { normalizeReferenceImage } from "@/lib/mockup-image";
-import {
-  DEFAULT_REVISION_SELECTION,
-  parseMockupSelection,
-} from "@/lib/mockup-selection";
+import { DEFAULT_REVISION_SELECTION, parseMockupSelection } from "@/lib/mockup-selection";
 import { stripControlCharacters } from "@/lib/sanitize";
 import {
   buildInpaintingMask,
@@ -195,8 +192,7 @@ const rewriteIdea = async (idea: string): Promise<string> => {
         choices?: Array<{ message?: { content?: unknown } }>;
       };
     };
-    const content =
-      body.result?.choices?.[0]?.message?.content ?? body.result?.response;
+    const content = body.result?.choices?.[0]?.message?.content ?? body.result?.response;
 
     return typeof content === "string" && content.trim().length > 0
       ? content.trim().replace(/^["']|["']$/g, "")
@@ -605,9 +601,7 @@ export async function POST(request: Request) {
   };
 
   if (mode === "revise") {
-    const rawReference = body.referenceImage
-      ? parseReferenceImage(body.referenceImage)
-      : null;
+    const rawReference = body.referenceImage ? parseReferenceImage(body.referenceImage) : null;
 
     if (!rawReference) {
       return errorResponse("Falta la propuesta anterior para aplicar cambios.", 400);

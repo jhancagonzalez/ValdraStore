@@ -3,9 +3,7 @@ import { appendDesignBrief, MAX_DESIGN_BRIEF_LENGTH } from "./design-brief";
 
 describe("appendDesignBrief", () => {
   it("acumula la idea inicial y el ajuste", () => {
-    expect(appendDesignBrief("una selva", "hazla realista")).toBe(
-      "una selva. hazla realista",
-    );
+    expect(appendDesignBrief("una selva", "hazla realista")).toBe("una selva. hazla realista");
   });
 
   it("no supera el máximo permitido", () => {

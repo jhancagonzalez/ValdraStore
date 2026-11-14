@@ -104,9 +104,7 @@ export const isSleeveSelection = (
   const centerY = selection.y + selection.height / 2;
   const side = centerX < 0.3 || centerX > 0.7;
   const vertical =
-    category === "hoodies"
-      ? centerY > 0.3 && centerY < 0.8
-      : centerY > 0.22 && centerY < 0.62;
+    category === "hoodies" ? centerY > 0.3 && centerY < 0.8 : centerY > 0.22 && centerY < 0.62;
 
   return side && vertical;
 };

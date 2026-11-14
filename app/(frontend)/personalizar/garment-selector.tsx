@@ -21,7 +21,12 @@ import {
 
 const IDEA_MAX_LENGTH = 600;
 const IDEA_SUGGESTIONS = ["Floral minimalista", "Geométrico", "Retro", "Tipografía pequeña"];
-const REVISION_SUGGESTIONS = ["Más minimalista", "Más color", "Cambiar composición", "Añadir textura"];
+const REVISION_SUGGESTIONS = [
+  "Más minimalista",
+  "Más color",
+  "Cambiar composición",
+  "Añadir textura",
+];
 const ZONE_SUGGESTIONS = ["Agregar elemento", "Quitar elemento", "Cambiar color", "Agregar texto"];
 const STYLE_CHANGE_PATTERN =
   /\b(realista|realistas|realistic|acuarela|watercolor|minimalista|minimalist|estilo|style|profesional|professional|moderno|modern|vintage|retro|textura|texture|geométrico|geometric)\b/i;
@@ -108,8 +113,7 @@ export const GarmentSelector = ({
     categoryBases[(currentIndex - 1 + categoryBases.length) % categoryBases.length];
   const nextBase = categoryBases[(currentIndex + 1) % categoryBases.length];
   const selectedName = getMockupBaseName(selectedBase);
-  const detectedText =
-    previousImage && revisionMode === "zone" ? extractDesignText(idea) : null;
+  const detectedText = previousImage && revisionMode === "zone" ? extractDesignText(idea) : null;
   const suggestions = previousImage
     ? revisionMode === "redesign"
       ? REVISION_SUGGESTIONS
@@ -445,14 +449,18 @@ export const GarmentSelector = ({
     }
 
     const isRedesign = revisionMode === "redesign";
-    const strategy = !previousImage ? undefined : isRedesign ? "redesign" : detectedText ? "text" : "inpaint";
+    const strategy = !previousImage
+      ? undefined
+      : isRedesign
+        ? "redesign"
+        : detectedText
+          ? "text"
+          : "inpaint";
 
     if (
       previousImage &&
       !isRedesign &&
-      (!selection ||
-        selection.width < MIN_SELECTION_SIZE ||
-        selection.height < MIN_SELECTION_SIZE)
+      (!selection || selection.width < MIN_SELECTION_SIZE || selection.height < MIN_SELECTION_SIZE)
     ) {
       setIdeaError("Marca la zona del diseño que quieres cambiar.");
       return;
@@ -719,7 +727,9 @@ export const GarmentSelector = ({
               {previousImage ? "Propuesta anterior" : selectedName}
             </p>
             <p className="design-preview-meta">
-              {previousImage ? `${selectedName} · Talla ${selectedSize}` : `Talla ${selectedSize} · ${selectedBase.categoryLabel}`}
+              {previousImage
+                ? `${selectedName} · Talla ${selectedSize}`
+                : `Talla ${selectedSize} · ${selectedBase.categoryLabel}`}
             </p>
             {previousImage && !generatedImage && revisionMode === "redesign" ? (
               <p className="design-redesign-note">
@@ -747,9 +757,7 @@ export const GarmentSelector = ({
                   Arrastra sobre la imagen o elige una zona. La IA la integrará con la tela y
                   conservará el resto.
                 </p>
-                <p className="form-hint">
-                  Para cambios en mangas, usa «Rediseñar estampado».
-                </p>
+                <p className="form-hint">Para cambios en mangas, usa «Rediseñar estampado».</p>
               </fieldset>
             ) : null}
             <button

@@ -58,19 +58,17 @@ describe("resolveMockupSelection", () => {
   });
 
   it("detecta una manga en camiseta y en hoodie", () => {
-    expect(
-      isSleeveSelection({ x: 0.04, y: 0.28, width: 0.24, height: 0.32 }, "camisetas"),
-    ).toBe(true);
-    expect(
-      isSleeveSelection({ x: 0.72, y: 0.4, width: 0.24, height: 0.32 }, "hoodies"),
-    ).toBe(true);
+    expect(isSleeveSelection({ x: 0.04, y: 0.28, width: 0.24, height: 0.32 }, "camisetas")).toBe(
+      true,
+    );
+    expect(isSleeveSelection({ x: 0.72, y: 0.4, width: 0.24, height: 0.32 }, "hoodies")).toBe(true);
   });
 
   it("no bloquea pecho ni bajo", () => {
     expect(isSleeveSelection(DEFAULT_REVISION_SELECTION, "camisetas")).toBe(false);
-    expect(
-      isSleeveSelection({ x: 0.22, y: 0.62, width: 0.56, height: 0.3 }, "camisetas"),
-    ).toBe(false);
+    expect(isSleeveSelection({ x: 0.22, y: 0.62, width: 0.56, height: 0.3 }, "camisetas")).toBe(
+      false,
+    );
   });
 
   it("da contexto suficiente a una selección pequeña", () => {
