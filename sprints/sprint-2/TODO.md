@@ -27,8 +27,10 @@ Notion conserva la fuente de verdad y este resumen debe actualizarse.
 - La imagen de referencia es una imagen JPEG/PNG/WebP de hasta 10 MB.
 - La imagen de referencia se imprime tal cual sobre la prenda; el fondo claro se recorta.
   Si el fondo es complejo, se usa como entrada del modelo generativo.
-- Las zonas grandes de edición usan el modelo de edición sobre la propuesta anterior; el
-  inpainting queda para zonas pequeñas.
+- Las revisiones añaden elementos por capa sobre la propuesta anterior o texto con
+  una fuente. Se retiraron el inpainting y la regeneración completa de revisiones
+  tras la validación local del 15-nov-2026. El usuario marca una zona libre y puede
+  moverla y ajustar su ancho/alto. No se modifica ni elimina contenido existente.
 - Mientras se genera, la interfaz muestra «Tu diseño se está generando…».
 - Cada integrante trabaja en su rama y abre un PR a `integracion`.
 - Las propuestas y su historial (HU-16) viven solo en el navegador; recargar la página

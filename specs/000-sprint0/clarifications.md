@@ -24,6 +24,26 @@ cliente.
 | C-16 | Protección del cambio de correo en HU-04 | Resuelta: confirmar contraseña actual | El usuario aprobó el 2026-10-26 que cambiar el correo electrónico exija la contraseña actual, porque ese correo es el identificador de acceso y una sesión robada podría cambiarlo y luego restablecer la contraseña. Se descartó activar `auth.verify`: exigiría correo saliente ya operativo y cambiaría el flujo de registro de HU-01. La regla se aplica en el servidor: además del formulario, el hook `beforeChange` de `customers` rechaza cualquier cambio de correo sin la marca de verificación en el contexto de la petición, que solo puede poner la Server Action. Un administrador sigue editando desde el panel. |
 | C-17 | Proveedor y alcance de IA del Sprint 2 (HU-14) | Requiere aprobación; discrepancia con C-01 registrada | Los documentos del Sprint 2 (`sprints/sprint-2/README.md`, `PLAN.md`, `TODO.md`) adoptan **Cloudflare Workers AI** con el modelo `@cf/black-forest-labs/flux-2-klein-4b`, cuenta gratuita de 10.000 neuronos al día y sin fallback pagado (D1), y habilitan la generación de imágenes. Eso difiere de C-01, que fija OpenRouter y mantiene la generación desactivada hasta verificar un endpoint gratuito; la discrepancia se registra aquí y no se asume como aprobada. La prueba técnica del modelo devolvió una imagen de 1024×1024. HU-14 implementa el adaptador `AiProvider` con `CloudflareAiProvider` y un proveedor falso solo para pruebas; no existe fallback pagado, el error de cuota se informa al cliente y la cuota de 3 generaciones por usuario al día queda fuera de esta fase (D7). La idea de diseño no puede estar vacía (D8) y crear la propuesta exige sesión de cliente (D6). Pendiente de aprobación: términos del modelo y política de datos (D2); mientras no haya respuesta se envían solo imágenes sintéticas. Falta también definir la persistencia de propuestas (modelo de datos del Sprint 2 sin aprobar) y la cuota. Al aprobarse esta entrada, actualizar la línea de IA de `AGENTS.md` y cerrar la parte de C-01 que corresponda. |
 
+## Validación local posterior — HU-16 (2026-11-15)
+
+El usuario autorizó en esta conversación una prueba sintética de conservación de
+dibujos (pandas/árboles y balón/cancha), y después pidió integrar el ajuste para
+verlo en el personalizador. También autorizó crear un cliente sintético y hacer
+una segunda prueba con hoodie. Se implementa localmente «Agregar elementos»:
+generar únicamente el elemento nuevo y componerlo en la zona elegida sobre la
+versión anterior, con salida PNG y sin fallback a regenerar la prenda. Es una
+adición a HU-16 autorizada para esta validación, no una aprobación general de envío
+de imágenes reales ni de gasto, ni una sustitución del enfoque de generación
+inicial de D3. C-17 y las demás decisiones generales pendientes no se cierran con
+esta prueba. Evidencia y límites en
+`sprints/sprint-2/evidence/HU-16-local-edit-spike.md`.
+
+Después de validar visualmente el hoodie con montaña y sol, el usuario pidió
+integrar el resultado y quitar el código anterior que no funcionaba. Se retiraron
+los dos caminos de revisión que reconstruían contenido (inpainting y edición
+completa); permanecen generación inicial, adición por capa, texto e historial.
+La selección libre añade controles para mover y cambiar el tamaño del área.
+
 ## Datos de referencia
 
 - Sprint 0: preparación de herramientas, repositorio, base de datos, arquitectura e

@@ -14,11 +14,7 @@ import {
   type MockupCategory,
   type MockupSize,
 } from "@/lib/mockup-bases";
-import {
-  isSleeveSelection,
-  type MockupSelection,
-  REVISION_ZONE_PRESETS,
-} from "@/lib/mockup-selection";
+import { type MockupSelection, REVISION_ZONE_PRESETS } from "@/lib/mockup-selection";
 import {
   addProposalVersion,
   compareProposalWith,
@@ -36,15 +32,12 @@ import { ReferenceUpload } from "./reference-upload";
 
 const IDEA_MAX_LENGTH = 600;
 const IDEA_SUGGESTIONS = ["Floral minimalista", "Geométrico", "Retro", "Tipografía pequeña"];
-const REVISION_SUGGESTIONS = [
-  "Más minimalista",
-  "Más color",
-  "Cambiar composición",
-  "Añadir textura",
+const ADDITION_SUGGESTIONS = [
+  "Una cancha de fútbol",
+  "Tres árboles",
+  "Un sol amarillo",
+  "Agregar texto",
 ];
-const ZONE_SUGGESTIONS = ["Agregar elemento", "Quitar elemento", "Cambiar color", "Agregar texto"];
-const STYLE_CHANGE_PATTERN =
-  /\b(realista|realistas|realistic|acuarela|watercolor|minimalista|minimalist|estilo|style|profesional|professional|moderno|modern|vintage|retro|textura|texture|geométrico|geometric)\b/i;
 const CATEGORY_ORDER: MockupCategory[] = ["camisetas", "hoodies"];
 const CATEGORY_LABELS: Record<MockupCategory, string> = {
   camisetas: "Camisetas",
@@ -94,14 +87,12 @@ const CLIENT_GENERATION_TIMEOUT_MS = 200_000;
 type FormIssue = {
   title: string;
   message: string;
-  suggestRedesign?: boolean;
   suggestedColorKey?: string;
 };
 
-const formIssue = (title: string, message: string, suggestRedesign = false): FormIssue => ({
+const formIssue = (title: string, message: string): FormIssue => ({
   title,
   message,
-  suggestRedesign,
 });
 
 type GarmentSelectorProps = {
@@ -135,8 +126,7 @@ export const GarmentSelector = ({
   const [previousImage, setPreviousImage] = useState<string | null>(null);
   const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
   const [designBrief, setDesignBrief] = useState("");
-  const [revisionMode, setRevisionMode] = useState<"zone" | "redesign">("zone");
-  const [lastStrategy, setLastStrategy] = useState<"inpaint" | "text" | "redesign" | null>(null);
+  const [lastStrategy, setLastStrategy] = useState<"addition" | "text" | null>(null);
   const [selection, setSelection] = useState<MockupSelection | null>(null);
   const [selectionZone, setSelectionZone] = useState<string | null>(null);
   const [lastZoneLabel, setLastZoneLabel] = useState<string | null>(null);
@@ -171,12 +161,8 @@ export const GarmentSelector = ({
     categoryBases[(currentIndex - 1 + categoryBases.length) % categoryBases.length];
   const nextBase = categoryBases[(currentIndex + 1) % categoryBases.length];
   const selectedName = getMockupBaseName(selectedBase);
-  const detectedText = previousImage && revisionMode === "zone" ? extractDesignText(idea) : null;
-  const suggestions = previousImage
-    ? revisionMode === "redesign"
-      ? REVISION_SUGGESTIONS
-      : ZONE_SUGGESTIONS
-    : IDEA_SUGGESTIONS;
+  const detectedText = previousImage ? extractDesignText(idea) : null;
+  const suggestions = previousImage ? ADDITION_SUGGESTIONS : IDEA_SUGGESTIONS;
   const nextPath = `/personalizar?base=${encodeURIComponent(selectedBase.id)}&size=${
     selectedSize ?? ""
   }`;
@@ -338,7 +324,6 @@ export const GarmentSelector = ({
     setGeneratedPrompt(null);
     setDesignBrief("");
     setReferenceImage(null);
-    setRevisionMode("zone");
     setLastStrategy(null);
     setSelection(null);
     setSelectionZone(null);
@@ -502,10 +487,18 @@ export const GarmentSelector = ({
     setIdeaError(null);
   };
 
-  const changeRevisionMode = (mode: "zone" | "redesign") => {
-    setRevisionMode(mode);
+  const adjustSelection = (patch: Partial<MockupSelection>) => {
+    setSelection((current) => {
+      if (!current) return current;
+      const next = { ...current, ...patch };
+      next.width = Math.max(MIN_SELECTION_SIZE, clamp01(next.width));
+      next.height = Math.max(MIN_SELECTION_SIZE, clamp01(next.height));
+      next.x = Math.max(0, Math.min(next.x, 1 - next.width));
+      next.y = Math.max(0, Math.min(next.y, 1 - next.height));
+      return next;
+    });
+    setSelectionZone("custom");
     setIdeaError(null);
-    setGenerationError(null);
   };
 
   const selectionPoint = (event: PointerEvent<HTMLDivElement>) => {
@@ -517,7 +510,7 @@ export const GarmentSelector = ({
   };
 
   const handleSelectionPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (!previousImage || generatedImage) {
+    if (!previousImage || generatedImage || generating) {
       return;
     }
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -578,54 +571,23 @@ export const GarmentSelector = ({
       return;
     }
 
-    const isRedesign = revisionMode === "redesign";
-    const strategy = !previousImage
-      ? undefined
-      : isRedesign
-        ? "redesign"
-        : detectedText
-          ? "text"
-          : "inpaint";
+    const strategy = previousImage ? (detectedText ? "text" : "addition") : undefined;
 
     if (
       previousImage &&
-      !isRedesign &&
       (!selection || selection.width < MIN_SELECTION_SIZE || selection.height < MIN_SELECTION_SIZE)
     ) {
       setIdeaError(
         formIssue(
           "Marca la zona que quieres cambiar",
-          "Arrastra sobre la imagen o elige «Pecho» o «Bajo». Para cambiar todo el diseño, usa «Rediseñar estampado».",
-          true,
-        ),
-      );
-      return;
-    }
-
-    if (
-      previousImage &&
-      !isRedesign &&
-      selection &&
-      isSleeveSelection(selection, selectedBase.category)
-    ) {
-      setIdeaError(
-        formIssue(
-          "Las mangas no se editan por zona",
-          "Para cambios en las mangas, usa «Rediseñar estampado».",
-          true,
+          "Arrastra sobre la imagen o elige «Pecho» o «Bajo». Para otro diseño, inicia una nueva personalización.",
         ),
       );
       return;
     }
 
     // Normas de uso: mismas reglas que el servidor, sin gastar cuota.
-    const guardMode: DesignGuardMode = !previousImage
-      ? "create"
-      : isRedesign
-        ? "redesign"
-        : detectedText
-          ? "text"
-          : "zone";
+    const guardMode: DesignGuardMode = !previousImage ? "create" : detectedText ? "text" : "zone";
     const guardIssue = checkDesignRequest({
       baseColorKey: selectedBase.colorKey,
       idea: trimmedIdea,
@@ -639,12 +601,11 @@ export const GarmentSelector = ({
       return;
     }
 
-    const zoneLabel = isRedesign
-      ? "Estampado completo"
-      : selectionZone && selectionZone !== "custom"
+    const zoneLabel =
+      selectionZone && selectionZone !== "custom"
         ? (REVISION_ZONE_PRESETS.find((zone) => zone.id === selectionZone)?.label ?? null)
         : previousImage
-          ? "Zona personalizada"
+          ? "Selección libre"
           : null;
 
     const requestId = generationIdRef.current + 1;
@@ -673,11 +634,10 @@ export const GarmentSelector = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           baseId: selectedBase.id,
-          designBrief: previousImage ? designBrief : undefined,
           idea: trimmedIdea,
           mode: previousImage ? "revise" : "create",
           referenceImage: previousImage ?? referenceImage ?? undefined,
-          selection: previousImage && !isRedesign ? selection : undefined,
+          selection: previousImage ? selection : undefined,
           size: selectedSize,
           strategy,
         }),
@@ -688,7 +648,6 @@ export const GarmentSelector = ({
         image?: unknown;
         message?: unknown;
         prompt?: unknown;
-        suggestRedesign?: unknown;
         suggestedColorKey?: unknown;
         title?: unknown;
       } | null;
@@ -701,7 +660,6 @@ export const GarmentSelector = ({
       if (response.status === 422 && typeof data?.title === "string") {
         setIdeaError({
           message: typeof data.message === "string" ? data.message : String(data.error ?? ""),
-          suggestRedesign: data.suggestRedesign === true,
           suggestedColorKey:
             typeof data.suggestedColorKey === "string" ? data.suggestedColorKey : undefined,
           title: data.title,
@@ -788,13 +746,6 @@ export const GarmentSelector = ({
 
   const ideaErrorActions: DesignNoticeAction[] = [];
 
-  if (ideaError?.suggestRedesign && previousImage) {
-    ideaErrorActions.push({
-      label: "Usar «Rediseñar estampado»",
-      onClick: () => changeRevisionMode("redesign"),
-    });
-  }
-
   if (ideaError?.suggestedColorKey) {
     const target = MOCKUP_BASES.find(
       (base) =>
@@ -847,7 +798,6 @@ export const GarmentSelector = ({
     setGenerationError(null);
     setIdeaError(null);
     setIdea("");
-    setRevisionMode("zone");
     setLastStrategy(null);
     setSelection(null);
     setSelectionZone(null);
@@ -949,13 +899,11 @@ export const GarmentSelector = ({
             ) : (
               <p className="design-result-note">
                 Vista previa de prueba.{" "}
-                {lastStrategy === "redesign"
-                  ? "Se generó un estampado nuevo sobre la misma prenda; el diseño anterior no se conservó."
-                  : lastStrategy === "text"
-                    ? "El texto se agregó con una fuente legible; el resto del diseño anterior se conservó."
-                    : lastStrategy === "inpaint"
-                      ? "El cambio se integró en la zona marcada; el resto del diseño anterior se conservó."
-                      : "La propuesta se generó a partir de tu idea."}{" "}
+                {lastStrategy === "text"
+                  ? "El texto se agregó con una fuente legible; el resto del diseño anterior se conservó."
+                  : lastStrategy === "addition"
+                    ? "El elemento se agregó en la zona marcada. Los píxeles fuera de esa zona se conservaron; el dibujo nuevo puede cubrir lo que hubiera dentro."
+                    : "La propuesta se generó a partir de tu idea."}{" "}
                 Todavía no está registrada: si sales de esta página antes de aprobarla, se perderá.
                 Descárgala si quieres conservarla.
               </p>
@@ -1015,7 +963,7 @@ export const GarmentSelector = ({
                 sizes="(max-width: 900px) 70vw, 480px"
                 unoptimized={Boolean(previousImage)}
               />
-              {previousImage && !generatedImage && revisionMode === "zone" ? (
+              {previousImage && !generatedImage ? (
                 <div
                   className="design-selection-layer"
                   aria-hidden="true"
@@ -1051,16 +999,24 @@ export const GarmentSelector = ({
                 ? `${selectedName} · Talla ${selectedSize}`
                 : `Talla ${selectedSize} · ${selectedBase.categoryLabel}`}
             </p>
-            {previousImage && !generatedImage && revisionMode === "redesign" ? (
-              <p className="design-redesign-note">
-                Se generará un estampado nuevo sobre la misma prenda. El diseño anterior no se
-                conserva.
-              </p>
-            ) : null}
-            {previousImage && !generatedImage && revisionMode === "zone" ? (
-              <fieldset className="design-zone-picker">
+            {previousImage && !generatedImage ? (
+              <fieldset className="design-zone-picker" disabled={generating}>
                 <legend>Zona a cambiar</legend>
                 <div className="design-zone-options">
+                  <button
+                    type="button"
+                    className="design-zone"
+                    aria-pressed={selectionZone === "custom"}
+                    onClick={() => {
+                      setSelection(
+                        (current) => current ?? { x: 0.58, y: 0.28, width: 0.12, height: 0.12 },
+                      );
+                      setSelectionZone("custom");
+                      setIdeaError(null);
+                    }}
+                  >
+                    Selección libre
+                  </button>
                   {REVISION_ZONE_PRESETS.map((zone) => (
                     <button
                       key={zone.id}
@@ -1073,11 +1029,75 @@ export const GarmentSelector = ({
                     </button>
                   ))}
                 </div>
+                {selection ? (
+                  <div className="design-zone-adjustments">
+                    <fieldset className="design-zone-options" aria-label="Mover la zona">
+                      <button
+                        type="button"
+                        className="design-zone"
+                        aria-label="Mover a la izquierda"
+                        onClick={() => adjustSelection({ x: selection.x - 0.02 })}
+                      >
+                        ←
+                      </button>
+                      <button
+                        type="button"
+                        className="design-zone"
+                        aria-label="Mover hacia arriba"
+                        onClick={() => adjustSelection({ y: selection.y - 0.02 })}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        className="design-zone"
+                        aria-label="Mover hacia abajo"
+                        onClick={() => adjustSelection({ y: selection.y + 0.02 })}
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        className="design-zone"
+                        aria-label="Mover a la derecha"
+                        onClick={() => adjustSelection({ x: selection.x + 0.02 })}
+                      >
+                        →
+                      </button>
+                    </fieldset>
+                    <label>
+                      Ancho de la zona
+                      <input
+                        type="range"
+                        min="2"
+                        max="100"
+                        value={Math.round(selection.width * 100)}
+                        onChange={(event) =>
+                          adjustSelection({ width: Number(event.target.value) / 100 })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Alto de la zona
+                      <input
+                        type="range"
+                        min="2"
+                        max="100"
+                        value={Math.round(selection.height * 100)}
+                        onChange={(event) =>
+                          adjustSelection({ height: Number(event.target.value) / 100 })
+                        }
+                      />
+                    </label>
+                  </div>
+                ) : null}
                 <p className="form-hint">
-                  Arrastra sobre la imagen o elige una zona. La IA la integrará con la tela y
-                  conservará el resto.
+                  Marca espacio libre para el elemento nuevo. Lo que quede fuera se conserva; el
+                  elemento puede tapar contenido dentro de la zona.
                 </p>
-                <p className="form-hint">Para cambios en mangas, usa «Rediseñar estampado».</p>
+                <p className="form-hint">
+                  Arrastra sobre la prenda para marcar una selección libre.
+                </p>
               </fieldset>
             ) : null}
             <button
@@ -1098,47 +1118,18 @@ export const GarmentSelector = ({
               </h2>
               <p className="design-lead">
                 {previousImage
-                  ? revisionMode === "redesign"
-                    ? "Describe el nuevo estilo del estampado. Se generará una versión nueva sobre la misma prenda; el diseño anterior no se conserva."
-                    : "Marca la zona que quieres cambiar y describe el ajuste. La IA reconstruirá solo esa zona y la integrará con la tela; el resto de tu diseño se conserva."
+                  ? "Marca dónde cabe el elemento nuevo y describe solo lo que quieres agregar. Conservaremos el diseño fuera de esa zona."
                   : "Describe el diseño que imaginas. Lo aplicaremos sobre la prenda y la talla que elegiste."}
               </p>
             </header>
 
             <form className="design-form" ref={formRef} onSubmit={handleIdeaSubmit} noValidate>
-              {previousImage ? (
-                <fieldset className="design-revision-mode">
-                  <legend>Cómo aplicar el cambio</legend>
-                  <div className="design-revision-options">
-                    <button
-                      type="button"
-                      className="design-revision-option"
-                      aria-pressed={revisionMode === "zone"}
-                      onClick={() => changeRevisionMode("zone")}
-                    >
-                      <strong>Editar la zona</strong>
-                      <span>Conserva el diseño anterior. Ideal para agregar un elemento.</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="design-revision-option"
-                      aria-pressed={revisionMode === "redesign"}
-                      onClick={() => changeRevisionMode("redesign")}
-                    >
-                      <strong>Rediseñar estampado</strong>
-                      <span>Crea una versión nueva. Ideal para cambiar el estilo.</span>
-                    </button>
-                  </div>
-                </fieldset>
-              ) : null}
               <div className="design-prompt-box">
                 <label htmlFor="design-idea">
                   {previousImage
-                    ? revisionMode === "redesign"
-                      ? "Describe el nuevo estilo"
-                      : detectedText
-                        ? "Texto a agregar"
-                        : "Describe el cambio en la zona marcada"
+                    ? detectedText
+                      ? "Texto a agregar"
+                      : "Describe solo el elemento nuevo"
                     : "Describe tu idea"}
                 </label>
                 <textarea
@@ -1148,11 +1139,9 @@ export const GarmentSelector = ({
                   maxLength={IDEA_MAX_LENGTH}
                   placeholder={
                     previousImage
-                      ? revisionMode === "redesign"
-                        ? "Ejemplo: haz que los árboles se vean realistas."
-                        : detectedText
-                          ? "Ejemplo: I LOVE YOU"
-                          : "Ejemplo: agrega árboles de Navidad blancos en esta zona."
+                      ? detectedText
+                        ? "Ejemplo: I LOVE YOU"
+                        : "Ejemplo: un sol amarillo con rayos cortos."
                       : "Ejemplo: un paisaje andino al atardecer, con líneas finas en el pecho."
                   }
                   aria-invalid={ideaError ? true : undefined}
@@ -1169,13 +1158,9 @@ export const GarmentSelector = ({
                 <div className="design-form-meta">
                   <p id="design-idea-hint" className="form-hint">
                     {previousImage
-                      ? revisionMode === "redesign"
-                        ? "Se generará un estampado nuevo sobre la misma prenda; el diseño anterior no se conserva."
-                        : detectedText
-                          ? `Texto detectado: “${detectedText}”. Se agregará con una fuente legible en la zona marcada.`
-                          : STYLE_CHANGE_PATTERN.test(idea)
-                            ? "Este cambio parece de estilo. Para mejores resultados, elige “Rediseñar estampado”."
-                            : "Solo se reconstruirá la zona marcada. El resto del diseño se conserva."
+                      ? detectedText
+                        ? `Texto detectado: “${detectedText}”. Se agregará con una fuente legible en la zona marcada.`
+                        : "Elige una zona sin dibujos que quieras conservar. El elemento aún no se adapta automáticamente a los pliegues."
                       : "La IA ampliará tu idea con composición, estilo y restricciones."}
                   </p>
                   <span className="design-form-count" aria-hidden="true">
@@ -1254,11 +1239,9 @@ export const GarmentSelector = ({
                   {generating
                     ? "Generando…"
                     : previousImage
-                      ? revisionMode === "redesign"
-                        ? "Generar rediseño"
-                        : detectedText
-                          ? "Agregar texto"
-                          : "Aplicar en la zona"
+                      ? detectedText
+                        ? "Agregar texto"
+                        : "Agregar al diseño"
                       : "Generar propuesta"}
                 </button>
                 {previousImage && currentProposal ? (

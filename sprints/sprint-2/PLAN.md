@@ -1,5 +1,14 @@
 # Plan de trabajo — Sprint 2
 
+> **Actualización de HU-16 (15-nov-2026):** el usuario autorizó sustituir la edición
+> anterior por adiciones por capa y retirar los caminos que reconstruían el diseño.
+> La implementación local solo añade elementos nuevos o texto en la zona elegida;
+> no usa inpainting ni regeneración completa para revisiones. Las secciones
+> anteriores de corrección por inpainting/rediseño que siguen en este documento
+> son antecedentes y quedan sustituidas para HU-16 por esta decisión y la
+> [evidencia de integración](evidence/HU-16-local-edit-spike.md). La generación
+> inicial no cambia y las decisiones generales de C-17 siguen pendientes.
+
 > **Actualización (13-nov-2026):** el reparto de responsables está sincronizado con
 > Notion. El enfoque técnico queda definido: **Cloudflare Workers AI** con
 > `@cf/black-forest-labs/flux-2-klein-4b`, **prendas base predefinidas** y generación

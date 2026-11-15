@@ -12,7 +12,7 @@
  * de toda la prenda en el modo por zona).
  */
 
-export type DesignGuardMode = "create" | "zone" | "redesign" | "text";
+export type DesignGuardMode = "create" | "zone" | "text";
 
 export type DesignGuardCode =
   | "empty"
@@ -32,8 +32,6 @@ export type DesignGuardIssue = {
   message: string;
   /** Clave de color de una prenda base que cumple lo pedido (para ofrecer el cambio). */
   suggestedColorKey?: string;
-  /** La petición funciona mejor con «Rediseñar estampado». */
-  suggestRedesign?: boolean;
 };
 
 export type DesignGuardInput = {
@@ -45,7 +43,7 @@ export type DesignGuardInput = {
   selectionArea?: number;
 };
 
-/** Por encima de esta área el inpainting reconstruye la prenda en lugar del estampado. */
+/** Mantiene las adiciones acotadas a una zona de la imagen. */
 export const MAX_ZONE_AREA = 0.45;
 
 const MIN_IDEA_CHARACTERS = 3;
@@ -397,9 +395,8 @@ export const checkDesignRequest = ({
         ...issue(
           "whole-garment-zone",
           "Ese cambio es para todo el diseño",
-          "«Editar la zona» solo modifica un área pequeña. Para cambiar todo el estampado usa «Rediseñar estampado».",
+          "Este flujo agrega elementos en una zona libre. Para cambiar todo el estampado inicia una nueva personalización.",
         ),
-        suggestRedesign: true,
       };
     }
 
@@ -408,9 +405,8 @@ export const checkDesignRequest = ({
         ...issue(
           "zone-too-large",
           "La zona marcada es muy grande",
-          "Marca un área más pequeña (por ejemplo «Pecho») o usa «Rediseñar estampado» para cambiar todo el diseño.",
+          "Marca un área más pequeña con la selección libre o elige «Detalle superior».",
         ),
-        suggestRedesign: true,
       };
     }
   }

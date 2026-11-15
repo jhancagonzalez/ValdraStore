@@ -47,6 +47,17 @@ este resumen debe actualizarse; Notion conserva la fuente de verdad.
 
 ## Tecnología de IA
 
+**Actualización local de HU-16 (15-nov-2026):** las revisiones ahora añaden un
+elemento generado por separado, o texto con una fuente, sobre la propuesta anterior.
+La zona se marca por arrastre libre o con atajos y se puede mover/redimensionar.
+Se retiraron el inpainting de Stable Diffusion 1.5 y la regeneración completa de
+revisiones, a petición del usuario después de validar el hoodie con montaña y sol.
+El PNG conserva los píxeles exteriores a la selección; el elemento puede tapar
+contenido dentro de ella y no se adapta automáticamente a pliegues. Modificar o
+borrar un objeto existente queda fuera de este camino. La generación inicial sigue
+con FLUX. Evidencia: [prueba e integración de HU-16](evidence/HU-16-local-edit-spike.md).
+Esta validación local no marca la historia como terminada ni cierra C-17.
+
 - **Proveedor:** Cloudflare Workers AI.
 - **Modelo:** `@cf/black-forest-labs/flux-2-klein-4b`.
 - **Costo:** cuenta gratuita con 10.000 neuronos por día; sin tarjeta y sin fallback
