@@ -12,7 +12,7 @@ Criterios transcritos del [Product Backlog de Notion](https://app.notion.com/p/4
 | HU-14 | Recibir una propuesta generada por IA | 8 | Must Have | Kevin Burgos | En construcción |
 | HU-15 | Ver la propuesta sobre un mockup | 5 | Must Have | Andrés Valencia | En construcción |
 | HU-16 | Solicitar modificaciones | 3 | Should Have | Daniel Cárdenas | En construcción |
-| HU-17 | Aprobar la propuesta final | 3 | Must Have | Emanuel Giraldo | En construcción |
+| HU-17 | Aprobar la propuesta final | 3 | Must Have | Emanuel Giraldo | En validación (PR a `integracion`) |
 | **Total** | | **27** | **5 Must · 2 Should** | | |
 
 Las asignaciones se consultaron en Notion el 12 de noviembre de 2026. Si cambian allí,
@@ -69,6 +69,15 @@ Responsable registrado en Notion: Emanuel Giraldo.
 - [ ] El cliente puede aprobar una propuesta, y el sistema le pide confirmarlo.
 - [ ] Al aprobar, el diseño final queda registrado y asociado al pedido.
 - [ ] Un diseño aprobado ya no puede modificarse sin iniciar una nueva personalización.
+
+> **Implementación en la rama de HU-17 (2026-11-15).** La aprobación está en el
+> resultado del personalizador: botón «Aprobar diseño», diálogo de confirmación y registro
+> en la colección `approved-designs` con sesión de cliente. Los criterios 1 y 3 quedan
+> cubiertos por código y pruebas. El criterio 2 se cumple solo en su primera mitad: el
+> diseño queda registrado, pero **no se asocia a un pedido** porque el Sprint 2 no tiene
+> colección de pedidos; la aprobación guarda un campo de texto `orderReference` como punto
+> de extensión del Sprint 3. Falta la prueba manual en navegador y aplicar la migración
+> con aprobación. Detalle en `evidence/HU-17.md`.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef364814f96edd0d59bbde170).
 

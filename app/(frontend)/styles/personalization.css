@@ -1070,6 +1070,75 @@ body:has(.personalizer-bar) .site-footer {
   line-height: 1.6;
 }
 
+/* Final design approval (HU-17) */
+.design-approval-note {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--ink);
+}
+
+.design-approval-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.design-approval-note p:not(.design-approval-title) {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.approval-dialog {
+  width: min(100%, 460px);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  padding: clamp(24px, 4vw, 36px);
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.approval-dialog::backdrop {
+  background: rgba(13, 13, 13, 0.62);
+}
+
+.approval-dialog-body {
+  display: grid;
+  gap: 14px;
+}
+
+.approval-dialog h3 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3.4vw, 1.9rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.approval-dialog p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.approval-dialog-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.approval-dialog-actions .button {
+  width: 100%;
+}
+
 .design-prompt-details {
   margin: 0;
   border-top: 1px solid var(--line);

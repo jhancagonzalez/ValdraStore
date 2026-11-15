@@ -18,6 +18,7 @@ import {
   type MockupSelection,
   REVISION_ZONE_PRESETS,
 } from "@/lib/mockup-selection";
+import { type Approval, ApproveDesign } from "./approve-design";
 
 const IDEA_MAX_LENGTH = 600;
 const IDEA_SUGGESTIONS = ["Floral minimalista", "Geométrico", "Retro", "Tipografía pequeña"];
@@ -95,6 +96,7 @@ export const GarmentSelector = ({
   const [lastZoneLabel, setLastZoneLabel] = useState<string | null>(null);
   const [selectionDrag, setSelectionDrag] = useState<{ x: number; y: number } | null>(null);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  const [approvedDesign, setApprovedDesign] = useState<Approval | null>(null);
   const ideaRef = useRef<HTMLTextAreaElement>(null);
   const resultRef = useRef<HTMLElement>(null);
   const customizeRef = useRef<HTMLButtonElement>(null);
@@ -211,7 +213,11 @@ export const GarmentSelector = ({
     }
   }, [selectedId]);
 
-  const hasUnsavedDesign = Boolean(generatedImage || previousImage);
+  /**
+   * Un diseño aprobado ya está registrado (HU-17), así que deja de considerarse
+   * un borrador sin guardar y no se avisa de pérdida al navegar.
+   */
+  const hasUnsavedDesign = Boolean((generatedImage || previousImage) && !approvedDesign);
 
   const confirmDiscardDraft = () =>
     !hasUnsavedDesign ||
@@ -236,6 +242,7 @@ export const GarmentSelector = ({
     setSelectionZone(null);
     setLastZoneLabel(null);
     setSelectionDrag(null);
+    setApprovedDesign(null);
   };
 
   useEffect(() => {
@@ -339,6 +346,16 @@ export const GarmentSelector = ({
     setIdeaOpen(false);
     setIdeaError(null);
     setGenerationError(null);
+
+    // Si el diseño ya se aprobó, al cerrar se descarta la copia local: ya está
+    // registrado y no debe disparar el aviso de «diseño sin guardar».
+    if (approvedDesign) {
+      setGeneratedImage(null);
+      setPreviousImage(null);
+      setGeneratedPrompt(null);
+    }
+
+    setApprovedDesign(null);
     customizeRef.current?.focus();
   };
 
@@ -574,6 +591,7 @@ export const GarmentSelector = ({
     setSelectionZone(null);
     setLastZoneLabel(null);
     setSelectionDrag(null);
+    setApprovedDesign(null);
   };
 
   return (
@@ -645,18 +663,34 @@ export const GarmentSelector = ({
 
           <div className="design-result-copy">
             <p className="design-result-idea">“{idea.trim()}”</p>
-            <p className="design-result-note">
-              Vista previa de prueba.{" "}
-              {lastStrategy === "redesign"
-                ? "Se generó un estampado nuevo sobre la misma prenda; el diseño anterior no se conservó."
-                : lastStrategy === "text"
-                  ? "El texto se agregó con una fuente legible; el resto del diseño anterior se conservó."
-                  : lastStrategy === "inpaint"
-                    ? "El cambio se integró en la zona marcada; el resto del diseño anterior se conservó."
-                    : "La propuesta se generó a partir de tu idea."}{" "}
-              No se guarda en la base de datos: si sales de esta página, se perderá. Descárgala si
-              quieres conservarla.
-            </p>
+            {approvedDesign ? (
+              <div className="design-approval-note" role="status">
+                <p className="design-approval-title">Diseño aprobado</p>
+                <p>
+                  Quedó registrado en tu cuenta
+                  {approvedDesign.approvedAt
+                    ? ` el ${new Intl.DateTimeFormat("es-CO", { dateStyle: "long" }).format(
+                        new Date(approvedDesign.approvedAt),
+                      )}`
+                    : ""}
+                  . Ya no se puede modificar desde aquí; si quieres otro diseño, inicia una nueva
+                  personalización.
+                </p>
+              </div>
+            ) : (
+              <p className="design-result-note">
+                Vista previa de prueba.{" "}
+                {lastStrategy === "redesign"
+                  ? "Se generó un estampado nuevo sobre la misma prenda; el diseño anterior no se conservó."
+                  : lastStrategy === "text"
+                    ? "El texto se agregó con una fuente legible; el resto del diseño anterior se conservó."
+                    : lastStrategy === "inpaint"
+                      ? "El cambio se integró en la zona marcada; el resto del diseño anterior se conservó."
+                      : "La propuesta se generó a partir de tu idea."}{" "}
+                Todavía no está registrada: si sales de esta página antes de aprobarla, se perderá.
+                Descárgala si quieres conservarla.
+              </p>
+            )}
             {generatedPrompt ? (
               <details className="design-prompt-details">
                 <summary>
@@ -667,9 +701,20 @@ export const GarmentSelector = ({
               </details>
             ) : null}
             <div className="design-actions">
-              <button type="button" className="button button-primary" onClick={beginRevision}>
-                Pedir cambios
-              </button>
+              {approvedDesign ? null : selectedSize ? (
+                <ApproveDesign
+                  baseId={selectedBase.id}
+                  idea={idea.trim()}
+                  image={generatedImage}
+                  size={selectedSize}
+                  onApproved={setApprovedDesign}
+                />
+              ) : null}
+              {approvedDesign ? null : (
+                <button type="button" className="button button-secondary" onClick={beginRevision}>
+                  Pedir cambios
+                </button>
+              )}
               <a
                 className="button button-secondary"
                 href={generatedImage}
@@ -678,7 +723,7 @@ export const GarmentSelector = ({
                 Descargar diseño
               </a>
               <button type="button" className="design-text-action" onClick={closeIdeaPanel}>
-                Elegir otra prenda
+                {approvedDesign ? "Nueva personalización" : "Elegir otra prenda"}
               </button>
             </div>
           </div>
