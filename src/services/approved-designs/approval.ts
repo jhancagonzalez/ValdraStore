@@ -1,3 +1,7 @@
+import {
+  detectSupportedImageMimeType,
+  type SupportedImageMimeType,
+} from "../../lib/image-signature";
 import { getMockupBase, isMockupSize, type MockupSize } from "../../lib/mockup-bases";
 import { stripControlCharacters } from "../../lib/sanitize";
 
@@ -10,7 +14,7 @@ export const IDEA_MAX_LENGTH = 600;
  */
 export const MAX_IMAGE_CHARS = 3_000_000;
 
-const IMAGE_PREFIX = /^data:image\/(jpeg|png|webp);base64,/;
+const IMAGE_PREFIX = /^data:(image\/(?:jpeg|png|webp));base64,/;
 
 export type ApprovalPayload = {
   baseId: string;
@@ -61,13 +65,22 @@ export const parseApprovalPayload = (input: unknown): ApprovalValidation => {
   }
 
   const image = typeof body.image === "string" ? body.image : "";
+  const match = IMAGE_PREFIX.exec(image);
 
-  if (!IMAGE_PREFIX.test(image)) {
+  if (!match) {
     return { message: "El diseño no llegó en un formato válido.", ok: false };
   }
 
   if (image.length > MAX_IMAGE_CHARS) {
     return { message: "El diseño es demasiado grande para registrarlo.", ok: false };
+  }
+
+  // El MIME declarado no basta: se comprueba la firma real de los bytes.
+  const bytes = Buffer.from(image.slice(match[0].length), "base64");
+  const mimeType = match[1] as SupportedImageMimeType;
+
+  if (bytes.byteLength === 0 || detectSupportedImageMimeType(bytes) !== mimeType) {
+    return { message: "El diseño no llegó en un formato válido.", ok: false };
   }
 
   return { ok: true, value: { baseId: base.id, idea, image, size: body.size } };

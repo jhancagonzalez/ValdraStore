@@ -1,0 +1,116 @@
+/* HU-15 — Visor del mockup de la propuesta */
+
+.mockup-viewer-frame {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--line);
+  cursor: zoom-in;
+  appearance: none;
+  font: inherit;
+  color: inherit;
+}
+
+.mockup-viewer-frame:focus-visible {
+  outline: 2px solid var(--line-strong);
+  outline-offset: 2px;
+}
+
+.mockup-viewer-zoom-hint {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 6px 10px;
+  background: rgb(255 255 255 / 0.9);
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.mockup-viewer-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.mockup-viewer-summary-item {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mockup-viewer-summary dt {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.mockup-viewer-summary dd {
+  margin: 0;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.mockup-viewer-error {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.mockup-viewer-dialog {
+  width: min(92vw, 880px);
+  max-height: 92dvh;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  background: var(--paper-soft);
+  overflow: auto;
+}
+
+.mockup-viewer-dialog::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+
+.mockup-viewer-dialog-body {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  justify-items: center;
+}
+
+.mockup-viewer-dialog-image {
+  width: 100%;
+  height: auto;
+  max-height: 70dvh;
+  object-fit: contain;
+}
+
+.mockup-viewer-dialog-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .mockup-viewer-dialog {
+    width: 100vw;
+    max-width: 100vw;
+    max-height: 100dvh;
+  }
+
+  .mockup-viewer-close {
+    width: 100%;
+  }
+}

@@ -85,6 +85,17 @@ describe("parseApprovalPayload (HU-17)", () => {
     }
   });
 
+  it("rechaza una imagen cuyo contenido no coincide con el tipo declarado", () => {
+    const jpegBytes = "/9j/4AAQSkZJRg==";
+
+    expect(
+      parseApprovalPayload({ ...validPayload, image: `data:image/png;base64,${jpegBytes}` }),
+    ).toEqual({
+      message: "El diseño no llegó en un formato válido.",
+      ok: false,
+    });
+  });
+
   it("rechaza una imagen por encima del máximo de caracteres", () => {
     const image = `data:image/jpeg;base64,${"A".repeat(MAX_IMAGE_CHARS)}`;
 

@@ -69,6 +69,11 @@ este resumen debe actualizarse; Notion conserva la fuente de verdad.
   costo.
 - **Estado visible:** mientras la imagen se genera, la interfaz muestra «Tu diseño se
   está generando…».
+- **Normas de uso (HU-16):** antes de gastar cuota, cada petición del personalizador pasa por reglas
+  deterministas (`src/lib/design-guard.ts`, en navegador y servidor) y por moderación con
+  `@cf/meta/llama-guard-3-8b` en el servidor, con la misma cuenta y token. Se bloquea
+  contenido sexual, violento, de odio, armas, drogas, insultos, marcas y personajes
+  registrados, datos personales y peticiones ajenas al diseño de ropa.
 
 ## Dependencias críticas
 

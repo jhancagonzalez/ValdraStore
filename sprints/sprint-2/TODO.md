@@ -8,10 +8,10 @@ Criterios transcritos del [Product Backlog de Notion](https://app.notion.com/p/4
 | --- | --- | --- | --- | --- | --- |
 | HU-11 | Seleccionar prenda, talla y color | 3 | Must Have | Jhancarlos Gonzalez | En construcción |
 | HU-12 | Ingresar una idea de diseño | 2 | Must Have | Jhancarlos Gonzalez | En construcción |
-| HU-13 | Cargar imagen de referencia | 3 | Should Have | Emanuel Giraldo | En construcción |
+| HU-13 | Cargar imagen de referencia | 3 | Should Have | Emanuel Giraldo | En validación (PR a `integracion`) |
 | HU-14 | Recibir una propuesta generada por IA | 8 | Must Have | Kevin Burgos | En construcción |
 | HU-15 | Ver la propuesta sobre un mockup | 5 | Must Have | Andrés Valencia | En construcción |
-| HU-16 | Solicitar modificaciones | 3 | Should Have | Daniel Cárdenas | En construcción |
+| HU-16 | Solicitar modificaciones | 3 | Should Have | Daniel Cárdenas | Integrada en `integracion` |
 | HU-17 | Aprobar la propuesta final | 3 | Must Have | Emanuel Giraldo | En validación (PR a `integracion`) |
 | **Total** | | **27** | **5 Must · 2 Should** | | |
 
@@ -27,6 +27,11 @@ Notion conserva la fuente de verdad y este resumen debe actualizarse.
 - La imagen de referencia es una imagen JPEG/PNG/WebP de hasta 10 MB.
 - Mientras se genera, la interfaz muestra «Tu diseño se está generando…».
 - Cada integrante trabaja en su rama y abre un PR a `integracion`.
+- Las propuestas y su historial (HU-16) viven solo en el navegador; recargar la página
+  los borra.
+- Las peticiones del personalizador pasan por normas de uso antes de gastar cuota: reglas en
+  `src/lib/design-guard.ts` (navegador y servidor) y moderación con Llama Guard 3 en el
+  servidor. El color de la prenda se elige con la base, no se le pide a la IA.
 
 ## Jhancarlos Gonzalez — Scrum Master, Developer Backend
 
@@ -50,6 +55,15 @@ Responsable registrado en Notion: Jhancarlos Gonzalez.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481c79971c6d45b15b480).
 
+> **Ajustes de UI/UX hechos en la rama de HU-16 (Daniel Cárdenas, 2026-11-14).** Durante
+> la prueba de HU-16 se encontró que el flujo de idea era difícil de entender: el botón
+> «Personalizar» quedaba bloqueado sin explicación visible, los errores aparecían fuera
+> de la vista y la página parecía quedarse cargando. Se ajustó: aviso visible en la
+> barra (talla y sesión), avisos destacados con acción junto al botón de enviar, panel de
+> progreso con tiempo y «Cancelar», límite de 200 s por petición y normas de uso antes de
+> generar. Afecta el criterio 2 («se informa el motivo»). Los criterios de HU-12 los
+> verifica y marca su responsable. Detalle en `evidence/HU-16.md`.
+
 ## Emanuel Giraldo — Product Owner, Developer Frontend
 
 ### HU-13 — Cargar imagen de referencia · 3 puntos · Should Have
@@ -59,6 +73,12 @@ Responsable registrado en Notion: Emanuel Giraldo.
 - [ ] El cliente puede cargar una imagen en formato y tamaño permitidos.
 - [ ] Si el archivo no es válido, el sistema lo rechaza con un mensaje claro.
 - [ ] La imagen cargada queda disponible como entrada para la generación con IA.
+
+> **Implementación en la rama de HU-13 (2026-11-15).** La carga está en el flujo
+> principal `/personalizar`, valida tipo real por bytes y máximo de 10 MB en navegador y
+> servidor, y la referencia se envía al modelo como entrada visual. Queda pendiente la
+> prueba manual en navegador con sesión de cliente y generación real; por eso los tres
+> criterios siguen sin marcar. Detalle en `evidence/HU-13.md`.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481a9b15de96e3dac18a1).
 
@@ -79,6 +99,12 @@ Responsable registrado en Notion: Emanuel Giraldo.
 > de extensión del Sprint 3. La migración ya está aplicada en Supabase con aprobación y
 > las protecciones del endpoint se probaron (401 sin sesión y 403 con origen ajeno). Falta
 > la prueba manual en navegador. Detalle en `evidence/HU-17.md`.
+>
+> **Integración del 2026-11-15.** Se verificó el flujo completo con sesión de cliente:
+> referencia, propuesta, revisión, aprobación real y borrado de cuenta. El borrado de un
+> cliente elimina primero sus diseños aprobados mediante un hook en `customers`, porque la
+> FK aplicada es `ON DELETE set null` sobre una columna obligatoria. Falta comprobar el
+> registro desde el panel de administración y que otro cliente no pueda leerlo.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef364814f96edd0d59bbde170).
 
@@ -112,9 +138,12 @@ Responsable registrado en Notion: Andrés Valencia.
 
 Responsable registrado en Notion: Daniel Cárdenas.
 
-- [ ] El cliente puede escribir qué cambios desea sobre la propuesta.
-- [ ] Al enviar la solicitud se genera una nueva propuesta que se muestra en el mockup.
-- [ ] Se conserva el historial de propuestas del proceso para poder comparar.
+- [x] El cliente puede escribir qué cambios desea sobre la propuesta.
+- [x] Al enviar la solicitud se genera una nueva propuesta que se muestra en el mockup.
+- [x] Se conserva el historial de propuestas del proceso para poder comparar.
+
+Verificado el 2026-11-14 en escritorio y móvil. Evidencia en
+[`evidence/HU-16.md`](evidence/HU-16.md).
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef364815a88bdd22ffe85bf52).
 
