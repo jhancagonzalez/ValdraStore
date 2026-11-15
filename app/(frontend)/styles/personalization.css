@@ -1,7 +1,7 @@
 /* Personalization (HU-11 / HU-12) */
 
 :root {
-  --personalizer-bar-height: calc(92px + env(safe-area-inset-bottom));
+  --personalizer-bar-height: calc(126px + env(safe-area-inset-bottom));
 }
 
 .page-personalizer {
@@ -458,16 +458,48 @@ body:has(.personalizer-bar) .site-footer {
   padding: 0;
 }
 
-.personalizer-hint {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
+/* Visible notice: why the customer cannot continue yet (size or session). */
+.personalizer-notice {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 8px;
+  margin: -6px 0 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--ink);
+  background: var(--paper-soft);
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.personalizer-notice[data-tone="error"] {
+  border-left-color: var(--danger);
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.personalizer-size-options[data-missing="true"] .option-chip {
+  border-color: var(--danger);
+  box-shadow: inset 0 0 0 1px var(--danger);
+  animation: personalizer-nudge 360ms ease;
+}
+
+@keyframes personalizer-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-4px);
+  }
+
+  75% {
+    transform: translateX(4px);
+  }
 }
 
 .personalizer-cta {
@@ -875,6 +907,8 @@ body:has(.personalizer-bar) .site-footer {
 
 .design-form textarea[aria-invalid="true"] {
   border-color: var(--danger);
+  box-shadow: 0 0 0 1px var(--danger);
+  background: var(--danger-bg);
 }
 
 .design-form-meta {
@@ -961,13 +995,132 @@ body:has(.personalizer-bar) .site-footer {
   text-underline-offset: 0.4em;
 }
 
-.design-generating {
+/* Notices and progress (HU-12 / HU-16) */
+
+.design-notice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-strong);
+  border-left-width: 4px;
+  background: var(--paper-soft);
+  color: var(--ink);
+  scroll-margin: calc(var(--header-height) + 24px) 0 calc(var(--personalizer-bar-height) + 24px);
+}
+
+.design-notice:focus {
+  outline: none;
+}
+
+.design-notice-icon {
+  margin-top: 1px;
+}
+
+.design-notice[data-tone="error"] {
+  border-color: var(--danger-line);
+  border-left-color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.design-notice[data-tone="error"] .design-notice-icon {
+  color: var(--danger);
+}
+
+.design-notice-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.design-notice-title {
   margin: 0;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.design-notice[data-tone="error"] .design-notice-title {
+  color: var(--danger);
+}
+
+.design-notice-text {
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.design-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.design-notice-action {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.design-notice-action:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.design-progress {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--ink);
+  border-left-width: 4px;
+  background: var(--paper);
+  scroll-margin: calc(var(--header-height) + 24px) 0 calc(var(--personalizer-bar-height) + 24px);
+}
+
+.design-progress-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--line);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: design-spin 800ms linear infinite;
+}
+
+@keyframes design-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.design-progress-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.design-progress-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.design-progress-meta {
+  margin: 0;
   color: var(--muted);
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 /* Result */
@@ -1114,6 +1267,146 @@ body:has(.personalizer-bar) .site-footer {
   overflow-wrap: anywhere;
 }
 
+/* Proposal history (HU-16) */
+
+.proposal-history {
+  display: grid;
+  gap: 14px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.proposal-history-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.proposal-history-title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.proposal-history-count,
+.proposal-history-compare label {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.proposal-history-compare {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.proposal-history-compare select {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.proposal-history-list {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  padding: 0 0 6px;
+  overflow-x: auto;
+  list-style: none;
+  scroll-snap-type: x proximity;
+}
+
+.proposal-history-list > li {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+.proposal-history-item {
+  display: grid;
+  gap: 4px;
+  width: 132px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease;
+}
+
+.proposal-history-item:hover {
+  border-color: var(--ink-soft);
+}
+
+.proposal-history-item[aria-pressed="true"] {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.proposal-history-item:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.proposal-history-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--paper-soft);
+}
+
+.proposal-history-thumb img {
+  object-fit: contain;
+}
+
+.proposal-history-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.proposal-history-strategy {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.proposal-history-request {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.proposal-history-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 /* Responsive */
 
 @media (max-width: 1024px) {
@@ -1163,7 +1456,7 @@ body:has(.personalizer-bar) .site-footer {
 
 @media (max-width: 640px) {
   :root {
-    --personalizer-bar-height: calc(136px + env(safe-area-inset-bottom));
+    --personalizer-bar-height: calc(188px + env(safe-area-inset-bottom));
   }
 
   /* Keeps all four nav items on one row after adding «Personalizar». */
@@ -1252,6 +1545,21 @@ body:has(.personalizer-bar) .site-footer {
     gap: 8px;
   }
 
+  .personalizer-notice {
+    margin: 0;
+  }
+
+  .design-progress {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .design-progress .design-text-action {
+    grid-column: 2;
+    justify-self: start;
+    min-height: 40px;
+    padding: 0;
+  }
+
   .personalizer-cta {
     grid-area: cta;
     min-width: 0;
@@ -1329,5 +1637,13 @@ body:has(.personalizer-bar) .site-footer {
   .garment-side:hover .garment-side-frame img,
   .design-back:hover svg {
     transform: none;
+  }
+
+  .personalizer-size-options[data-missing="true"] .option-chip {
+    animation: none;
+  }
+
+  .design-progress-spinner {
+    animation-duration: 2400ms;
   }
 }

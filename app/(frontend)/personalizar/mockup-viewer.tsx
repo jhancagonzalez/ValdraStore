@@ -9,13 +9,19 @@ type MockupViewerProps = {
   base: MockupBase;
   size: MockupSize | null;
   imageSrc: string;
+  label?: string;
 };
 
 /**
  * Visor del mockup de HU-15: muestra la propuesta sobre la prenda con su
  * resumen legible y permite ampliarla en un diálogo modal.
  */
-export const MockupViewer = ({ base, size, imageSrc }: MockupViewerProps) => {
+export const MockupViewer = ({
+  base,
+  size,
+  imageSrc,
+  label = "Propuesta sobre tu prenda",
+}: MockupViewerProps) => {
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const lastSrcRef = useRef(imageSrc);
   const [failed, setFailed] = useState(false);
@@ -34,7 +40,7 @@ export const MockupViewer = ({ base, size, imageSrc }: MockupViewerProps) => {
 
   return (
     <figure className="design-compare-item mockup-viewer">
-      <figcaption className="design-compare-label">Propuesta sobre tu prenda</figcaption>
+      <figcaption className="design-compare-label">{label}</figcaption>
       {failed ? (
         <p className="mockup-viewer-error" role="alert">
           No pudimos mostrar el mockup. Genera la propuesta de nuevo.
