@@ -129,7 +129,10 @@ export const ReferenceUpload = ({ disabled = false, onChange, value }: Reference
       }
 
       context.drawImage(image, 0, 0, dimensions.width, dimensions.height);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+      // JPEG no conserva transparencia; las referencias PNG/WebP se reencodan
+      // como WebP para mantener el alfa y no inflar el cuerpo de la petición.
+      const outputMimeType = validation.mimeType === "image/jpeg" ? "image/jpeg" : "image/webp";
+      const dataUrl = canvas.toDataURL(outputMimeType, 0.9);
 
       if (!aliveRef.current) {
         return;
