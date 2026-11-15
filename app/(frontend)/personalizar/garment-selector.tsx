@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { type FormEvent, type PointerEvent, useEffect, useRef, useState } from "react";
 import { appendDesignBrief } from "@/lib/design-brief";
+import { checkDesignRequest, type DesignGuardMode } from "@/lib/design-guard";
 import { extractDesignText } from "@/lib/design-text";
 import {
   getMockupBase,
@@ -18,6 +19,17 @@ import {
   type MockupSelection,
   REVISION_ZONE_PRESETS,
 } from "@/lib/mockup-selection";
+import {
+  addProposalVersion,
+  compareProposalWith,
+  EMPTY_PROPOSAL_HISTORY,
+  getCurrentProposal,
+  getProposalVersion,
+  type ProposalHistory,
+  selectProposalVersion,
+} from "@/lib/proposal-history";
+import { DesignNotice, type DesignNoticeAction } from "./design-notice";
+import { ProposalHistoryPanel } from "./proposal-history";
 
 const IDEA_MAX_LENGTH = 600;
 const IDEA_SUGGESTIONS = ["Floral minimalista", "Geométrico", "Retro", "Tipografía pequeña"];
@@ -57,7 +69,37 @@ const ChevronDownIcon = () => (
   </svg>
 );
 
+const LockIcon = () => (
+  <svg
+    viewBox="0 0 16 16"
+    width="12"
+    height="12"
+    aria-hidden="true"
+    focusable="false"
+    style={{ flex: "0 0 auto" }}
+  >
+    <rect x="3" y="7" width="10" height="7" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
+
 const MIN_SELECTION_SIZE = 0.02;
+/** Si el proveedor no responde en este tiempo, se corta y se ofrece reintentar. */
+const CLIENT_GENERATION_TIMEOUT_MS = 200_000;
+
+/** Problema que el cliente debe resolver antes de generar (HU-12, HU-16). */
+type FormIssue = {
+  title: string;
+  message: string;
+  suggestRedesign?: boolean;
+  suggestedColorKey?: string;
+};
+
+const formIssue = (title: string, message: string, suggestRedesign = false): FormIssue => ({
+  title,
+  message,
+  suggestRedesign,
+});
 
 type GarmentSelectorProps = {
   initialBaseId: string;
@@ -66,7 +108,8 @@ type GarmentSelectorProps = {
 };
 
 /**
- * Selector de prenda base (HU-11) y flujo de idea (HU-12).
+ * Selector de prenda base (HU-11), flujo de idea (HU-12) y modificaciones con
+ * historial de propuestas (HU-16).
  * La selección y la propuesta viven solo en el navegador: no se persisten en
  * Payload. El resultado se descarga y se advierte antes de salir.
  */
@@ -81,7 +124,7 @@ export const GarmentSelector = ({
   const [selectedSize, setSelectedSize] = useState<MockupSize | null>(initialSize);
   const [ideaOpen, setIdeaOpen] = useState(false);
   const [idea, setIdea] = useState("");
-  const [ideaError, setIdeaError] = useState<string | null>(null);
+  const [ideaError, setIdeaError] = useState<FormIssue | null>(null);
   const [generating, setGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -95,6 +138,16 @@ export const GarmentSelector = ({
   const [lastZoneLabel, setLastZoneLabel] = useState<string | null>(null);
   const [selectionDrag, setSelectionDrag] = useState<{ x: number; y: number } | null>(null);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  // HU-16: todas las versiones del proceso, solo en memoria del navegador.
+  const [history, setHistory] = useState<ProposalHistory>(EMPTY_PROPOSAL_HISTORY);
+  const [revisingFrom, setRevisingFrom] = useState<number | null>(null);
+  const [sizeMissing, setSizeMissing] = useState(false);
+  const [generationStartedAt, setGenerationStartedAt] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const noticeRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const timedOutRef = useRef(false);
+  const sizeOptionsRef = useRef<HTMLDivElement>(null);
   const ideaRef = useRef<HTMLTextAreaElement>(null);
   const resultRef = useRef<HTMLElement>(null);
   const customizeRef = useRef<HTMLButtonElement>(null);
@@ -128,6 +181,23 @@ export const GarmentSelector = ({
       ? "webp"
       : "jpg";
   const activeStep = ideaOpen ? (generatedImage ? 2 : 1) : 0;
+  const currentProposal = getCurrentProposal(history);
+  const comparedProposal = getProposalVersion(history, history.compareVersion);
+  const compareImage = currentProposal ? (comparedProposal?.image ?? null) : previousImage;
+  const compareLabel = comparedProposal
+    ? `Versión ${comparedProposal.version}`
+    : compareImage
+      ? "Diseño anterior"
+      : "Prenda base";
+  // Aviso visible de la barra: explica por qué no se puede continuar todavía.
+  const barNotice = !selectedSize
+    ? sizeMissing
+      ? "Elige una talla antes de personalizar."
+      : "Elige una talla para continuar."
+    : isAuthenticated
+      ? `Talla ${selectedSize} seleccionada. Continúa con tu idea.`
+      : "Para personalizar debes iniciar sesión. Tu prenda y talla se conservan.";
+  const barNoticeTone = !selectedSize && sizeMissing ? "error" : "info";
 
   const closeAuthPrompt = () => {
     setAuthPromptOpen(false);
@@ -211,7 +281,33 @@ export const GarmentSelector = ({
     }
   }, [selectedId]);
 
-  const hasUnsavedDesign = Boolean(generatedImage || previousImage);
+  // Lleva el aviso o el progreso a la vista: el cliente no tiene que buscarlos.
+  useEffect(() => {
+    if (!ideaError && !generationError && !generating) {
+      return;
+    }
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    noticeRef.current?.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "center",
+    });
+  }, [ideaError, generationError, generating]);
+
+  useEffect(() => {
+    if (!generating || generationStartedAt === null) {
+      setElapsedSeconds(0);
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setElapsedSeconds(Math.round((Date.now() - generationStartedAt) / 1000));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [generating, generationStartedAt]);
+
+  const hasUnsavedDesign = Boolean(generatedImage || previousImage || history.versions.length);
 
   const confirmDiscardDraft = () =>
     !hasUnsavedDesign ||
@@ -236,6 +332,8 @@ export const GarmentSelector = ({
     setSelectionZone(null);
     setLastZoneLabel(null);
     setSelectionDrag(null);
+    setHistory(EMPTY_PROPOSAL_HISTORY);
+    setRevisingFrom(null);
   };
 
   useEffect(() => {
@@ -307,6 +405,7 @@ export const GarmentSelector = ({
       return;
     }
     setSelectedSize(size);
+    setSizeMissing(false);
     resetGeneratedState();
   };
 
@@ -344,6 +443,8 @@ export const GarmentSelector = ({
 
   const handleCustomize = () => {
     if (!selectedSize) {
+      setSizeMissing(true);
+      sizeOptionsRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
       return;
     }
     if (!isAuthenticated) {
@@ -438,13 +539,16 @@ export const GarmentSelector = ({
     const trimmedIdea = idea.trim();
 
     if (trimmedIdea === "") {
-      setIdeaError("Describe tu idea antes de continuar.");
+      setIdeaError(
+        checkDesignRequest({ idea: "", mode: previousImage ? "zone" : "create" }) ??
+          formIssue("Falta tu descripción", "Escribe tu idea antes de continuar."),
+      );
       ideaRef.current?.focus();
       return;
     }
 
     if (!selectedSize) {
-      setIdeaError("Selecciona una talla antes de continuar.");
+      setIdeaError(formIssue("Falta la talla", "Selecciona una talla antes de continuar."));
       return;
     }
 
@@ -462,7 +566,13 @@ export const GarmentSelector = ({
       !isRedesign &&
       (!selection || selection.width < MIN_SELECTION_SIZE || selection.height < MIN_SELECTION_SIZE)
     ) {
-      setIdeaError("Marca la zona del diseño que quieres cambiar.");
+      setIdeaError(
+        formIssue(
+          "Marca la zona que quieres cambiar",
+          "Arrastra sobre la imagen o elige «Pecho» o «Bajo». Para cambiar todo el diseño, usa «Rediseñar estampado».",
+          true,
+        ),
+      );
       return;
     }
 
@@ -472,7 +582,34 @@ export const GarmentSelector = ({
       selection &&
       isSleeveSelection(selection, selectedBase.category)
     ) {
-      setIdeaError("Para cambios en mangas, usa «Rediseñar estampado».");
+      setIdeaError(
+        formIssue(
+          "Las mangas no se editan por zona",
+          "Para cambios en las mangas, usa «Rediseñar estampado».",
+          true,
+        ),
+      );
+      return;
+    }
+
+    // Normas de uso: mismas reglas que el servidor, sin gastar cuota.
+    const guardMode: DesignGuardMode = !previousImage
+      ? "create"
+      : isRedesign
+        ? "redesign"
+        : detectedText
+          ? "text"
+          : "zone";
+    const guardIssue = checkDesignRequest({
+      baseColorKey: selectedBase.colorKey,
+      idea: trimmedIdea,
+      mode: guardMode,
+      selectionArea:
+        guardMode === "zone" && selection ? selection.width * selection.height : undefined,
+    });
+
+    if (guardIssue) {
+      setIdeaError(guardIssue);
       return;
     }
 
@@ -489,6 +626,11 @@ export const GarmentSelector = ({
     generationAbortRef.current?.abort();
     const controller = new AbortController();
     generationAbortRef.current = controller;
+    timedOutRef.current = false;
+    const timeout = window.setTimeout(() => {
+      timedOutRef.current = true;
+      controller.abort();
+    }, CLIENT_GENERATION_TIMEOUT_MS);
 
     setIdeaError(null);
     setGenerationError(null);
@@ -496,6 +638,7 @@ export const GarmentSelector = ({
     setGeneratedPrompt(null);
     setLastZoneLabel(zoneLabel);
     setLastStrategy(strategy ?? null);
+    setGenerationStartedAt(Date.now());
     setGenerating(true);
 
     try {
@@ -517,10 +660,26 @@ export const GarmentSelector = ({
       const data = (await response.json().catch(() => null)) as {
         error?: unknown;
         image?: unknown;
+        message?: unknown;
         prompt?: unknown;
+        suggestRedesign?: unknown;
+        suggestedColorKey?: unknown;
+        title?: unknown;
       } | null;
 
       if (requestId !== generationIdRef.current) {
+        return;
+      }
+
+      // El servidor rechazó la petición por las normas de uso: se explica junto al campo.
+      if (response.status === 422 && typeof data?.title === "string") {
+        setIdeaError({
+          message: typeof data.message === "string" ? data.message : String(data.error ?? ""),
+          suggestRedesign: data.suggestRedesign === true,
+          suggestedColorKey:
+            typeof data.suggestedColorKey === "string" ? data.suggestedColorKey : undefined,
+          title: data.title,
+        });
         return;
       }
 
@@ -532,11 +691,32 @@ export const GarmentSelector = ({
         throw new Error(message);
       }
 
-      setGeneratedImage(data.image);
-      setGeneratedPrompt(typeof data.prompt === "string" ? data.prompt : null);
-      setDesignBrief((current) => appendDesignBrief(current, trimmedIdea));
+      const image = data.image;
+      const prompt = typeof data.prompt === "string" ? data.prompt : null;
+      const brief = appendDesignBrief(designBrief, trimmedIdea);
+
+      setGeneratedImage(image);
+      setGeneratedPrompt(prompt);
+      setDesignBrief(brief);
+      // HU-16: cada propuesta queda como una versión nueva del historial.
+      setHistory((current) =>
+        addProposalVersion(current, {
+          basedOn: previousImage ? revisingFrom : null,
+          brief,
+          image,
+          prompt,
+          request: trimmedIdea,
+          strategy: strategy ?? "create",
+          zoneLabel,
+        }),
+      );
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
+        if (timedOutRef.current && requestId === generationIdRef.current) {
+          setGenerationError(
+            "La generación tardó demasiado y la detuvimos. Inténtalo de nuevo en unos segundos.",
+          );
+        }
         return;
       }
 
@@ -550,10 +730,82 @@ export const GarmentSelector = ({
           : "No pudimos generar la propuesta. Inténtalo de nuevo.",
       );
     } finally {
+      window.clearTimeout(timeout);
       if (requestId === generationIdRef.current) {
         setGenerating(false);
         generationAbortRef.current = null;
       }
+    }
+  };
+
+  const cancelGeneration = () => {
+    generationIdRef.current += 1;
+    generationAbortRef.current?.abort();
+    generationAbortRef.current = null;
+    setGenerating(false);
+  };
+
+  /** Cambia a la prenda base del color pedido sin cerrar el formulario. */
+  const switchToColor = (colorKey: string) => {
+    const target = MOCKUP_BASES.find(
+      (base) => base.category === selectedBase.category && base.colorKey === colorKey,
+    );
+
+    if (!target || !confirmDiscardDraft()) {
+      return;
+    }
+
+    setActiveCategory(target.category);
+    setSelectedId(target.id);
+    resetGeneratedState();
+  };
+
+  const ideaErrorActions: DesignNoticeAction[] = [];
+
+  if (ideaError?.suggestRedesign && previousImage) {
+    ideaErrorActions.push({
+      label: "Usar «Rediseñar estampado»",
+      onClick: () => changeRevisionMode("redesign"),
+    });
+  }
+
+  if (ideaError?.suggestedColorKey) {
+    const target = MOCKUP_BASES.find(
+      (base) =>
+        base.category === selectedBase.category && base.colorKey === ideaError.suggestedColorKey,
+    );
+
+    if (target) {
+      ideaErrorActions.push({
+        label: `Cambiar a ${getMockupBaseName(target)}`,
+        onClick: () => switchToColor(target.colorKey),
+      });
+    }
+  }
+
+  /** Muestra una versión del historial como propuesta actual (HU-16). */
+  const showProposalVersion = (version: number) => {
+    const next = selectProposalVersion(history, version);
+    const proposal = getCurrentProposal(next);
+
+    if (!proposal) {
+      return;
+    }
+
+    setHistory(next);
+    setGeneratedImage(proposal.image);
+    setGeneratedPrompt(proposal.prompt);
+    setLastStrategy(proposal.strategy === "create" ? null : proposal.strategy);
+    setLastZoneLabel(proposal.zoneLabel);
+    setIdea(proposal.request);
+    setDesignBrief(proposal.brief);
+    setGenerationError(null);
+    setIdeaError(null);
+  };
+
+  const cancelRevision = () => {
+    if (history.currentVersion !== null) {
+      showProposalVersion(history.currentVersion);
     }
   };
 
@@ -562,6 +814,7 @@ export const GarmentSelector = ({
       return;
     }
 
+    setRevisingFrom(history.currentVersion);
     setPreviousImage(generatedImage);
     setGeneratedImage(null);
     setGeneratedPrompt(null);
@@ -613,16 +866,14 @@ export const GarmentSelector = ({
 
           <div className="design-result-compare">
             <figure className="design-compare-item">
-              <figcaption className="design-compare-label">
-                {previousImage ? "Diseño anterior" : "Prenda base"}
-              </figcaption>
+              <figcaption className="design-compare-label">{compareLabel}</figcaption>
               <div className="design-compare-frame">
                 <Image
-                  src={previousImage ?? selectedBase.file}
-                  alt={previousImage ? "Propuesta de diseño anterior" : selectedBase.alt}
+                  src={compareImage ?? selectedBase.file}
+                  alt={compareImage ? `Propuesta de diseño: ${compareLabel}` : selectedBase.alt}
                   fill
                   sizes="(max-width: 640px) 92vw, (max-width: 1240px) 44vw, 520px"
-                  unoptimized={Boolean(previousImage)}
+                  unoptimized={Boolean(compareImage)}
                 />
               </div>
             </figure>
@@ -630,7 +881,11 @@ export const GarmentSelector = ({
             <span className="design-result-divider" aria-hidden="true" />
 
             <figure className="design-compare-item">
-              <figcaption className="design-compare-label">Propuesta generada</figcaption>
+              <figcaption className="design-compare-label">
+                {currentProposal
+                  ? `Versión ${currentProposal.version} · Actual`
+                  : "Propuesta generada"}
+              </figcaption>
               <div className="design-compare-frame">
                 <Image
                   src={generatedImage}
@@ -642,6 +897,12 @@ export const GarmentSelector = ({
               </div>
             </figure>
           </div>
+
+          <ProposalHistoryPanel
+            history={history}
+            onCompare={(version) => setHistory((current) => compareProposalWith(current, version))}
+            onSelect={showProposalVersion}
+          />
 
           <div className="design-result-copy">
             <p className="design-result-idea">“{idea.trim()}”</p>
@@ -673,7 +934,9 @@ export const GarmentSelector = ({
               <a
                 className="button button-secondary"
                 href={generatedImage}
-                download={`valdra-${selectedBase.id}-${selectedSize}.${downloadExtension}`}
+                download={`valdra-${selectedBase.id}-${selectedSize}${
+                  currentProposal ? `-v${currentProposal.version}` : ""
+                }.${downloadExtension}`}
               >
                 Descargar diseño
               </a>
@@ -724,7 +987,11 @@ export const GarmentSelector = ({
               ) : null}
             </div>
             <p className="design-preview-name">
-              {previousImage ? "Propuesta anterior" : selectedName}
+              {previousImage
+                ? revisingFrom
+                  ? `Cambios sobre la versión ${revisingFrom}`
+                  : "Propuesta anterior"
+                : selectedName}
             </p>
             <p className="design-preview-meta">
               {previousImage
@@ -785,13 +1052,7 @@ export const GarmentSelector = ({
               </p>
             </header>
 
-            {generationError ? (
-              <p className="form-error" role="alert">
-                {generationError}
-              </p>
-            ) : null}
-
-            <form className="design-form" onSubmit={handleIdeaSubmit} noValidate>
+            <form className="design-form" ref={formRef} onSubmit={handleIdeaSubmit} noValidate>
               {previousImage ? (
                 <fieldset className="design-revision-mode">
                   <legend>Cómo aplicar el cambio</legend>
@@ -843,7 +1104,7 @@ export const GarmentSelector = ({
                   }
                   aria-invalid={ideaError ? true : undefined}
                   aria-describedby={
-                    ideaError ? "design-idea-hint design-idea-error" : "design-idea-hint"
+                    ideaError ? "design-idea-hint design-idea-notice" : "design-idea-hint"
                   }
                   onChange={(event) => {
                     setIdea(event.target.value);
@@ -884,9 +1145,42 @@ export const GarmentSelector = ({
               </fieldset>
 
               {ideaError ? (
-                <p id="design-idea-error" className="form-field-error" role="alert">
-                  {ideaError}
-                </p>
+                <DesignNotice
+                  id="design-idea-notice"
+                  noticeRef={noticeRef}
+                  tone="error"
+                  title={ideaError.title}
+                  actions={ideaErrorActions}
+                >
+                  {ideaError.message}
+                </DesignNotice>
+              ) : generationError ? (
+                <DesignNotice
+                  noticeRef={noticeRef}
+                  tone="error"
+                  title="No pudimos generar la propuesta"
+                  actions={[
+                    { label: "Reintentar", onClick: () => formRef.current?.requestSubmit() },
+                  ]}
+                >
+                  {generationError}
+                </DesignNotice>
+              ) : null}
+
+              {generating ? (
+                <div className="design-progress" ref={noticeRef} role="status">
+                  <span className="design-progress-spinner" aria-hidden="true" />
+                  <div className="design-progress-body">
+                    <p className="design-progress-title">Tu diseño se está generando…</p>
+                    <p className="design-progress-meta">
+                      {elapsedSeconds > 0 ? `${elapsedSeconds} s · ` : ""}Suele tardar entre 15 y 60
+                      segundos. No cierres esta página.
+                    </p>
+                  </div>
+                  <button type="button" className="design-text-action" onClick={cancelGeneration}>
+                    Cancelar
+                  </button>
+                </div>
               ) : null}
 
               <div className="design-actions">
@@ -906,6 +1200,16 @@ export const GarmentSelector = ({
                           : "Aplicar en la zona"
                       : "Generar propuesta"}
                 </button>
+                {previousImage && currentProposal ? (
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={cancelRevision}
+                    disabled={generating}
+                  >
+                    Volver a la propuesta
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="button button-secondary"
@@ -915,12 +1219,6 @@ export const GarmentSelector = ({
                   Volver a la prenda
                 </button>
               </div>
-
-              {generating ? (
-                <p className="design-generating" role="status">
-                  Tu diseño se está generando…
-                </p>
-              ) : null}
             </form>
           </div>
         </section>
@@ -1056,7 +1354,11 @@ export const GarmentSelector = ({
 
               <fieldset className="personalizer-sizes">
                 <legend className="personalizer-label">Talla</legend>
-                <div className="personalizer-size-options">
+                <div
+                  className="personalizer-size-options"
+                  ref={sizeOptionsRef}
+                  data-missing={!selectedSize && sizeMissing ? "true" : undefined}
+                >
                   {MOCKUP_SIZES.map((size) => (
                     <button
                       key={size}
@@ -1069,18 +1371,12 @@ export const GarmentSelector = ({
                     </button>
                   ))}
                 </div>
-                <p id="size-hint" className="personalizer-hint" role="status">
-                  {selectedSize
-                    ? `Talla seleccionada: ${selectedSize}.`
-                    : "Elige una talla para continuar."}
-                </p>
               </fieldset>
 
               <button
                 type="button"
                 ref={customizeRef}
                 className="button button-primary personalizer-cta"
-                disabled={!selectedSize}
                 aria-describedby="size-hint"
                 aria-haspopup={!isAuthenticated ? "dialog" : undefined}
                 aria-controls={!isAuthenticated && authPromptOpen ? "auth-dialog" : undefined}
@@ -1088,6 +1384,16 @@ export const GarmentSelector = ({
               >
                 Personalizar
               </button>
+
+              <p
+                id="size-hint"
+                className="personalizer-notice"
+                data-tone={barNoticeTone}
+                role="status"
+              >
+                {!isAuthenticated && selectedSize ? <LockIcon /> : null}
+                {barNotice}
+              </p>
             </div>
           </div>
         </>
