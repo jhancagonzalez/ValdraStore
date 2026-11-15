@@ -8,7 +8,7 @@ Criterios transcritos del [Product Backlog de Notion](https://app.notion.com/p/4
 | --- | --- | --- | --- | --- | --- |
 | HU-11 | Seleccionar prenda, talla y color | 3 | Must Have | Jhancarlos Gonzalez | En construcción |
 | HU-12 | Ingresar una idea de diseño | 2 | Must Have | Jhancarlos Gonzalez | En construcción |
-| HU-13 | Cargar imagen de referencia | 3 | Should Have | Emanuel Giraldo | En construcción |
+| HU-13 | Cargar imagen de referencia | 3 | Should Have | Emanuel Giraldo | En validación (PR a `integracion`) |
 | HU-14 | Recibir una propuesta generada por IA | 8 | Must Have | Kevin Burgos | En construcción |
 | HU-15 | Ver la propuesta sobre un mockup | 5 | Must Have | Andrés Valencia | En construcción |
 | HU-16 | Solicitar modificaciones | 3 | Should Have | Daniel Cárdenas | En construcción |
@@ -59,6 +59,12 @@ Responsable registrado en Notion: Emanuel Giraldo.
 - [ ] El cliente puede cargar una imagen en formato y tamaño permitidos.
 - [ ] Si el archivo no es válido, el sistema lo rechaza con un mensaje claro.
 - [ ] La imagen cargada queda disponible como entrada para la generación con IA.
+
+> **Implementación en la rama de HU-13 (2026-11-15).** La carga está en el flujo
+> principal `/personalizar`, valida tipo real por bytes y máximo de 10 MB en navegador y
+> servidor, y la referencia se envía al modelo como entrada visual. Queda pendiente la
+> prueba manual en navegador con sesión de cliente y generación real; por eso los tres
+> criterios siguen sin marcar. Detalle en `evidence/HU-13.md`.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481a9b15de96e3dac18a1).
 

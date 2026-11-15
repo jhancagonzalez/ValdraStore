@@ -18,6 +18,7 @@ import {
   type MockupSelection,
   REVISION_ZONE_PRESETS,
 } from "@/lib/mockup-selection";
+import { ReferenceUpload } from "./reference-upload";
 
 const IDEA_MAX_LENGTH = 600;
 const IDEA_SUGGESTIONS = ["Floral minimalista", "Geométrico", "Retro", "Tipografía pequeña"];
@@ -82,6 +83,7 @@ export const GarmentSelector = ({
   const [ideaOpen, setIdeaOpen] = useState(false);
   const [idea, setIdea] = useState("");
   const [ideaError, setIdeaError] = useState<string | null>(null);
+  const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -230,6 +232,7 @@ export const GarmentSelector = ({
     setPreviousImage(null);
     setGeneratedPrompt(null);
     setDesignBrief("");
+    setReferenceImage(null);
     setRevisionMode("zone");
     setLastStrategy(null);
     setSelection(null);
@@ -339,6 +342,7 @@ export const GarmentSelector = ({
     setIdeaOpen(false);
     setIdeaError(null);
     setGenerationError(null);
+    setReferenceImage(null);
     customizeRef.current?.focus();
   };
 
@@ -507,7 +511,7 @@ export const GarmentSelector = ({
           designBrief: previousImage ? designBrief : undefined,
           idea: trimmedIdea,
           mode: previousImage ? "revise" : "create",
-          referenceImage: previousImage ?? undefined,
+          referenceImage: previousImage ?? referenceImage ?? undefined,
           selection: previousImage && !isRedesign ? selection : undefined,
           size: selectedSize,
           strategy,
@@ -574,6 +578,7 @@ export const GarmentSelector = ({
     setSelectionZone(null);
     setLastZoneLabel(null);
     setSelectionDrag(null);
+    setReferenceImage(null);
   };
 
   return (
@@ -882,6 +887,10 @@ export const GarmentSelector = ({
                   </button>
                 ))}
               </fieldset>
+
+              {!previousImage ? (
+                <ReferenceUpload disabled={generating} onChange={setReferenceImage} />
+              ) : null}
 
               {ideaError ? (
                 <p id="design-idea-error" className="form-field-error" role="alert">
