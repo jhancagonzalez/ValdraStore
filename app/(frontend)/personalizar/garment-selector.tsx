@@ -29,6 +29,7 @@ import {
   selectProposalVersion,
 } from "@/lib/proposal-history";
 import { DesignNotice, type DesignNoticeAction } from "./design-notice";
+import { MockupViewer } from "./mockup-viewer";
 import { ProposalHistoryPanel } from "./proposal-history";
 
 const IDEA_MAX_LENGTH = 600;
@@ -880,22 +881,16 @@ export const GarmentSelector = ({
 
             <span className="design-result-divider" aria-hidden="true" />
 
-            <figure className="design-compare-item">
-              <figcaption className="design-compare-label">
-                {currentProposal
+            <MockupViewer
+              base={selectedBase}
+              size={selectedSize}
+              imageSrc={generatedImage}
+              label={
+                currentProposal
                   ? `Versión ${currentProposal.version} · Actual`
-                  : "Propuesta generada"}
-              </figcaption>
-              <div className="design-compare-frame">
-                <Image
-                  src={generatedImage}
-                  alt={`Propuesta de diseño para ${selectedName}`}
-                  fill
-                  sizes="(max-width: 640px) 92vw, (max-width: 1240px) 44vw, 520px"
-                  unoptimized
-                />
-              </div>
-            </figure>
+                  : "Propuesta generada"
+              }
+            />
           </div>
 
           <ProposalHistoryPanel
