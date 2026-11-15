@@ -72,6 +72,7 @@ export interface Config {
     customers: Customer;
     media: Media;
     'private-spike-media': PrivateSpikeMedia;
+    'approved-designs': ApprovedDesign;
     variants: Variant;
     variantTypes: VariantType;
     variantOptions: VariantOption;
@@ -94,6 +95,7 @@ export interface Config {
     customers: CustomersSelect<false> | CustomersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'private-spike-media': PrivateSpikeMediaSelect<false> | PrivateSpikeMediaSelect<true>;
+    'approved-designs': ApprovedDesignsSelect<false> | ApprovedDesignsSelect<true>;
     variants: VariantsSelect<false> | VariantsSelect<true>;
     variantTypes: VariantTypesSelect<false> | VariantTypesSelect<true>;
     variantOptions: VariantOptionsSelect<false> | VariantOptionsSelect<true>;
@@ -268,6 +270,30 @@ export interface PrivateSpikeMedia {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "approved-designs".
+ */
+export interface ApprovedDesign {
+  id: number;
+  customer: number | Customer;
+  garment: string;
+  garmentLabel: string;
+  colorLabel: string;
+  size: string;
+  idea: string;
+  /**
+   * Imagen final en data URL. Solo la ven el cliente propietario y los administradores.
+   */
+  image: string;
+  approvedAt: string;
+  /**
+   * Punto de extensión para el pedido del Sprint 3. Sin historias de pedidos no se completa.
+   */
+  orderReference?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "variants".
  */
 export interface Variant {
@@ -393,6 +419,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'private-spike-media';
         value: number | PrivateSpikeMedia;
+      } | null)
+    | ({
+        relationTo: 'approved-designs';
+        value: number | ApprovedDesign;
       } | null)
     | ({
         relationTo: 'variants';
@@ -549,6 +579,23 @@ export interface PrivateSpikeMediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "approved-designs_select".
+ */
+export interface ApprovedDesignsSelect<T extends boolean = true> {
+  customer?: T;
+  garment?: T;
+  garmentLabel?: T;
+  colorLabel?: T;
+  size?: T;
+  idea?: T;
+  image?: T;
+  approvedAt?: T;
+  orderReference?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

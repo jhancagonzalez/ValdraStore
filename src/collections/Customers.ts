@@ -103,6 +103,18 @@ export const Customers: CollectionConfig = {
   hooks: {
     beforeOperation: [validateResetPassword, enforceOperationRateLimit],
     beforeValidate: [enforcePasswordPolicy, requireCustomerLastName],
+    beforeDelete: [
+      async ({ id, req }) => {
+        // HU-17: los diseños aprobados son datos personales del cliente y su
+        // relación es obligatoria, así que se eliminan antes de borrar la cuenta.
+        await req.payload.delete({
+          collection: "approved-designs",
+          overrideAccess: true,
+          req,
+          where: { customer: { equals: id } },
+        });
+      },
+    ],
     beforeChange: [
       ({ data, operation, originalDoc, req }) => {
         // A stolen session must not be able to replace the password through a

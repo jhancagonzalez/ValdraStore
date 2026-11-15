@@ -7,6 +7,7 @@ import * as migration_20261030_120000_media_rls from "./20261030_120000_media_rl
 import * as migration_20261030_130000_last_admin_guard from "./20261030_130000_last_admin_guard";
 import * as migration_20261030_131000_rate_limit from "./20261030_131000_rate_limit";
 import * as migration_20261030_140000_customer_last_name from "./20261030_140000_customer_last_name";
+import * as migration_20261115_120000_approved_designs from "./20261115_120000_approved_designs";
 
 export const migrations = [
   {
@@ -53,5 +54,10 @@ export const migrations = [
     up: migration_20261030_140000_customer_last_name.up,
     down: migration_20261030_140000_customer_last_name.down,
     name: "20261030_140000_customer_last_name",
+  },
+  {
+    up: migration_20261115_120000_approved_designs.up,
+    down: migration_20261115_120000_approved_designs.down,
+    name: "20261115_120000_approved_designs",
   },
 ];
