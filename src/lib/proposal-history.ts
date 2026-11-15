@@ -7,7 +7,7 @@
  * cambios desde una versión anterior parta de su propio contexto.
  */
 
-export type ProposalStrategy = "create" | "inpaint" | "text" | "redesign";
+export type ProposalStrategy = "create" | "addition" | "text";
 
 export type ProposalVersion = {
   /** Versión anterior desde la que se pidió el cambio; `null` en la propuesta inicial. */
@@ -47,8 +47,7 @@ export const EMPTY_PROPOSAL_HISTORY: ProposalHistory = {
 
 export const PROPOSAL_STRATEGY_LABELS: Record<ProposalStrategy, string> = {
   create: "Propuesta inicial",
-  inpaint: "Cambio en una zona",
-  redesign: "Rediseño del estampado",
+  addition: "Elemento agregado",
   text: "Texto agregado",
 };
 

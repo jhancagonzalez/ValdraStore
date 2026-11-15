@@ -129,7 +129,10 @@ export const ReferenceUpload = ({ disabled = false, onChange, value }: Reference
       }
 
       context.drawImage(image, 0, 0, dimensions.width, dimensions.height);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+      // JPEG no conserva transparencia; las referencias PNG/WebP se reencodan
+      // como WebP para mantener el alfa y no inflar el cuerpo de la petición.
+      const outputMimeType = validation.mimeType === "image/jpeg" ? "image/jpeg" : "image/webp";
+      const dataUrl = canvas.toDataURL(outputMimeType, 0.9);
 
       if (!aliveRef.current) {
         return;
@@ -158,7 +161,7 @@ export const ReferenceUpload = ({ disabled = false, onChange, value }: Reference
   return (
     <div className="reference-upload">
       <div className="reference-upload-head">
-        <label htmlFor={inputId}>Imagen de referencia (opcional)</label>
+        <label htmlFor={inputId}>Imagen para estampar (opcional)</label>
         <span className="form-hint">JPEG, PNG o WebP · máximo 10 MB</span>
       </div>
 
@@ -178,8 +181,8 @@ export const ReferenceUpload = ({ disabled = false, onChange, value }: Reference
       />
 
       <p id={hintId} className="form-hint">
-        Súbela si quieres que la IA tome el motivo o los colores de una imagen que ya tengas. Solo
-        aceptamos los formatos indicados; si el archivo no sirve, lo rechazamos con el motivo.
+        Imprimimos tu imagen tal cual sobre la prenda, sin redibujarla. Funciona mejor con fondos
+        blancos o transparentes; si el archivo no sirve, lo rechazamos con el motivo.
       </p>
 
       {error ? (

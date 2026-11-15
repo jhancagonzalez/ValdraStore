@@ -13,16 +13,9 @@ export type MockupSelectionRect = {
   height: number;
 };
 
-export type MockupCropRect = {
-  left: number;
-  top: number;
-  size: number;
-};
-
 export type ResolvedMockupSelection = {
   selection: MockupSelection;
   selectionRect: MockupSelectionRect;
-  cropRect: MockupCropRect;
 };
 
 /** Zona de edición por defecto: el pecho, sin tocar mangas ni fondo. */
@@ -37,14 +30,14 @@ export const DEFAULT_REVISION_SELECTION: MockupSelection = {
 export const REVISION_ZONE_PRESETS = [
   { id: "chest", label: "Pecho", selection: DEFAULT_REVISION_SELECTION },
   {
+    id: "detail",
+    label: "Detalle superior",
+    selection: { x: 0.58, y: 0.28, width: 0.12, height: 0.12 },
+  },
+  {
     id: "bottom",
     label: "Bajo",
     selection: { x: 0.22, y: 0.62, width: 0.56, height: 0.3 },
-  },
-  {
-    id: "all",
-    label: "Toda la prenda",
-    selection: { x: 0.1, y: 0.1, width: 0.8, height: 0.84 },
   },
 ] as const;
 
@@ -86,29 +79,7 @@ export const parseMockupSelection = (value: unknown): MockupSelection | null => 
   };
 };
 
-/**
- * Convierte la selección normalizada en píxeles y calcula un recorte cuadrado
- * con contexto alrededor. El modelo edita el recorte; la composición final usa
- * solo `selectionRect`, así el resto del mockup no cambia.
- */
-/**
- * Detecta si el centro de la selección cae en la zona de una manga. Las
- * mangas quedan fuera de "Editar la zona" porque el modelo gratuito no
- * reproduce el detalle; se derivan a "Rediseñar estampado".
- */
-export const isSleeveSelection = (
-  selection: MockupSelection,
-  category: "camisetas" | "hoodies",
-) => {
-  const centerX = selection.x + selection.width / 2;
-  const centerY = selection.y + selection.height / 2;
-  const side = centerX < 0.3 || centerX > 0.7;
-  const vertical =
-    category === "hoodies" ? centerY > 0.3 && centerY < 0.8 : centerY > 0.22 && centerY < 0.62;
-
-  return side && vertical;
-};
-
+/** Convierte la selección normalizada en el rectángulo de composición. */
 export const resolveMockupSelection = (
   selection: MockupSelection,
   imageWidth: number,
@@ -120,18 +91,5 @@ export const resolveMockupSelection = (
   const top = clamp(Math.round(selection.y * imageHeight), 0, imageHeight - height);
   const selectionRect = { left, top, width, height };
 
-  const longestSide = Math.min(imageWidth, imageHeight);
-  const minimumCrop = Math.max(64, Math.round(longestSide * 0.15));
-  const desiredCrop = Math.round(Math.max(width, height) * 1.5);
-  const cropSize = clamp(desiredCrop, minimumCrop, longestSide);
-  const centerX = left + width / 2;
-  const centerY = top + height / 2;
-  const cropLeft = clamp(Math.round(centerX - cropSize / 2), 0, imageWidth - cropSize);
-  const cropTop = clamp(Math.round(centerY - cropSize / 2), 0, imageHeight - cropSize);
-
-  return {
-    selection,
-    selectionRect,
-    cropRect: { left: cropLeft, top: cropTop, size: cropSize },
-  };
+  return { selection, selectionRect };
 };

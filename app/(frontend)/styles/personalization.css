@@ -691,6 +691,23 @@ body:has(.personalizer-bar) .site-footer {
   gap: 8px;
 }
 
+.design-zone-adjustments {
+  display: grid;
+  gap: 12px;
+}
+
+.design-zone-adjustments label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.design-zone-adjustments fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 .design-zone {
   min-width: 44px;
   min-height: 44px;
@@ -754,15 +771,6 @@ body:has(.personalizer-bar) .site-footer {
   color: var(--ink);
 }
 
-.design-redesign-note {
-  margin: 4px 0 0;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.55;
-}
-
 .design-workspace-main {
   display: grid;
   align-content: start;
@@ -798,74 +806,6 @@ body:has(.personalizer-bar) .site-footer {
   display: grid;
   gap: 24px;
   max-width: 720px;
-}
-
-.design-revision-mode {
-  display: grid;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.design-revision-mode legend {
-  padding: 0;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.design-revision-options {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.design-revision-option {
-  display: grid;
-  align-content: start;
-  gap: 6px;
-  min-height: 44px;
-  padding: 14px 16px;
-  border: 1px solid var(--line-strong);
-  border-radius: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background-color 180ms ease,
-    border-color 180ms ease,
-    color 180ms ease;
-}
-
-.design-revision-option strong {
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: -0.005em;
-}
-
-.design-revision-option span {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.design-revision-option:hover {
-  border-color: var(--ink);
-}
-
-.design-revision-option[aria-pressed="true"] {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.design-revision-option[aria-pressed="true"] span {
-  color: rgba(255, 255, 255, 0.76);
 }
 
 .design-prompt-box {
@@ -1726,10 +1666,6 @@ body:has(.personalizer-bar) .site-footer {
 
   .design-form {
     gap: 20px;
-  }
-
-  .design-revision-options {
-    grid-template-columns: 1fr;
   }
 
   .design-form-meta {

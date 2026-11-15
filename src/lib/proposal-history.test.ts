@@ -26,11 +26,11 @@ const threeVersions = (): ProposalHistory => {
   const v1 = addProposalVersion(EMPTY_PROPOSAL_HISTORY, proposal({ image: "img-1" }));
   const v2 = addProposalVersion(
     v1,
-    proposal({ basedOn: 1, image: "img-2", request: "agrega un sol", strategy: "inpaint" }),
+    proposal({ basedOn: 1, image: "img-2", request: "agrega un sol", strategy: "addition" }),
   );
   return addProposalVersion(
     v2,
-    proposal({ basedOn: 2, image: "img-3", request: "hazlo acuarela", strategy: "redesign" }),
+    proposal({ basedOn: 2, image: "img-3", request: "agrega una luna", strategy: "addition" }),
   );
 };
 
@@ -48,14 +48,14 @@ describe("addProposalVersion — criterio 2: cada solicitud genera una nueva pro
     const v1 = addProposalVersion(EMPTY_PROPOSAL_HISTORY, proposal());
     const v2 = addProposalVersion(
       v1,
-      proposal({ basedOn: 1, request: "agrega un sol", strategy: "inpaint", zoneLabel: "Pecho" }),
+      proposal({ basedOn: 1, request: "agrega un sol", strategy: "addition", zoneLabel: "Pecho" }),
     );
 
     expect(v2.currentVersion).toBe(2);
     expect(v2.compareVersion).toBe(1);
     expect(getCurrentProposal(v2)).toMatchObject({
       request: "agrega un sol",
-      strategy: "inpaint",
+      strategy: "addition",
       version: 2,
       zoneLabel: "Pecho",
     });
@@ -84,7 +84,7 @@ describe("historial — criterio 3: se conservan las propuestas para comparar", 
     expect(history.versions.map((item) => [item.version, item.image, item.request])).toEqual([
       [1, "img-1", "un paisaje andino"],
       [2, "img-2", "agrega un sol"],
-      [3, "img-3", "hazlo acuarela"],
+      [3, "img-3", "agrega una luna"],
     ]);
   });
 

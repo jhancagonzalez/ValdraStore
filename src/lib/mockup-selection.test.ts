@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_REVISION_SELECTION,
-  isSleeveSelection,
   parseMockupSelection,
   resolveMockupSelection,
 } from "./mockup-selection";
@@ -33,52 +32,32 @@ describe("parseMockupSelection", () => {
 });
 
 describe("resolveMockupSelection", () => {
-  it("calcula un recorte cuadrado que contiene la selección", () => {
+  it("calcula el rectángulo de composición de la selección", () => {
     const resolved = resolveMockupSelection(DEFAULT_REVISION_SELECTION, 1024, 1024);
 
     expect(resolved.selectionRect).toEqual({ left: 184, top: 164, width: 655, height: 717 });
-    expect(resolved.cropRect.size).toBe(1024);
-    expect(resolved.cropRect.left).toBe(0);
-    expect(resolved.cropRect.top).toBe(0);
   });
 
-  it("mantiene el recorte dentro de los bordes en una selección lateral", () => {
+  it("mantiene el rectángulo de composición dentro de los bordes", () => {
     const resolved = resolveMockupSelection(
       { x: 0.02, y: 0.3, width: 0.2, height: 0.3 },
       1024,
       1024,
     );
 
-    expect(resolved.cropRect.left).toBeGreaterThanOrEqual(0);
-    expect(resolved.cropRect.top).toBeGreaterThanOrEqual(0);
-    expect(resolved.cropRect.left + resolved.cropRect.size).toBeLessThanOrEqual(1024);
-    expect(resolved.cropRect.top + resolved.cropRect.size).toBeLessThanOrEqual(1024);
-    expect(resolved.selectionRect.left).toBeGreaterThanOrEqual(resolved.cropRect.left);
-    expect(resolved.selectionRect.top).toBeGreaterThanOrEqual(resolved.cropRect.top);
+    expect(resolved.selectionRect.left).toBeGreaterThanOrEqual(0);
+    expect(resolved.selectionRect.top).toBeGreaterThanOrEqual(0);
+    expect(resolved.selectionRect.left + resolved.selectionRect.width).toBeLessThanOrEqual(1024);
+    expect(resolved.selectionRect.top + resolved.selectionRect.height).toBeLessThanOrEqual(1024);
   });
 
-  it("detecta una manga en camiseta y en hoodie", () => {
-    expect(isSleeveSelection({ x: 0.04, y: 0.28, width: 0.24, height: 0.32 }, "camisetas")).toBe(
-      true,
-    );
-    expect(isSleeveSelection({ x: 0.72, y: 0.4, width: 0.24, height: 0.32 }, "hoodies")).toBe(true);
-  });
-
-  it("no bloquea pecho ni bajo", () => {
-    expect(isSleeveSelection(DEFAULT_REVISION_SELECTION, "camisetas")).toBe(false);
-    expect(isSleeveSelection({ x: 0.22, y: 0.62, width: 0.56, height: 0.3 }, "camisetas")).toBe(
-      false,
-    );
-  });
-
-  it("da contexto suficiente a una selección pequeña", () => {
+  it("conserva el tamaño de una selección pequeña", () => {
     const resolved = resolveMockupSelection(
       { x: 0.4, y: 0.4, width: 0.05, height: 0.05 },
       1024,
       1024,
     );
 
-    expect(resolved.cropRect.size).toBeGreaterThanOrEqual(154);
     expect(resolved.selectionRect.width).toBe(51);
     expect(resolved.selectionRect.height).toBe(51);
   });

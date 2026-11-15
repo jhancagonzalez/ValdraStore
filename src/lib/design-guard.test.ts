@@ -91,19 +91,19 @@ describe("checkDesignRequest — color de la prenda", () => {
 });
 
 describe("checkDesignRequest — modo por zona", () => {
-  it("envía los cambios de todo el diseño a «Rediseñar estampado»", () => {
+  it("rechaza cambiar todo el diseño en el flujo de adiciones", () => {
     const result = check("hazlo todo el diseño en acuarela", { mode: "zone", selectionArea: 0.2 });
 
-    expect(result).toMatchObject({ code: "whole-garment-zone", suggestRedesign: true });
+    expect(result).toMatchObject({ code: "whole-garment-zone" });
   });
 
   it("rechaza una zona más grande que el máximo permitido", () => {
     const result = check("agrega estrellas", { mode: "zone", selectionArea: MAX_ZONE_AREA + 0.1 });
 
-    expect(result).toMatchObject({ code: "zone-too-large", suggestRedesign: true });
+    expect(result).toMatchObject({ code: "zone-too-large" });
   });
 
-  it("no aplica las reglas de zona al rediseño", () => {
-    expect(check("todo el diseño en acuarela", { mode: "redesign" })).toBeNull();
+  it("no aplica las reglas de zona a la creación inicial", () => {
+    expect(check("todo el diseño en acuarela", { mode: "create" })).toBeNull();
   });
 });
