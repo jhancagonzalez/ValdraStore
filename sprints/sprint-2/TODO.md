@@ -76,8 +76,9 @@ Responsable registrado en Notion: Emanuel Giraldo.
 > cubiertos por código y pruebas. El criterio 2 se cumple solo en su primera mitad: el
 > diseño queda registrado, pero **no se asocia a un pedido** porque el Sprint 2 no tiene
 > colección de pedidos; la aprobación guarda un campo de texto `orderReference` como punto
-> de extensión del Sprint 3. Falta la prueba manual en navegador y aplicar la migración
-> con aprobación. Detalle en `evidence/HU-17.md`.
+> de extensión del Sprint 3. La migración ya está aplicada en Supabase con aprobación y
+> las protecciones del endpoint se probaron (401 sin sesión y 403 con origen ajeno). Falta
+> la prueba manual en navegador. Detalle en `evidence/HU-17.md`.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef364814f96edd0d59bbde170).
 
