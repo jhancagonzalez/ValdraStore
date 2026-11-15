@@ -18,6 +18,7 @@ import {
   type MockupSelection,
   REVISION_ZONE_PRESETS,
 } from "@/lib/mockup-selection";
+import { MockupViewer } from "./mockup-viewer";
 
 const IDEA_MAX_LENGTH = 600;
 const IDEA_SUGGESTIONS = ["Floral minimalista", "Geométrico", "Retro", "Tipografía pequeña"];
@@ -629,18 +630,7 @@ export const GarmentSelector = ({
 
             <span className="design-result-divider" aria-hidden="true" />
 
-            <figure className="design-compare-item">
-              <figcaption className="design-compare-label">Propuesta generada</figcaption>
-              <div className="design-compare-frame">
-                <Image
-                  src={generatedImage}
-                  alt={`Propuesta de diseño para ${selectedName}`}
-                  fill
-                  sizes="(max-width: 640px) 92vw, (max-width: 1240px) 44vw, 520px"
-                  unoptimized
-                />
-              </div>
-            </figure>
+            <MockupViewer base={selectedBase} size={selectedSize} imageSrc={generatedImage} />
           </div>
 
           <div className="design-result-copy">
