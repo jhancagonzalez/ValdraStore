@@ -965,6 +965,80 @@ body:has(.personalizer-bar) .site-footer {
   color: var(--ink);
 }
 
+/* Reference upload (HU-13) */
+.reference-upload {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px dashed var(--line-strong);
+}
+
+.reference-upload-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 16px;
+}
+
+.reference-upload-head label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.reference-upload-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 160ms ease;
+}
+
+.reference-upload-input:hover:enabled {
+  border-color: var(--ink);
+}
+
+.reference-upload-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.reference-upload-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  padding-top: 4px;
+}
+
+.reference-upload-preview img {
+  width: 120px;
+  height: 120px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  object-fit: cover;
+}
+
+.reference-upload-meta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.reference-upload-name {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
 .design-actions {
   display: flex;
   flex-wrap: wrap;

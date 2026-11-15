@@ -9,6 +9,7 @@ import { getMockupBase, getMockupBaseName, isMockupSize } from "@/lib/mockup-bas
 import { normalizeReferenceImage } from "@/lib/mockup-image";
 import { DEFAULT_REVISION_SELECTION, parseMockupSelection } from "@/lib/mockup-selection";
 import { stripControlCharacters } from "@/lib/sanitize";
+import { MAX_REFERENCE_IMAGE_BYTES } from "@/services/ai/reference-image";
 import { moderateDesignRequest } from "@/services/personalization/moderation";
 import {
   buildInpaintingMask,
@@ -48,7 +49,6 @@ Assistant: blue artwork, clean vector shapes, same composition`;
 const INPAINTING_NEGATIVE_PROMPT =
   "person, mannequin, body, hands, text, logo, brand, watermark, photo, 3d, shadow, background change, extra garment, second t-shirt, duplicated clothing, nsfw, nude, gore, blood, weapon";
 const MAX_IDEA_LENGTH = 600;
-const MAX_REFERENCE_BYTES = 3_000_000;
 const MAX_PROVIDER_IMAGE_BYTES = 3_000_000;
 const ALLOWED_REFERENCE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
@@ -250,7 +250,7 @@ const parseReferenceImage = (value: unknown): ImagePayload | null => {
     !ALLOWED_REFERENCE_MIME_TYPES.has(mimeType) ||
     detected !== mimeType ||
     buffer.length === 0 ||
-    buffer.length > MAX_REFERENCE_BYTES
+    buffer.length > MAX_REFERENCE_IMAGE_BYTES
   ) {
     return null;
   }
@@ -401,13 +401,21 @@ const runModel = async (form: FormData): Promise<ProviderResult> => {
   return { ok: true, image };
 };
 
-const generateFromBase = async (baseImage: Buffer, prompt: string): Promise<ProviderResult> => {
+const generateFromBase = async (
+  baseImage: Buffer,
+  prompt: string,
+  mimeType = "image/jpeg",
+): Promise<ProviderResult> => {
   const form = new FormData();
   form.append("prompt", prompt);
   form.append(
     "input_image",
-    new Blob([new Uint8Array(baseImage)], { type: "image/jpeg" }),
-    "prenda.jpg",
+    new Blob([new Uint8Array(baseImage)], { type: mimeType }),
+    mimeType === "image/png"
+      ? "prenda.png"
+      : mimeType === "image/webp"
+        ? "prenda.webp"
+        : "prenda.jpg",
   );
   return runModel(form);
 };
@@ -762,14 +770,44 @@ export async function POST(request: Request) {
     });
   }
 
-  const baseImage = await loadBaseImage();
+  // HU-13: la referencia del cliente es la entrada visual del modelo; si no hay,
+  // se usa el mockup base de la prenda seleccionada.
+  let inputImage: Buffer;
+  let inputMimeType = "image/jpeg";
 
-  if (!baseImage) {
-    return errorResponse("No pudimos cargar la prenda seleccionada.", 500);
+  if (body.referenceImage !== undefined && body.referenceImage !== null) {
+    const rawReference = parseReferenceImage(body.referenceImage);
+
+    if (!rawReference) {
+      return errorResponse(
+        "La imagen de referencia debe ser JPEG, PNG o WebP y no superar 10 MB.",
+        400,
+      );
+    }
+
+    const referenceImage = await normalizeReferenceImage(
+      rawReference.buffer,
+      rawReference.mimeType,
+    );
+
+    if (!referenceImage) {
+      return errorResponse("La imagen de referencia tiene dimensiones no válidas.", 400);
+    }
+
+    inputImage = referenceImage.buffer;
+    inputMimeType = referenceImage.mimeType;
+  } else {
+    const baseImage = await loadBaseImage();
+
+    if (!baseImage) {
+      return errorResponse("No pudimos cargar la prenda seleccionada.", 500);
+    }
+
+    inputImage = baseImage;
   }
 
   const prompt = buildCreatePrompt(garmentName, idea);
-  const result = await generateFromBase(baseImage, prompt);
+  const result = await generateFromBase(inputImage, prompt, inputMimeType);
 
   if (!result.ok) {
     return errorResponse(result.message, result.status);
