@@ -25,6 +25,10 @@ Notion conserva la fuente de verdad y este resumen debe actualizarse.
 - La cuota de 3 generaciones por usuario al día no se implementa por ahora.
 - La idea de diseño no puede enviarse vacía.
 - La imagen de referencia es una imagen JPEG/PNG/WebP de hasta 10 MB.
+- La imagen de referencia se imprime tal cual sobre la prenda; el fondo claro se recorta.
+  Si el fondo es complejo, se usa como entrada del modelo generativo.
+- Las zonas grandes de edición usan el modelo de edición sobre la propuesta anterior; el
+  inpainting queda para zonas pequeñas.
 - Mientras se genera, la interfaz muestra «Tu diseño se está generando…».
 - Cada integrante trabaja en su rama y abre un PR a `integracion`.
 - Las propuestas y su historial (HU-16) viven solo en el navegador; recargar la página
@@ -79,6 +83,11 @@ Responsable registrado en Notion: Emanuel Giraldo.
 > servidor, y la referencia se envía al modelo como entrada visual. Queda pendiente la
 > prueba manual en navegador con sesión de cliente y generación real; por eso los tres
 > criterios siguen sin marcar. Detalle en `evidence/HU-13.md`.
+>
+> **Ajuste de integración (2026-11-15).** La prueba del flujo completo mostró que enviar la
+> referencia como `input_image` generaba un diseño nuevo, no la imagen subida. Ahora la
+> referencia se compone tal cual sobre la prenda; si el fondo no es claro, se mantiene el
+> modelo como respaldo. Detalle en `evidence/HU-13.md`.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481a9b15de96e3dac18a1).
 

@@ -12,6 +12,10 @@ import { stripControlCharacters } from "@/lib/sanitize";
 import { MAX_REFERENCE_IMAGE_BYTES } from "@/services/ai/reference-image";
 import { moderateDesignRequest } from "@/services/personalization/moderation";
 import {
+  composeReferenceDesign,
+  type ReferencePlacement,
+} from "@/services/personalization/reference-composite";
+import {
   buildInpaintingMask,
   hasVisibleSelectionChange,
   type InpaintingMask,
@@ -51,6 +55,8 @@ const INPAINTING_NEGATIVE_PROMPT =
 const MAX_IDEA_LENGTH = 600;
 const MAX_PROVIDER_IMAGE_BYTES = 3_000_000;
 const ALLOWED_REFERENCE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+/** Zonas grandes se editan con el modelo de edición, no con inpainting. */
+const LARGE_ZONE_AREA = 0.3;
 
 type MockupRequest = {
   baseId?: unknown;
@@ -151,10 +157,23 @@ const buildInpaintingPrompt = (garmentName: string, idea: string) => {
 };
 
 const buildRedesignPrompt = (garmentName: string, designBrief: string, idea: string) =>
-  buildCreatePrompt(
-    garmentName,
-    `${designBrief || "el diseño anterior"}. Ajuste solicitado: ${idea}. El estampado va impreso en el pecho de la camiseta, no en el fondo de la foto.`,
-  );
+  [
+    "Edit the printed graphic on this shirt. Keep the existing design's subject, colors and composition.",
+    `Current design: ${designBrief || "the previous design"}.`,
+    `Requested adjustment: ${idea}.`,
+    `Keep the same ${garmentName.toLowerCase()}, fabric color, collar, sleeves, hem, folds, lighting, background and camera framing identical.`,
+    "Apply only the requested adjustment. Do not add people, text, logos or watermarks unless requested.",
+    "Clean vector illustration style, professional screen print.",
+  ].join(" ");
+
+const buildEditPrompt = (garmentName: string, change: string) =>
+  [
+    "Edit the printed graphic on this shirt. Keep the existing design's subject, pose, colors, composition, position and size.",
+    `Requested change: ${change}.`,
+    `Apply only that change to the existing graphic. Keep the same ${garmentName.toLowerCase()}, fabric color, collar, sleeves, hem, folds, lighting, background and camera framing.`,
+    "Do not redraw or replace the rest of the design. Do not add people, text, logos or watermarks unless the customer asked for text.",
+    "Clean vector illustration style, professional screen print.",
+  ].join(" ");
 
 /**
  * Reescribe la petición del cliente como una descripción concreta en inglés.
@@ -709,14 +728,8 @@ export async function POST(request: Request) {
     }
 
     if (strategy === "redesign") {
-      const baseImage = await loadBaseImage();
-
-      if (!baseImage) {
-        return errorResponse("No pudimos cargar la prenda seleccionada.", 500);
-      }
-
-      const prompt = buildRedesignPrompt(garmentName, designBrief, idea);
-      const result = await generateFromBase(baseImage, prompt);
+      const prompt = buildRedesignPrompt(garmentName, designBrief, await rewriteIdea(idea));
+      const result = await generateFromBase(referenceImage.buffer, prompt, referenceImage.mimeType);
 
       if (!result.ok) {
         return errorResponse(result.message, result.status);
@@ -729,7 +742,44 @@ export async function POST(request: Request) {
     }
 
     const rewrittenIdea = await rewriteIdea(idea);
-    const prompt = buildInpaintingPrompt(garmentName, rewrittenIdea);
+    const isLargeZone = selection.width * selection.height >= LARGE_ZONE_AREA;
+    const prompt = isLargeZone
+      ? buildEditPrompt(garmentName, rewrittenIdea)
+      : buildInpaintingPrompt(garmentName, rewrittenIdea);
+
+    if (isLargeZone) {
+      // El inpainting repinta todo el recuadro y borra el diseño existente. En
+      // zonas grandes se edita la propuesta anterior completa para conservarla.
+      const result = await generateFromBase(referenceImage.buffer, prompt, referenceImage.mimeType);
+
+      if (!result.ok) {
+        return errorResponse(result.message, result.status);
+      }
+
+      let changed = true;
+
+      try {
+        changed = await hasVisibleSelectionChange(
+          referenceImage.buffer,
+          result.image.buffer,
+          selection,
+        );
+      } catch {
+        // Si la comparación falla, no bloqueamos una respuesta válida del modelo.
+      }
+
+      if (!changed) {
+        return errorResponse(
+          "La IA no aplicó un cambio visible en esa zona. Prueba con una descripción más concreta o usa “Rediseñar estampado”.",
+          422,
+        );
+      }
+
+      return NextResponse.json({
+        image: `data:${result.image.mimeType};base64,${result.image.buffer.toString("base64")}`,
+        prompt,
+      });
+    }
 
     let mask: InpaintingMask;
 
@@ -770,9 +820,15 @@ export async function POST(request: Request) {
     });
   }
 
-  // HU-13: la referencia del cliente es la entrada visual del modelo; si no hay,
-  // se usa el mockup base de la prenda seleccionada.
-  let inputImage: Buffer;
+  // HU-13: la referencia se imprime tal cual sobre la prenda. Si el recorte
+  // automático no es posible (fondo complejo), se usa como entrada del modelo.
+  const baseImage = await loadBaseImage();
+
+  if (!baseImage) {
+    return errorResponse("No pudimos cargar la prenda seleccionada.", 500);
+  }
+
+  let inputImage: Buffer = baseImage;
   let inputMimeType = "image/jpeg";
 
   if (body.referenceImage !== undefined && body.referenceImage !== null) {
@@ -794,16 +850,26 @@ export async function POST(request: Request) {
       return errorResponse("La imagen de referencia tiene dimensiones no válidas.", 400);
     }
 
-    inputImage = referenceImage.buffer;
-    inputMimeType = referenceImage.mimeType;
-  } else {
-    const baseImage = await loadBaseImage();
+    const placement: ReferencePlacement = /\b(bajo|abajo|inferior)\b/i.test(idea)
+      ? "bottom"
+      : "chest";
+    let composed: Buffer | null = null;
 
-    if (!baseImage) {
-      return errorResponse("No pudimos cargar la prenda seleccionada.", 500);
+    try {
+      composed = await composeReferenceDesign(baseImage, referenceImage.buffer, placement);
+    } catch {
+      // Si sharp falla, se intenta el modelo generativo como respaldo.
     }
 
-    inputImage = baseImage;
+    if (composed) {
+      return NextResponse.json({
+        image: `data:image/jpeg;base64,${composed.toString("base64")}`,
+        prompt: "Imagen de referencia aplicada tal cual como estampado.",
+      });
+    }
+
+    inputImage = referenceImage.buffer;
+    inputMimeType = referenceImage.mimeType;
   }
 
   const prompt = buildCreatePrompt(garmentName, idea);

@@ -95,6 +95,7 @@ export const ApprovedDesigns: CollectionConfig = {
           "Imagen final en data URL. Solo la ven el cliente propietario y los administradores.",
       },
       label: "Diseño aprobado",
+      maxLength: 3_000_000,
       required: true,
     },
     {
