@@ -13,6 +13,8 @@ type ReferenceUploadProps = {
   disabled?: boolean;
   /** Recibe la referencia ya reducida como data URL, o `null` al quitarla. */
   onChange: (dataUrl: string | null) => void;
+  /** Referencia vigente en el formulario; `null` limpia la vista previa. */
+  value: string | null;
 };
 
 type ReferencePreview = {
@@ -36,7 +38,7 @@ const readImage = (url: string): Promise<HTMLImageElement> =>
  * y el máximo de 10 MB, y reduce la imagen antes de enviarla: el cuerpo de una
  * función de Vercel Hobby no admite 10 MB en Base64.
  */
-export const ReferenceUpload = ({ disabled = false, onChange }: ReferenceUploadProps) => {
+export const ReferenceUpload = ({ disabled = false, onChange, value }: ReferenceUploadProps) => {
   const inputId = useId();
   const hintId = useId();
   const errorId = useId();
@@ -53,6 +55,21 @@ export const ReferenceUpload = ({ disabled = false, onChange }: ReferenceUploadP
       aliveRef.current = false;
     };
   }, []);
+
+  // Si el formulario descarta la referencia (cambio de prenda, talla o color),
+  // la vista previa debe desaparecer con ella.
+  useEffect(() => {
+    if (value !== null || preview === null) {
+      return;
+    }
+
+    setPreview(null);
+    setError(null);
+
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+  }, [preview, value]);
 
   const clear = () => {
     setPreview(null);

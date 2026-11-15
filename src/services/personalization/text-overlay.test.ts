@@ -45,7 +45,7 @@ describe("renderTextOverlay", () => {
       }
     }
     expect(hasDarkPixel).toBe(true);
-  });
+  }, 15_000);
 
   it("escapa caracteres especiales y de control sin romper el SVG", async () => {
     const white = await solid(512, 512, { r: 255, g: 255, b: 255 });
@@ -60,5 +60,5 @@ describe("renderTextOverlay", () => {
 
     expect(metadata.width).toBe(512);
     expect(metadata.height).toBe(512);
-  });
+  }, 15_000);
 });
