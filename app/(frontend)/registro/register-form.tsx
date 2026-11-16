@@ -193,7 +193,7 @@ export const RegisterForm = ({ next }: RegisterFormProps) => {
 
   return (
     <>
-      <form className="form" onSubmit={onSubmit} noValidate={false}>
+      <form className="form" onSubmit={onSubmit}>
         {error ? (
           <p className="form-error" role="alert">
             {error}
@@ -268,7 +268,11 @@ export const RegisterForm = ({ next }: RegisterFormProps) => {
             onChange={(event) => setPassword(event.target.value)}
             aria-invalid={Boolean(fieldErrors.password)}
             aria-describedby={
-              fieldErrors.password ? "password-error" : password ? undefined : "password-hint"
+              fieldErrors.password
+                ? "password-error"
+                : password
+                  ? "password-rules"
+                  : "password-hint"
             }
           />
           {fieldErrors.password ? (

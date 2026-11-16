@@ -28,6 +28,7 @@ export const ProductImage = ({ src, alt, sizes, preload = false }: ProductImageP
       alt={imageAlt}
       fill
       preload={preload}
+      loading={preload ? "eager" : "lazy"}
       sizes={sizes}
       style={{ objectFit: "cover" }}
       data-fallback={usingFallback ? "true" : undefined}

@@ -1,99 +1,20 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { type FormEvent, type PointerEvent, useEffect, useRef, useState } from "react";
-import { appendDesignBrief } from "@/lib/design-brief";
-import { checkDesignRequest, type DesignGuardMode } from "@/lib/design-guard";
-import { extractDesignText } from "@/lib/design-text";
+import { useEffect, useRef, useState } from "react";
 import {
   getMockupBase,
   getMockupBaseName,
   MOCKUP_BASES,
-  MOCKUP_SIZES,
   type MockupCategory,
   type MockupSize,
 } from "@/lib/mockup-bases";
-import { type MockupSelection, REVISION_ZONE_PRESETS } from "@/lib/mockup-selection";
-import {
-  addProposalVersion,
-  compareProposalWith,
-  EMPTY_PROPOSAL_HISTORY,
-  getCurrentProposal,
-  getProposalVersion,
-  type ProposalHistory,
-  selectProposalVersion,
-} from "@/lib/proposal-history";
-import { type Approval, ApproveDesign } from "./approve-design";
-import { DesignNotice, type DesignNoticeAction } from "./design-notice";
-import { MockupViewer } from "./mockup-viewer";
-import { ProposalHistoryPanel } from "./proposal-history";
-import { ReferenceUpload } from "./reference-upload";
-
-const IDEA_MAX_LENGTH = 600;
-const IDEA_SUGGESTIONS = ["Floral minimalista", "Geométrico", "Retro", "Tipografía pequeña"];
-const ADDITION_SUGGESTIONS = [
-  "Una cancha de fútbol",
-  "Tres árboles",
-  "Un sol amarillo",
-  "Agregar texto",
-];
-const CATEGORY_ORDER: MockupCategory[] = ["camisetas", "hoodies"];
-const CATEGORY_LABELS: Record<MockupCategory, string> = {
-  camisetas: "Camisetas",
-  hoodies: "Hoodies",
-};
-const STEPS = ["Prenda", "Idea", "Propuesta"] as const;
-
-const clamp01 = (value: number) => Math.min(Math.max(value, 0), 1);
-
-const ArrowLeftIcon = () => (
-  <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-    <path d="M14 8H2m5-5L2 8l5 5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-  </svg>
-);
-
-const ArrowRightIcon = () => (
-  <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-    <path d="M2 8h12M9 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-  </svg>
-);
-
-const ChevronDownIcon = () => (
-  <svg viewBox="0 0 12 8" width="12" height="8" aria-hidden="true" focusable="false">
-    <path d="M1 1.5 6 6.5l5-5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-  </svg>
-);
-
-const LockIcon = () => (
-  <svg
-    viewBox="0 0 16 16"
-    width="12"
-    height="12"
-    aria-hidden="true"
-    focusable="false"
-    style={{ flex: "0 0 auto" }}
-  >
-    <rect x="3" y="7" width="10" height="7" fill="none" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" strokeWidth="1.5" />
-  </svg>
-);
-
-const MIN_SELECTION_SIZE = 0.02;
-/** Si el proveedor no responde en este tiempo, se corta y se ofrece reintentar. */
-const CLIENT_GENERATION_TIMEOUT_MS = 200_000;
-
-/** Problema que el cliente debe resolver antes de generar (HU-12, HU-16). */
-type FormIssue = {
-  title: string;
-  message: string;
-  suggestedColorKey?: string;
-};
-
-const formIssue = (title: string, message: string): FormIssue => ({
-  title,
-  message,
-});
+import { AuthPrompt } from "./auth-prompt";
+import { DesignForm } from "./design-form";
+import type { DesignNoticeAction } from "./design-notice";
+import { DesignResult } from "./design-result";
+import { GarmentPicker } from "./garment-picker";
+import { PersonalizerSteps } from "./personalizer-steps";
+import { useDesignGeneration } from "./use-design-generation";
 
 type GarmentSelectorProps = {
   initialBaseId: string;
@@ -103,9 +24,9 @@ type GarmentSelectorProps = {
 
 /**
  * Selector de prenda base (HU-11), flujo de idea (HU-12) y modificaciones con
- * historial de propuestas (HU-16).
- * La selección y la propuesta viven solo en el navegador: no se persisten en
- * Payload. El resultado se descarga y se advierte antes de salir.
+ * historial de propuestas (HU-16). La selección y la propuesta viven solo en el
+ * navegador: no se persisten en Payload. El resultado se descarga y se advierte
+ * antes de salir.
  */
 export const GarmentSelector = ({
   initialBaseId,
@@ -117,39 +38,11 @@ export const GarmentSelector = ({
   const [selectedId, setSelectedId] = useState(initialBase.id);
   const [selectedSize, setSelectedSize] = useState<MockupSize | null>(initialSize);
   const [ideaOpen, setIdeaOpen] = useState(false);
-  const [idea, setIdea] = useState("");
-  const [ideaError, setIdeaError] = useState<FormIssue | null>(null);
-  const [referenceImage, setReferenceImage] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const [generationError, setGenerationError] = useState<string | null>(null);
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [previousImage, setPreviousImage] = useState<string | null>(null);
-  const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
-  const [designBrief, setDesignBrief] = useState("");
-  const [lastStrategy, setLastStrategy] = useState<"addition" | "text" | null>(null);
-  const [selection, setSelection] = useState<MockupSelection | null>(null);
-  const [selectionZone, setSelectionZone] = useState<string | null>(null);
-  const [lastZoneLabel, setLastZoneLabel] = useState<string | null>(null);
-  const [selectionDrag, setSelectionDrag] = useState<{ x: number; y: number } | null>(null);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
-  const [approvedDesign, setApprovedDesign] = useState<Approval | null>(null);
-  // HU-16: todas las versiones del proceso, solo en memoria del navegador.
-  const [history, setHistory] = useState<ProposalHistory>(EMPTY_PROPOSAL_HISTORY);
-  const [revisingFrom, setRevisingFrom] = useState<number | null>(null);
   const [sizeMissing, setSizeMissing] = useState(false);
-  const [generationStartedAt, setGenerationStartedAt] = useState<number | null>(null);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const noticeRef = useRef<HTMLDivElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
-  const timedOutRef = useRef(false);
-  const sizeOptionsRef = useRef<HTMLDivElement>(null);
-  const ideaRef = useRef<HTMLTextAreaElement>(null);
-  const resultRef = useRef<HTMLElement>(null);
   const customizeRef = useRef<HTMLButtonElement>(null);
-  const authDialogRef = useRef<HTMLDivElement>(null);
+  const sizeOptionsRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLUListElement>(null);
-  const generationAbortRef = useRef<AbortController | null>(null);
-  const generationIdRef = useRef(0);
 
   const categoryBases = MOCKUP_BASES.filter((base) => base.category === activeCategory);
   const selectedBase = categoryBases.find((base) => base.id === selectedId) ?? categoryBases[0];
@@ -161,99 +54,130 @@ export const GarmentSelector = ({
     categoryBases[(currentIndex - 1 + categoryBases.length) % categoryBases.length];
   const nextBase = categoryBases[(currentIndex + 1) % categoryBases.length];
   const selectedName = getMockupBaseName(selectedBase);
-  const detectedText = previousImage ? extractDesignText(idea) : null;
-  const suggestions = previousImage ? ADDITION_SUGGESTIONS : IDEA_SUGGESTIONS;
+  const design = useDesignGeneration({ ideaOpen, selectedBase, selectedSize });
+  const generatedImage = design.generatedImage;
   const nextPath = `/personalizar?base=${encodeURIComponent(selectedBase.id)}&size=${
     selectedSize ?? ""
   }`;
-  const downloadExtension = generatedImage?.startsWith("data:image/png")
-    ? "png"
-    : generatedImage?.startsWith("data:image/webp")
-      ? "webp"
-      : "jpg";
   const activeStep = ideaOpen ? (generatedImage ? 2 : 1) : 0;
-  const currentProposal = getCurrentProposal(history);
-  const comparedProposal = getProposalVersion(history, history.compareVersion);
-  const compareImage = currentProposal ? (comparedProposal?.image ?? null) : previousImage;
-  const compareLabel = comparedProposal
-    ? `Versión ${comparedProposal.version}`
-    : compareImage
-      ? "Diseño anterior"
-      : "Prenda base";
-  // Aviso visible de la barra: explica por qué no se puede continuar todavía.
   const barNotice = !selectedSize
     ? sizeMissing
       ? "Elige una talla antes de personalizar."
       : "Elige una talla para continuar."
     : isAuthenticated
-      ? `Talla ${selectedSize} seleccionada. Continúa con tu idea.`
+      ? `Talla ${selectedSize} lista. Continúa para describir tu diseño.`
       : "Para personalizar debes iniciar sesión. Tu prenda y talla se conservan.";
   const barNoticeTone = !selectedSize && sizeMissing ? "error" : "info";
+
+  const selectBase = (id: string) => {
+    if (id === selectedId) {
+      return;
+    }
+    if (!design.confirmDiscardDraft()) {
+      return;
+    }
+    setSelectedId(id);
+    setIdeaOpen(false);
+    design.resetGeneratedState();
+  };
+
+  const selectSize = (size: MockupSize) => {
+    if (size === selectedSize) {
+      return;
+    }
+    if (!design.confirmDiscardDraft()) {
+      return;
+    }
+    setSelectedSize(size);
+    setSizeMissing(false);
+    design.resetGeneratedState();
+  };
+
+  const selectCategory = (category: MockupCategory) => {
+    if (category === activeCategory) {
+      return;
+    }
+
+    // Keep the same color when switching between t-shirts and hoodies.
+    const next =
+      MOCKUP_BASES.find(
+        (base) => base.category === category && base.colorKey === selectedBase.colorKey,
+      ) ?? MOCKUP_BASES.find((base) => base.category === category);
+
+    if (!next || !design.confirmDiscardDraft()) {
+      return;
+    }
+
+    setActiveCategory(category);
+    setSelectedId(next.id);
+    setIdeaOpen(false);
+    design.resetGeneratedState();
+  };
+
+  const closeIdeaPanel = () => {
+    design.prepareClose();
+    setIdeaOpen(false);
+    customizeRef.current?.focus();
+  };
+
+  const handleCustomize = (): boolean => {
+    if (!selectedSize) {
+      setSizeMissing(true);
+      sizeOptionsRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+      return false;
+    }
+    if (!isAuthenticated) {
+      setAuthPromptOpen(true);
+      return false;
+    }
+    setIdeaOpen(true);
+    return true;
+  };
+
+  const openDesigner = (target: "image" | "text") => {
+    // Solo se fija el foco deseado si el panel se abrió; si falta talla o
+    // sesión, el intento se descarta para no robar el foco más tarde.
+    if (handleCustomize()) {
+      design.setDesignFocus(target);
+    }
+  };
 
   const closeAuthPrompt = () => {
     setAuthPromptOpen(false);
     customizeRef.current?.focus();
   };
 
-  useEffect(() => {
-    if (!authPromptOpen) {
+  /** Cambia a la prenda base del color pedido sin cerrar el formulario. */
+  const switchToColor = (colorKey: string) => {
+    const target = MOCKUP_BASES.find(
+      (base) => base.category === selectedBase.category && base.colorKey === colorKey,
+    );
+
+    if (!target || !design.confirmDiscardDraft()) {
       return;
     }
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    authDialogRef.current?.focus();
+    setActiveCategory(target.category);
+    setSelectedId(target.id);
+    design.resetGeneratedState();
+  };
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setAuthPromptOpen(false);
-        customizeRef.current?.focus();
-        return;
-      }
+  const ideaErrorActions: DesignNoticeAction[] = [];
 
-      if (event.key !== "Tab") {
-        return;
-      }
+  if (design.ideaError?.suggestedColorKey) {
+    const target = MOCKUP_BASES.find(
+      (base) =>
+        base.category === selectedBase.category &&
+        base.colorKey === design.ideaError?.suggestedColorKey,
+    );
 
-      const focusable = authDialogRef.current?.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      );
-
-      if (!focusable?.length) {
-        return;
-      }
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [authPromptOpen]);
-
-  useEffect(() => {
-    if (!ideaOpen) {
-      return;
+    if (target) {
+      ideaErrorActions.push({
+        label: `Cambiar a ${getMockupBaseName(target)}`,
+        onClick: () => switchToColor(target.colorKey),
+      });
     }
-
-    if (generatedImage) {
-      resultRef.current?.focus();
-    } else {
-      ideaRef.current?.focus();
-    }
-  }, [ideaOpen, generatedImage]);
+  }
 
   // Keeps the active thumbnail visible when arrows reach an item outside the rail.
   useEffect(() => {
@@ -272,70 +196,8 @@ export const GarmentSelector = ({
     }
   }, [selectedId]);
 
-  /**
-   * Un diseño aprobado ya está registrado (HU-17), así que deja de considerarse
-   * un borrador sin guardar y no se avisa de pérdida al navegar.
-   */
-  // Lleva el aviso o el progreso a la vista: el cliente no tiene que buscarlos.
   useEffect(() => {
-    if (!ideaError && !generationError && !generating) {
-      return;
-    }
-
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    noticeRef.current?.scrollIntoView({
-      behavior: reduceMotion ? "auto" : "smooth",
-      block: "center",
-    });
-  }, [ideaError, generationError, generating]);
-
-  useEffect(() => {
-    if (!generating || generationStartedAt === null) {
-      setElapsedSeconds(0);
-      return;
-    }
-
-    const timer = window.setInterval(() => {
-      setElapsedSeconds(Math.round((Date.now() - generationStartedAt) / 1000));
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [generating, generationStartedAt]);
-
-  const hasUnsavedDesign = Boolean(
-    (generatedImage || previousImage || history.versions.length > 0) && !approvedDesign,
-  );
-
-  const confirmDiscardDraft = () =>
-    !hasUnsavedDesign ||
-    window.confirm(
-      "Tu diseño se perderá porque no se guarda en la base de datos. Descárgalo antes de salir si quieres conservarlo. ¿Quieres continuar?",
-    );
-
-  const resetGeneratedState = () => {
-    generationIdRef.current += 1;
-    generationAbortRef.current?.abort();
-    generationAbortRef.current = null;
-    setGenerating(false);
-    setIdeaError(null);
-    setGenerationError(null);
-    setGeneratedImage(null);
-    setPreviousImage(null);
-    setGeneratedPrompt(null);
-    setDesignBrief("");
-    setReferenceImage(null);
-    setLastStrategy(null);
-    setSelection(null);
-    setSelectionZone(null);
-    setLastZoneLabel(null);
-    setSelectionDrag(null);
-    setApprovedDesign(null);
-    setHistory(EMPTY_PROPOSAL_HISTORY);
-    setRevisingFrom(null);
-  };
-
-  useEffect(() => {
-    if (!hasUnsavedDesign) {
+    if (!design.hasUnsavedDesign) {
       return;
     }
 
@@ -374,1117 +236,107 @@ export const GarmentSelector = ({
       window.removeEventListener("beforeunload", onBeforeUnload);
       document.removeEventListener("click", onInternalLink, true);
     };
-  }, [hasUnsavedDesign]);
-
-  useEffect(
-    () => () => {
-      generationAbortRef.current?.abort();
-    },
-    [],
-  );
-
-  const selectBase = (id: string) => {
-    if (id === selectedId) {
-      return;
-    }
-    if (!confirmDiscardDraft()) {
-      return;
-    }
-    setSelectedId(id);
-    setIdeaOpen(false);
-    resetGeneratedState();
-  };
-
-  const selectSize = (size: MockupSize) => {
-    if (size === selectedSize) {
-      return;
-    }
-    if (!confirmDiscardDraft()) {
-      return;
-    }
-    setSelectedSize(size);
-    setSizeMissing(false);
-    resetGeneratedState();
-  };
-
-  const selectCategory = (category: MockupCategory) => {
-    if (category === activeCategory) {
-      return;
-    }
-
-    // Keep the same color when switching between t-shirts and hoodies.
-    const nextBase =
-      MOCKUP_BASES.find(
-        (base) => base.category === category && base.colorKey === selectedBase.colorKey,
-      ) ?? MOCKUP_BASES.find((base) => base.category === category);
-
-    if (!nextBase || !confirmDiscardDraft()) {
-      return;
-    }
-
-    setActiveCategory(category);
-    setSelectedId(nextBase.id);
-    setIdeaOpen(false);
-    resetGeneratedState();
-  };
-
-  const closeIdeaPanel = () => {
-    generationIdRef.current += 1;
-    generationAbortRef.current?.abort();
-    generationAbortRef.current = null;
-    setGenerating(false);
-    setIdeaOpen(false);
-    setIdeaError(null);
-    setGenerationError(null);
-
-    // Si el diseño ya se aprobó, al cerrar se descarta la copia local: ya está
-    // registrado y no debe disparar el aviso de «diseño sin guardar».
-    if (approvedDesign) {
-      setGeneratedImage(null);
-      setPreviousImage(null);
-      setGeneratedPrompt(null);
-      setHistory(EMPTY_PROPOSAL_HISTORY);
-      setRevisingFrom(null);
-    }
-
-    setApprovedDesign(null);
-    setReferenceImage(null);
-    customizeRef.current?.focus();
-  };
-
-  const handleCustomize = () => {
-    if (!selectedSize) {
-      setSizeMissing(true);
-      sizeOptionsRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
-      return;
-    }
-    if (!isAuthenticated) {
-      setAuthPromptOpen(true);
-      return;
-    }
-    setIdeaOpen(true);
-  };
-
-  const appendSuggestion = (suggestion: string) => {
-    if (suggestion === "Agregar texto") {
-      setIdea("agrega la palabra ");
-      setIdeaError(null);
-      ideaRef.current?.focus();
-      return;
-    }
-
-    setIdea((current) => {
-      const next = current.trim() ? `${current.trim()}, ${suggestion.toLowerCase()}` : suggestion;
-      return next.slice(0, IDEA_MAX_LENGTH);
-    });
-    setIdeaError(null);
-    ideaRef.current?.focus();
-  };
-
-  const selectZone = (zone: { id: string; selection: MockupSelection }) => {
-    setSelection({ ...zone.selection });
-    setSelectionZone(zone.id);
-    setIdeaError(null);
-  };
-
-  const adjustSelection = (patch: Partial<MockupSelection>) => {
-    setSelection((current) => {
-      if (!current) return current;
-      const next = { ...current, ...patch };
-      next.width = Math.max(MIN_SELECTION_SIZE, clamp01(next.width));
-      next.height = Math.max(MIN_SELECTION_SIZE, clamp01(next.height));
-      next.x = Math.max(0, Math.min(next.x, 1 - next.width));
-      next.y = Math.max(0, Math.min(next.y, 1 - next.height));
-      return next;
-    });
-    setSelectionZone("custom");
-    setIdeaError(null);
-  };
-
-  const selectionPoint = (event: PointerEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    return {
-      x: clamp01((event.clientX - rect.left) / rect.width),
-      y: clamp01((event.clientY - rect.top) / rect.height),
-    };
-  };
-
-  const handleSelectionPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (!previousImage || generatedImage || generating) {
-      return;
-    }
-    event.currentTarget.setPointerCapture(event.pointerId);
-    const point = selectionPoint(event);
-    setSelectionDrag(point);
-    setSelectionZone("custom");
-    setSelection({ x: point.x, y: point.y, width: 0, height: 0 });
-    setIdeaError(null);
-  };
-
-  const handleSelectionPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (!selectionDrag) {
-      return;
-    }
-    const point = selectionPoint(event);
-    setSelection({
-      x: Math.min(selectionDrag.x, point.x),
-      y: Math.min(selectionDrag.y, point.y),
-      width: Math.abs(point.x - selectionDrag.x),
-      height: Math.abs(point.y - selectionDrag.y),
-    });
-  };
-
-  const handleSelectionPointerUp = (event: PointerEvent<HTMLDivElement>) => {
-    if (!selectionDrag) {
-      return;
-    }
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-    setSelectionDrag(null);
-
-    if (
-      !selection ||
-      selection.width < MIN_SELECTION_SIZE ||
-      selection.height < MIN_SELECTION_SIZE
-    ) {
-      setSelection(null);
-      setSelectionZone(null);
-    }
-  };
-
-  const handleIdeaSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const trimmedIdea = idea.trim();
-
-    if (trimmedIdea === "") {
-      setIdeaError(
-        checkDesignRequest({ idea: "", mode: previousImage ? "zone" : "create" }) ??
-          formIssue("Falta tu descripción", "Escribe tu idea antes de continuar."),
-      );
-      ideaRef.current?.focus();
-      return;
-    }
-
-    if (!selectedSize) {
-      setIdeaError(formIssue("Falta la talla", "Selecciona una talla antes de continuar."));
-      return;
-    }
-
-    const strategy = previousImage ? (detectedText ? "text" : "addition") : undefined;
-
-    if (
-      previousImage &&
-      (!selection || selection.width < MIN_SELECTION_SIZE || selection.height < MIN_SELECTION_SIZE)
-    ) {
-      setIdeaError(
-        formIssue(
-          "Marca la zona que quieres cambiar",
-          "Arrastra sobre la imagen o elige «Pecho» o «Bajo». Para otro diseño, inicia una nueva personalización.",
-        ),
-      );
-      return;
-    }
-
-    // Normas de uso: mismas reglas que el servidor, sin gastar cuota.
-    const guardMode: DesignGuardMode = !previousImage ? "create" : detectedText ? "text" : "zone";
-    const guardIssue = checkDesignRequest({
-      baseColorKey: selectedBase.colorKey,
-      idea: trimmedIdea,
-      mode: guardMode,
-      selectionArea:
-        guardMode === "zone" && selection ? selection.width * selection.height : undefined,
-    });
-
-    if (guardIssue) {
-      setIdeaError(guardIssue);
-      return;
-    }
-
-    const zoneLabel =
-      selectionZone && selectionZone !== "custom"
-        ? (REVISION_ZONE_PRESETS.find((zone) => zone.id === selectionZone)?.label ?? null)
-        : previousImage
-          ? "Selección libre"
-          : null;
-
-    const requestId = generationIdRef.current + 1;
-    generationIdRef.current = requestId;
-    generationAbortRef.current?.abort();
-    const controller = new AbortController();
-    generationAbortRef.current = controller;
-    timedOutRef.current = false;
-    const timeout = window.setTimeout(() => {
-      timedOutRef.current = true;
-      controller.abort();
-    }, CLIENT_GENERATION_TIMEOUT_MS);
-
-    setIdeaError(null);
-    setGenerationError(null);
-    setGeneratedImage(null);
-    setGeneratedPrompt(null);
-    setLastZoneLabel(zoneLabel);
-    setLastStrategy(strategy ?? null);
-    setGenerationStartedAt(Date.now());
-    setGenerating(true);
-
-    try {
-      const response = await fetch("/api/personalization/mockup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          baseId: selectedBase.id,
-          idea: trimmedIdea,
-          mode: previousImage ? "revise" : "create",
-          referenceImage: previousImage ?? referenceImage ?? undefined,
-          selection: previousImage ? selection : undefined,
-          size: selectedSize,
-          strategy,
-        }),
-        signal: controller.signal,
-      });
-      const data = (await response.json().catch(() => null)) as {
-        error?: unknown;
-        image?: unknown;
-        message?: unknown;
-        prompt?: unknown;
-        suggestedColorKey?: unknown;
-        title?: unknown;
-      } | null;
-
-      if (requestId !== generationIdRef.current) {
-        return;
-      }
-
-      // El servidor rechazó la petición por las normas de uso: se explica junto al campo.
-      if (response.status === 422 && typeof data?.title === "string") {
-        setIdeaError({
-          message: typeof data.message === "string" ? data.message : String(data.error ?? ""),
-          suggestedColorKey:
-            typeof data.suggestedColorKey === "string" ? data.suggestedColorKey : undefined,
-          title: data.title,
-        });
-        return;
-      }
-
-      if (!response.ok || typeof data?.image !== "string") {
-        const message =
-          typeof data?.error === "string"
-            ? data.error
-            : "No pudimos generar la propuesta. Inténtalo de nuevo.";
-        throw new Error(message);
-      }
-
-      const image = data.image;
-      const prompt = typeof data.prompt === "string" ? data.prompt : null;
-      const brief = appendDesignBrief(designBrief, trimmedIdea);
-
-      setGeneratedImage(image);
-      setGeneratedPrompt(prompt);
-      setDesignBrief(brief);
-      // HU-16: cada propuesta queda como una versión nueva del historial.
-      setHistory((current) =>
-        addProposalVersion(current, {
-          basedOn: previousImage ? revisingFrom : null,
-          brief,
-          image,
-          prompt,
-          request: trimmedIdea,
-          strategy: strategy ?? "create",
-          zoneLabel,
-        }),
-      );
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        if (timedOutRef.current && requestId === generationIdRef.current) {
-          setGenerationError(
-            "La generación tardó demasiado y la detuvimos. Inténtalo de nuevo en unos segundos.",
-          );
-        }
-        return;
-      }
-
-      if (requestId !== generationIdRef.current) {
-        return;
-      }
-
-      setGenerationError(
-        error instanceof Error
-          ? error.message
-          : "No pudimos generar la propuesta. Inténtalo de nuevo.",
-      );
-    } finally {
-      window.clearTimeout(timeout);
-      if (requestId === generationIdRef.current) {
-        setGenerating(false);
-        generationAbortRef.current = null;
-      }
-    }
-  };
-
-  const cancelGeneration = () => {
-    generationIdRef.current += 1;
-    generationAbortRef.current?.abort();
-    generationAbortRef.current = null;
-    setGenerating(false);
-  };
-
-  /** Cambia a la prenda base del color pedido sin cerrar el formulario. */
-  const switchToColor = (colorKey: string) => {
-    const target = MOCKUP_BASES.find(
-      (base) => base.category === selectedBase.category && base.colorKey === colorKey,
-    );
-
-    if (!target || !confirmDiscardDraft()) {
-      return;
-    }
-
-    setActiveCategory(target.category);
-    setSelectedId(target.id);
-    resetGeneratedState();
-  };
-
-  const ideaErrorActions: DesignNoticeAction[] = [];
-
-  if (ideaError?.suggestedColorKey) {
-    const target = MOCKUP_BASES.find(
-      (base) =>
-        base.category === selectedBase.category && base.colorKey === ideaError.suggestedColorKey,
-    );
-
-    if (target) {
-      ideaErrorActions.push({
-        label: `Cambiar a ${getMockupBaseName(target)}`,
-        onClick: () => switchToColor(target.colorKey),
-      });
-    }
-  }
-
-  /** Muestra una versión del historial como propuesta actual (HU-16). */
-  const showProposalVersion = (version: number) => {
-    const next = selectProposalVersion(history, version);
-    const proposal = getCurrentProposal(next);
-
-    if (!proposal) {
-      return;
-    }
-
-    setHistory(next);
-    setGeneratedImage(proposal.image);
-    setGeneratedPrompt(proposal.prompt);
-    setLastStrategy(proposal.strategy === "create" ? null : proposal.strategy);
-    setLastZoneLabel(proposal.zoneLabel);
-    setIdea(proposal.request);
-    setDesignBrief(proposal.brief);
-    setGenerationError(null);
-    setIdeaError(null);
-  };
-
-  const cancelRevision = () => {
-    if (history.currentVersion !== null) {
-      showProposalVersion(history.currentVersion);
-    }
-  };
-
-  const beginRevision = () => {
-    if (!generatedImage) {
-      return;
-    }
-
-    setRevisingFrom(history.currentVersion);
-    setPreviousImage(generatedImage);
-    setGeneratedImage(null);
-    setGeneratedPrompt(null);
-    setGenerationError(null);
-    setIdeaError(null);
-    setIdea("");
-    setLastStrategy(null);
-    setSelection(null);
-    setSelectionZone(null);
-    setLastZoneLabel(null);
-    setSelectionDrag(null);
-    setApprovedDesign(null);
-    setReferenceImage(null);
-  };
+  }, [design.hasUnsavedDesign]);
 
   return (
     <div className="garment-selector">
-      <div className="personalizer-steps-wrap">
-        <ol className="personalizer-steps" aria-label="Progreso de personalización">
-          {STEPS.map((step, index) => (
-            <li
-              key={step}
-              className="personalizer-step"
-              data-state={
-                index < activeStep ? "done" : index === activeStep ? "current" : "upcoming"
-              }
-              aria-current={index === activeStep ? "step" : undefined}
-            >
-              {step}
-            </li>
-          ))}
-        </ol>
-      </div>
+      <PersonalizerSteps activeStep={activeStep} />
 
-      {ideaOpen && generatedImage ? (
-        <section
-          id="design-workspace"
-          className="design-result"
-          ref={resultRef}
-          tabIndex={-1}
-          aria-labelledby="design-workspace-title"
-        >
-          <header className="design-result-head">
-            <h2 id="design-workspace-title">Así se ve tu idea</h2>
-            <p className="design-result-meta">
-              {selectedName} · Talla {selectedSize}
-              {lastZoneLabel ? ` · Zona: ${lastZoneLabel}` : ""}
-            </p>
-          </header>
-
-          <div className="design-result-compare">
-            <figure className="design-compare-item">
-              <figcaption className="design-compare-label">{compareLabel}</figcaption>
-              <div className="design-compare-frame">
-                <Image
-                  src={compareImage ?? selectedBase.file}
-                  alt={compareImage ? `Propuesta de diseño: ${compareLabel}` : selectedBase.alt}
-                  fill
-                  sizes="(max-width: 640px) 92vw, (max-width: 1240px) 44vw, 520px"
-                  unoptimized={Boolean(compareImage)}
-                />
-              </div>
-            </figure>
-
-            <span className="design-result-divider" aria-hidden="true" />
-
-            <MockupViewer
-              base={selectedBase}
-              size={selectedSize}
-              imageSrc={generatedImage}
-              label={
-                currentProposal
-                  ? `Versión ${currentProposal.version} · Actual`
-                  : "Propuesta generada"
-              }
-            />
-          </div>
-
-          {approvedDesign ? null : (
-            <ProposalHistoryPanel
-              history={history}
-              onCompare={(version) =>
-                setHistory((current) => compareProposalWith(current, version))
-              }
-              onSelect={showProposalVersion}
-            />
-          )}
-
-          <div className="design-result-copy">
-            <p className="design-result-idea">“{idea.trim()}”</p>
-            {approvedDesign ? (
-              <div className="design-approval-note" role="status">
-                <p className="design-approval-title">Diseño aprobado</p>
-                <p>
-                  Quedó registrado en tu cuenta
-                  {approvedDesign.approvedAt
-                    ? ` el ${new Intl.DateTimeFormat("es-CO", { dateStyle: "long" }).format(
-                        new Date(approvedDesign.approvedAt),
-                      )}`
-                    : ""}
-                  . Ya no se puede modificar desde aquí; si quieres otro diseño, inicia una nueva
-                  personalización.
-                </p>
-              </div>
-            ) : (
-              <p className="design-result-note">
-                Vista previa de prueba.{" "}
-                {lastStrategy === "text"
-                  ? "El texto se agregó con una fuente legible; el resto del diseño anterior se conservó."
-                  : lastStrategy === "addition"
-                    ? "El elemento se agregó en la zona marcada. Los píxeles fuera de esa zona se conservaron; el dibujo nuevo puede cubrir lo que hubiera dentro."
-                    : "La propuesta se generó a partir de tu idea."}{" "}
-                Todavía no está registrada: si sales de esta página antes de aprobarla, se perderá.
-                Descárgala si quieres conservarla.
-              </p>
-            )}
-            {generatedPrompt ? (
-              <details className="design-prompt-details">
-                <summary>
-                  <span>Ver prompt mejorado para la IA</span>
-                  <ChevronDownIcon />
-                </summary>
-                <p>{generatedPrompt}</p>
-              </details>
-            ) : null}
-            <div className="design-actions">
-              {approvedDesign ? null : selectedSize ? (
-                <ApproveDesign
-                  baseId={selectedBase.id}
-                  idea={idea.trim()}
-                  image={generatedImage}
-                  size={selectedSize}
-                  onApproved={setApprovedDesign}
-                />
-              ) : null}
-              {approvedDesign ? null : (
-                <button type="button" className="button button-secondary" onClick={beginRevision}>
-                  Pedir cambios
-                </button>
-              )}
-              <a
-                className="button button-secondary"
-                href={generatedImage}
-                download={`valdra-${selectedBase.id}-${selectedSize}${
-                  currentProposal ? `-v${currentProposal.version}` : ""
-                }.${downloadExtension}`}
-              >
-                Descargar diseño
-              </a>
-              <button type="button" className="design-text-action" onClick={closeIdeaPanel}>
-                {approvedDesign ? "Nueva personalización" : "Elegir otra prenda"}
-              </button>
-            </div>
-          </div>
-        </section>
+      {generatedImage && ideaOpen ? (
+        <DesignResult
+          approvedDesign={design.approvedDesign}
+          compareImage={design.compareImage}
+          compareLabel={design.compareLabel}
+          currentProposal={design.currentProposal}
+          downloadExtension={design.downloadExtension}
+          generatedImage={generatedImage}
+          generatedPrompt={design.generatedPrompt}
+          history={design.history}
+          idea={design.idea}
+          lastStrategy={design.lastStrategy}
+          lastZoneLabel={design.lastZoneLabel}
+          onApproved={design.handleApproved}
+          onBeginRevision={design.beginRevision}
+          onClose={closeIdeaPanel}
+          onCompare={design.compareVersion}
+          onDownload={design.handleDownload}
+          onSelectVersion={design.showProposalVersion}
+          resultRef={design.resultRef}
+          selectedBase={selectedBase}
+          selectedName={selectedName}
+          selectedSize={selectedSize}
+        />
       ) : ideaOpen ? (
-        <section
-          id="design-workspace"
-          className="design-workspace"
-          aria-labelledby="design-workspace-title"
-        >
-          <aside className="design-workspace-preview">
-            <p className="design-step-label">{previousImage ? "Diseño anterior" : "Tu prenda"}</p>
-            <div className="design-preview-frame">
-              <Image
-                src={previousImage ?? selectedBase.file}
-                alt={previousImage ? "Propuesta de diseño anterior" : selectedBase.alt}
-                fill
-                sizes="(max-width: 900px) 70vw, 480px"
-                unoptimized={Boolean(previousImage)}
-              />
-              {previousImage && !generatedImage ? (
-                <div
-                  className="design-selection-layer"
-                  aria-hidden="true"
-                  title="Marca la zona que quieres cambiar"
-                  onPointerDown={handleSelectionPointerDown}
-                  onPointerMove={handleSelectionPointerMove}
-                  onPointerUp={handleSelectionPointerUp}
-                  onPointerCancel={handleSelectionPointerUp}
-                >
-                  {selection && selection.width > 0 && selection.height > 0 ? (
-                    <span
-                      className="design-selection-box"
-                      style={{
-                        left: `${selection.x * 100}%`,
-                        top: `${selection.y * 100}%`,
-                        width: `${selection.width * 100}%`,
-                        height: `${selection.height * 100}%`,
-                      }}
-                    />
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-            <p className="design-preview-name">
-              {previousImage
-                ? revisingFrom
-                  ? `Cambios sobre la versión ${revisingFrom}`
-                  : "Propuesta anterior"
-                : selectedName}
-            </p>
-            <p className="design-preview-meta">
-              {previousImage
-                ? `${selectedName} · Talla ${selectedSize}`
-                : `Talla ${selectedSize} · ${selectedBase.categoryLabel}`}
-            </p>
-            {previousImage && !generatedImage ? (
-              <fieldset className="design-zone-picker" disabled={generating}>
-                <legend>Zona a cambiar</legend>
-                <div className="design-zone-options">
-                  <button
-                    type="button"
-                    className="design-zone"
-                    aria-pressed={selectionZone === "custom"}
-                    onClick={() => {
-                      setSelection(
-                        (current) => current ?? { x: 0.58, y: 0.28, width: 0.12, height: 0.12 },
-                      );
-                      setSelectionZone("custom");
-                      setIdeaError(null);
-                    }}
-                  >
-                    Selección libre
-                  </button>
-                  {REVISION_ZONE_PRESETS.map((zone) => (
-                    <button
-                      key={zone.id}
-                      type="button"
-                      className="design-zone"
-                      aria-pressed={selectionZone === zone.id}
-                      onClick={() => selectZone(zone)}
-                    >
-                      {zone.label}
-                    </button>
-                  ))}
-                </div>
-                {selection ? (
-                  <div className="design-zone-adjustments">
-                    <fieldset className="design-zone-options" aria-label="Mover la zona">
-                      <button
-                        type="button"
-                        className="design-zone"
-                        aria-label="Mover a la izquierda"
-                        onClick={() => adjustSelection({ x: selection.x - 0.02 })}
-                      >
-                        ←
-                      </button>
-                      <button
-                        type="button"
-                        className="design-zone"
-                        aria-label="Mover hacia arriba"
-                        onClick={() => adjustSelection({ y: selection.y - 0.02 })}
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        className="design-zone"
-                        aria-label="Mover hacia abajo"
-                        onClick={() => adjustSelection({ y: selection.y + 0.02 })}
-                      >
-                        ↓
-                      </button>
-                      <button
-                        type="button"
-                        className="design-zone"
-                        aria-label="Mover a la derecha"
-                        onClick={() => adjustSelection({ x: selection.x + 0.02 })}
-                      >
-                        →
-                      </button>
-                    </fieldset>
-                    <label>
-                      Ancho de la zona
-                      <input
-                        type="range"
-                        min="2"
-                        max="100"
-                        value={Math.round(selection.width * 100)}
-                        onChange={(event) =>
-                          adjustSelection({ width: Number(event.target.value) / 100 })
-                        }
-                      />
-                    </label>
-                    <label>
-                      Alto de la zona
-                      <input
-                        type="range"
-                        min="2"
-                        max="100"
-                        value={Math.round(selection.height * 100)}
-                        onChange={(event) =>
-                          adjustSelection({ height: Number(event.target.value) / 100 })
-                        }
-                      />
-                    </label>
-                  </div>
-                ) : null}
-                <p className="form-hint">
-                  Marca espacio libre para el elemento nuevo. Lo que quede fuera se conserva; el
-                  elemento puede tapar contenido dentro de la zona.
-                </p>
-                <p className="form-hint">
-                  Arrastra sobre la prenda para marcar una selección libre.
-                </p>
-              </fieldset>
-            ) : null}
-            <button
-              type="button"
-              className="design-back"
-              onClick={closeIdeaPanel}
-              disabled={generating}
-            >
-              <ArrowLeftIcon />
-              Cambiar prenda
-            </button>
-          </aside>
-
-          <div className="design-workspace-main">
-            <header className="design-workspace-head">
-              <h2 id="design-workspace-title">
-                {previousImage ? "Pide cambios sobre tu diseño" : "Cuéntanos qué quieres crear"}
-              </h2>
-              <p className="design-lead">
-                {previousImage
-                  ? "Marca dónde cabe el elemento nuevo y describe solo lo que quieres agregar. Conservaremos el diseño fuera de esa zona."
-                  : "Describe el diseño que imaginas. Lo aplicaremos sobre la prenda y la talla que elegiste."}
-              </p>
-            </header>
-
-            <form className="design-form" ref={formRef} onSubmit={handleIdeaSubmit} noValidate>
-              <div className="design-prompt-box">
-                <label htmlFor="design-idea">
-                  {previousImage
-                    ? detectedText
-                      ? "Texto a agregar"
-                      : "Describe solo el elemento nuevo"
-                    : "Describe tu idea"}
-                </label>
-                <textarea
-                  id="design-idea"
-                  ref={ideaRef}
-                  value={idea}
-                  maxLength={IDEA_MAX_LENGTH}
-                  placeholder={
-                    previousImage
-                      ? detectedText
-                        ? "Ejemplo: I LOVE YOU"
-                        : "Ejemplo: un sol amarillo con rayos cortos."
-                      : "Ejemplo: un paisaje andino al atardecer, con líneas finas en el pecho."
-                  }
-                  aria-invalid={ideaError ? true : undefined}
-                  aria-describedby={
-                    ideaError ? "design-idea-hint design-idea-notice" : "design-idea-hint"
-                  }
-                  onChange={(event) => {
-                    setIdea(event.target.value);
-                    if (ideaError) {
-                      setIdeaError(null);
-                    }
-                  }}
-                />
-                <div className="design-form-meta">
-                  <p id="design-idea-hint" className="form-hint">
-                    {previousImage
-                      ? detectedText
-                        ? `Texto detectado: “${detectedText}”. Se agregará con una fuente legible en la zona marcada.`
-                        : "Elige una zona sin dibujos que quieras conservar. El elemento aún no se adapta automáticamente a los pliegues."
-                      : "La IA ampliará tu idea con composición, estilo y restricciones."}
-                  </p>
-                  <span className="design-form-count" aria-hidden="true">
-                    {idea.length}/{IDEA_MAX_LENGTH}
-                  </span>
-                </div>
-              </div>
-
-              <fieldset className="design-suggestions" aria-label="Ideas de ejemplo">
-                {suggestions.map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    type="button"
-                    className="design-suggestion"
-                    onClick={() => appendSuggestion(suggestion)}
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </fieldset>
-
-              {!previousImage ? (
-                <ReferenceUpload
-                  disabled={generating}
-                  onChange={setReferenceImage}
-                  value={referenceImage}
-                />
-              ) : null}
-
-              {ideaError ? (
-                <DesignNotice
-                  id="design-idea-notice"
-                  noticeRef={noticeRef}
-                  tone="error"
-                  title={ideaError.title}
-                  actions={ideaErrorActions}
-                >
-                  {ideaError.message}
-                </DesignNotice>
-              ) : generationError ? (
-                <DesignNotice
-                  noticeRef={noticeRef}
-                  tone="error"
-                  title="No pudimos generar la propuesta"
-                  actions={[
-                    { label: "Reintentar", onClick: () => formRef.current?.requestSubmit() },
-                  ]}
-                >
-                  {generationError}
-                </DesignNotice>
-              ) : null}
-
-              {generating ? (
-                <div className="design-progress" ref={noticeRef} role="status">
-                  <span className="design-progress-spinner" aria-hidden="true" />
-                  <div className="design-progress-body">
-                    <p className="design-progress-title">Tu diseño se está generando…</p>
-                    <p className="design-progress-meta">
-                      {elapsedSeconds > 0 ? `${elapsedSeconds} s · ` : ""}Suele tardar entre 15 y 60
-                      segundos. No cierres esta página.
-                    </p>
-                  </div>
-                  <button type="button" className="design-text-action" onClick={cancelGeneration}>
-                    Cancelar
-                  </button>
-                </div>
-              ) : null}
-
-              <div className="design-actions">
-                <button
-                  type="submit"
-                  className="button button-primary"
-                  disabled={generating}
-                  aria-busy={generating}
-                >
-                  {generating
-                    ? "Generando…"
-                    : previousImage
-                      ? detectedText
-                        ? "Agregar texto"
-                        : "Agregar al diseño"
-                      : "Generar propuesta"}
-                </button>
-                {previousImage && currentProposal ? (
-                  <button
-                    type="button"
-                    className="button button-secondary"
-                    onClick={cancelRevision}
-                    disabled={generating}
-                  >
-                    Volver a la propuesta
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  className="button button-secondary"
-                  onClick={closeIdeaPanel}
-                  disabled={generating}
-                >
-                  Volver a la prenda
-                </button>
-              </div>
-            </form>
-          </div>
-        </section>
+        <DesignForm
+          currentProposal={design.currentProposal}
+          detectedText={design.detectedText}
+          elapsedSeconds={design.elapsedSeconds}
+          formRef={design.formRef}
+          generating={design.generating}
+          generationError={design.generationError}
+          idea={design.idea}
+          ideaError={design.ideaError}
+          ideaErrorActions={ideaErrorActions}
+          ideaRef={design.ideaRef}
+          noticeRef={design.noticeRef}
+          onAdjustSelection={design.adjustSelection}
+          onCancelGeneration={design.cancelGeneration}
+          onCancelRevision={design.cancelRevision}
+          onChangeIdea={(value) => {
+            design.setIdea(value);
+            if (design.ideaError) {
+              design.clearIdeaError();
+            }
+          }}
+          onClose={closeIdeaPanel}
+          onPointerDown={design.handleSelectionPointerDown}
+          onPointerMove={design.handleSelectionPointerMove}
+          onPointerUp={design.handleSelectionPointerUp}
+          onReferenceChange={design.setReferenceImage}
+          onSelectFreeZone={design.selectFreeZone}
+          onSelectZone={design.selectZone}
+          onSubmit={design.handleIdeaSubmit}
+          previousImage={design.previousImage}
+          referenceImage={design.referenceImage}
+          revisingFrom={design.revisingFrom}
+          selectedBase={selectedBase}
+          selectedName={selectedName}
+          selectedSize={selectedSize}
+          selection={design.selection}
+          selectionZone={design.selectionZone}
+        />
       ) : (
-        <>
-          <nav className="garment-tabs" aria-label="Tipo de prenda">
-            {CATEGORY_ORDER.map((category) => {
-              const count = MOCKUP_BASES.filter((base) => base.category === category).length;
-              const active = activeCategory === category;
-              return (
-                <button
-                  key={category}
-                  type="button"
-                  className="garment-tab"
-                  aria-pressed={active}
-                  onClick={() => selectCategory(category)}
-                >
-                  <span>{CATEGORY_LABELS[category]}</span>
-                  <span className="garment-tab-count">{count}</span>
-                </button>
-              );
-            })}
-          </nav>
-
-          <section className="garment-stage" aria-label="Selector de prenda">
-            <button
-              type="button"
-              className="garment-side garment-side-prev"
-              aria-label={`Ver ${getMockupBaseName(previousBase)}`}
-              onClick={() => selectBase(previousBase.id)}
-            >
-              <span className="garment-side-frame">
-                <Image src={previousBase.file} alt="" fill sizes="220px" />
-              </span>
-              <span className="garment-side-name">{getMockupBaseName(previousBase)}</span>
-            </button>
-
-            <figure className="garment-main">
-              <div className="garment-preview">
-                <Image
-                  src={selectedBase.file}
-                  alt={selectedBase.alt}
-                  fill
-                  sizes="(max-width: 900px) 92vw, 620px"
-                  loading="eager"
-                  fetchPriority="high"
-                />
-                <button
-                  type="button"
-                  className="garment-arrow garment-arrow-prev"
-                  aria-label="Prenda anterior"
-                  onClick={() => selectBase(previousBase.id)}
-                >
-                  <ArrowLeftIcon />
-                </button>
-                <button
-                  type="button"
-                  className="garment-arrow garment-arrow-next"
-                  aria-label="Prenda siguiente"
-                  onClick={() => selectBase(nextBase.id)}
-                >
-                  <ArrowRightIcon />
-                </button>
-              </div>
-              <figcaption className="garment-stage-caption">
-                <span className="garment-stage-name">{selectedName}</span>
-                <span className="garment-stage-meta">
-                  {selectedBase.categoryLabel} · Vista frontal
-                </span>
-              </figcaption>
-            </figure>
-
-            <button
-              type="button"
-              className="garment-side garment-side-next"
-              aria-label={`Ver ${getMockupBaseName(nextBase)}`}
-              onClick={() => selectBase(nextBase.id)}
-            >
-              <span className="garment-side-frame">
-                <Image src={nextBase.file} alt="" fill sizes="220px" />
-              </span>
-              <span className="garment-side-name">{getMockupBaseName(nextBase)}</span>
-            </button>
-          </section>
-
-          <p className="sr-only" role="status">
-            Prenda seleccionada: {selectedName}.
-          </p>
-
-          <div className="garment-rail-block">
-            <div className="garment-rail-head">
-              <h2 className="garment-rail-title">{CATEGORY_LABELS[activeCategory]}</h2>
-              <span className="garment-rail-count">{categoryBases.length} disponibles</span>
-            </div>
-            <ul className="garment-rail" ref={railRef}>
-              {categoryBases.map((base) => {
-                const name = getMockupBaseName(base);
-                const active = base.id === selectedBase.id;
-                return (
-                  <li key={base.id}>
-                    <button
-                      type="button"
-                      className="garment-thumb"
-                      data-base-id={base.id}
-                      aria-pressed={active}
-                      aria-label={name}
-                      onClick={() => selectBase(base.id)}
-                    >
-                      <span className="garment-thumb-frame">
-                        <Image src={base.file} alt="" fill sizes="96px" />
-                      </span>
-                      <span className="garment-thumb-name" aria-hidden="true">
-                        {name}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-
-          <div className="personalizer-bar">
-            <div className="personalizer-bar-inner">
-              <div className="personalizer-summary">
-                <span className="personalizer-summary-thumb">
-                  <Image src={selectedBase.file} alt="" fill sizes="56px" />
-                </span>
-                <span className="personalizer-summary-text">
-                  <span className="personalizer-summary-label">Prenda seleccionada</span>
-                  <span className="personalizer-summary-name">{selectedName}</span>
-                </span>
-              </div>
-
-              <fieldset className="personalizer-sizes">
-                <legend className="personalizer-label">Talla</legend>
-                <div
-                  className="personalizer-size-options"
-                  ref={sizeOptionsRef}
-                  data-missing={!selectedSize && sizeMissing ? "true" : undefined}
-                >
-                  {MOCKUP_SIZES.map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      className="option-chip"
-                      aria-pressed={selectedSize === size}
-                      onClick={() => selectSize(size)}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-
-              <button
-                type="button"
-                ref={customizeRef}
-                className="button button-primary personalizer-cta"
-                aria-describedby="size-hint"
-                aria-haspopup={!isAuthenticated ? "dialog" : undefined}
-                aria-controls={!isAuthenticated && authPromptOpen ? "auth-dialog" : undefined}
-                onClick={handleCustomize}
-              >
-                Personalizar
-              </button>
-
-              <p
-                id="size-hint"
-                className="personalizer-notice"
-                data-tone={barNoticeTone}
-                role="status"
-              >
-                {!isAuthenticated && selectedSize ? <LockIcon /> : null}
-                {barNotice}
-              </p>
-            </div>
-          </div>
-        </>
+        <GarmentPicker
+          activeCategory={activeCategory}
+          authPromptOpen={authPromptOpen}
+          barNotice={barNotice}
+          barNoticeTone={barNoticeTone}
+          categoryBases={categoryBases}
+          customizeRef={customizeRef}
+          isAuthenticated={isAuthenticated}
+          nextBase={nextBase}
+          onCustomize={handleCustomize}
+          onOpenDesigner={openDesigner}
+          onSelectBase={selectBase}
+          onSelectCategory={selectCategory}
+          onSelectSize={selectSize}
+          previousBase={previousBase}
+          railRef={railRef}
+          selectedBase={selectedBase}
+          selectedName={selectedName}
+          selectedSize={selectedSize}
+          sizeMissing={sizeMissing}
+          sizeOptionsRef={sizeOptionsRef}
+        />
       )}
 
-      {authPromptOpen ? (
-        <div className="auth-dialog-backdrop">
-          <div
-            id="auth-dialog"
-            ref={authDialogRef}
-            className="auth-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="auth-dialog-title"
-            aria-describedby="auth-dialog-description"
-            tabIndex={-1}
-          >
-            <h2 id="auth-dialog-title">Inicia sesión para personalizar</h2>
-            <p id="auth-dialog-description">
-              Conserva tu prenda, talla y color y continúa con tu idea de diseño.
-            </p>
-            <p className="auth-dialog-selection">
-              {selectedName} · Talla {selectedSize}
-            </p>
-            <p className="auth-dialog-note">
-              Tu selección se conserva al iniciar sesión o crear tu cuenta.
-            </p>
-            <div className="auth-dialog-actions">
-              <Link
-                className="button button-primary"
-                href={`/login?next=${encodeURIComponent(nextPath)}`}
-              >
-                Iniciar sesión
-              </Link>
-              <Link
-                className="button button-secondary"
-                href={`/registro?next=${encodeURIComponent(nextPath)}`}
-              >
-                Crear cuenta
-              </Link>
-              <button type="button" className="auth-dialog-dismiss" onClick={closeAuthPrompt}>
-                Seguir explorando
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <AuthPrompt
+        nextPath={nextPath}
+        onClose={closeAuthPrompt}
+        open={authPromptOpen}
+        selectedName={selectedName}
+        selectedSize={selectedSize}
+      />
     </div>
   );
 };

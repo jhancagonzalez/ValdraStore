@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { createMockAiProvider } from "./mock-provider";
 import { generateDesignProposal } from "./proposal";
 import { IDEA_MAX_LENGTH } from "./proposal-prompt";
-import { MAX_REFERENCE_IMAGE_BYTES } from "./reference-image";
 import type { AiImageRequest } from "./types";
 
 const JPEG_BYTES = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
@@ -76,38 +75,25 @@ describe("generateDesignProposal (HU-14)", () => {
     expect(result).toMatchObject({ ok: false, reason: "invalid_size" });
   });
 
-  it("rechaza una imagen de referencia de más de 10 MB", async () => {
-    const { provider } = createRecordingProvider();
+  it("no envía referencias del cliente al proveedor mientras C-17 esté abierta", async () => {
+    const { provider, requests } = createRecordingProvider();
     const result = await generateDesignProposal(
       {
         baseId: BASE_ID,
         idea: "Un tigre",
-        referenceImageBytes: new Uint8Array(MAX_REFERENCE_IMAGE_BYTES + 1),
-        size: "M",
-      },
-      { provider, readBaseImage },
-    );
-
-    expect(result).toMatchObject({ ok: false, reason: "invalid_reference" });
-  });
-
-  it("rechaza una imagen cuyo contenido no es JPEG, PNG ni WebP", async () => {
-    const { provider } = createRecordingProvider();
-    const result = await generateDesignProposal(
-      {
-        baseId: BASE_ID,
-        idea: "Un tigre",
-        referenceImageBytes: new Uint8Array([0x25, 0x50, 0x44, 0x46]),
+        referenceImageBytes: PNG_BYTES,
         size: "M",
       },
       { provider, readBaseImage },
     );
 
     expect(result).toMatchObject({
-      message: "La imagen de referencia debe ser JPEG, PNG o WebP.",
+      message:
+        "Las imágenes de referencia no se envían a la IA mientras la política de datos esté pendiente.",
       ok: false,
       reason: "invalid_reference",
     });
+    expect(requests).toHaveLength(0);
   });
 
   it("envía la idea y la prenda base al proveedor y devuelve la imagen", async () => {
@@ -129,20 +115,6 @@ describe("generateDesignProposal (HU-14)", () => {
     expect(requests[0]?.prompt).toContain("un tigre geométrico");
     expect(requests[0]?.prompt).toContain("Camiseta negra");
     expect(requests[0]?.referenceImage?.bytes).toEqual(JPEG_BYTES);
-  });
-
-  it("usa la imagen del cliente como entrada cuando existe", async () => {
-    const { provider, requests } = createRecordingProvider();
-    const result = await generateDesignProposal(
-      { baseId: BASE_ID, idea: "Un tigre", referenceImageBytes: PNG_BYTES, size: "M" },
-      { provider, readBaseImage },
-    );
-
-    expect(result.ok).toBe(true);
-    expect(requests[0]?.referenceImage).toEqual({
-      bytes: PNG_BYTES,
-      mimeType: "image/png",
-    });
   });
 
   it("reintenta un fallo transitorio del proveedor y termina bien", async () => {

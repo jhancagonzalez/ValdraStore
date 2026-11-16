@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { type FormEvent, useRef, useState } from "react";
+import { StatusMark } from "../../_components/status-mark";
+import { useToast } from "../../_components/toast";
 
 const REFERENCE_ACCEPT = "image/jpeg,image/png,image/webp";
 
@@ -37,6 +39,7 @@ type FieldErrors = {
 };
 
 export const ProposalForm = ({ bases, initialBaseId, initialSize, sizes }: ProposalFormProps) => {
+  const { toast } = useToast();
   const [baseId, setBaseId] = useState(initialBaseId);
   const [size, setSize] = useState(initialSize);
   const [idea, setIdea] = useState("");
@@ -120,14 +123,27 @@ export const ProposalForm = ({ bases, initialBaseId, initialSize, sizes }: Propo
         provider: typeof data.provider === "string" ? data.provider : "",
       });
       setState("success");
+      toast({
+        title: "Propuesta lista",
+        description: "Revísala antes de aprobarla. Todavía no está registrada en tu cuenta.",
+        tone: "success",
+      });
     } catch (error) {
+      const aborted = controller.signal.aborted;
       showError(
-        controller.signal.aborted
+        aborted
           ? "La generación tardó demasiado o se canceló. Inténtalo de nuevo."
           : error instanceof Error
             ? error.message
             : "No pudimos generar la propuesta. Inténtalo de nuevo.",
       );
+      if (!aborted && error instanceof TypeError) {
+        toast({
+          title: "No pudimos conectar con el servidor",
+          description: "Revisa tu conexión e inténtalo de nuevo.",
+          tone: "error",
+        });
+      }
     } finally {
       clearTimeout(timeout);
       abortRef.current = null;
@@ -233,7 +249,7 @@ export const ProposalForm = ({ bases, initialBaseId, initialSize, sizes }: Propo
 
         {generating ? (
           <p aria-live="polite" className="proposal-status" role="status">
-            <span aria-hidden="true" className="proposal-spinner" />
+            <StatusMark />
             Tu diseño se está generando…
           </p>
         ) : null}

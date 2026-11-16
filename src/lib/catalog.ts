@@ -12,6 +12,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
   hoodies: "Hoodies",
 };
 
+export type CatalogSort = "newest" | "price-asc" | "price-desc";
+
 export type CatalogFilters = {
   category: string;
   color: string;
@@ -19,10 +21,10 @@ export type CatalogFilters = {
   minPrice: number | null;
   q: string;
   size: string;
+  sort: CatalogSort;
 };
 
 export type CatalogFacets = {
-  categories: string[];
   colors: string[];
   sizes: string[];
 };
@@ -186,7 +188,6 @@ export const getPublishedProducts = async (page: number, filters: CatalogFilters
     attributesByProduct.get(product.id) ?? emptyAttributes();
 
   const facets: CatalogFacets = {
-    categories: sortedUnique(products.map((product) => product.category)),
     colors: sortedUnique(products.flatMap((product) => attributesOf(product).colors)),
     sizes: sortedSizes(products.flatMap((product) => attributesOf(product).sizes)),
   };
@@ -194,17 +195,39 @@ export const getPublishedProducts = async (page: number, filters: CatalogFilters
   const matching = products.filter((product) =>
     matchesFilters(product, attributesOf(product), filters),
   );
-  const totalPages = Math.max(1, Math.ceil(matching.length / CATALOG_PAGE_SIZE));
+  const sorted = [...matching];
+  if (filters.sort === "price-asc" || filters.sort === "price-desc") {
+    const direction = filters.sort === "price-asc" ? 1 : -1;
+    const comparablePrice = (product: Product) => {
+      const prices = [product.priceInCOP, ...attributesOf(product).prices].filter(
+        (price): price is number => typeof price === "number",
+      );
+      return prices.length > 0 ? Math.min(...prices) : Number.POSITIVE_INFINITY;
+    };
+
+    sorted.sort((a, b) => {
+      const priceA = comparablePrice(a);
+      const priceB = comparablePrice(b);
+
+      // Products without a price stay at the end in both directions.
+      if (priceA === Number.POSITIVE_INFINITY || priceB === Number.POSITIVE_INFINITY) {
+        return priceA === priceB ? 0 : priceA === Number.POSITIVE_INFINITY ? 1 : -1;
+      }
+
+      return direction * (priceA - priceB);
+    });
+  }
+  const totalPages = Math.max(1, Math.ceil(sorted.length / CATALOG_PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * CATALOG_PAGE_SIZE;
 
   return {
-    docs: matching.slice(start, start + CATALOG_PAGE_SIZE),
+    docs: sorted.slice(start, start + CATALOG_PAGE_SIZE),
     facets,
     hasNextPage: currentPage < totalPages,
     hasPrevPage: currentPage > 1,
     page: currentPage,
-    totalDocs: matching.length,
+    totalDocs: sorted.length,
     totalPages,
     unfilteredCount: products.length,
   };

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getSessionCustomer } from "@/lib/auth";
+import { AuthLayout } from "../_components/auth-layout";
 import { RegisterForm } from "./register-form";
 
 export const metadata: Metadata = { title: "Crear cuenta" };
@@ -25,10 +26,11 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
   }
 
   return (
-    <main className="page page-narrow">
-      <h1 className="section-title">Crear cuenta</h1>
-      <p className="section-subtitle">Regístrate para personalizar prendas y hacer pedidos.</p>
+    <AuthLayout
+      title="Crear cuenta"
+      subtitle="Regístrate para personalizar prendas y guardar los diseños que apruebes."
+    >
       <RegisterForm next={next} />
-    </main>
+    </AuthLayout>
   );
 }

@@ -29,6 +29,7 @@ export default async function PersonalizePage({ searchParams }: PersonalizePageP
   return (
     <main className="page page-personalizer">
       <header className="personalizer-head">
+        <p className="eyebrow">Personalizador</p>
         <h1 className="section-title">Personalizar</h1>
         <p className="section-subtitle">
           Elige la prenda y la talla; después damos forma a tu idea sobre ella.

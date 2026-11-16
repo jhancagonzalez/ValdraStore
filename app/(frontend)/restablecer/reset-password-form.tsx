@@ -52,6 +52,7 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
           maxLength={100}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
+          aria-describedby={password ? "password-rules" : undefined}
         />
         <PasswordStrength value={password} />
       </div>

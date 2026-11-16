@@ -7,9 +7,11 @@ import { extractDesignText } from "@/lib/design-text";
 import { getMockupBase, getMockupBaseName, isMockupSize } from "@/lib/mockup-bases";
 import { normalizeReferenceImage } from "@/lib/mockup-image";
 import { DEFAULT_REVISION_SELECTION, parseMockupSelection } from "@/lib/mockup-selection";
+import { getPayloadClient } from "@/lib/payload";
 import { stripControlCharacters } from "@/lib/sanitize";
 import { MAX_REFERENCE_IMAGE_BYTES } from "@/services/ai/reference-image";
 import { buildAdditionPrompt, composeDesignAddition } from "@/services/personalization/addition";
+import { consumeDailyGenerationQuota } from "@/services/personalization/generation-quota";
 import { moderateDesignRequest } from "@/services/personalization/moderation";
 import {
   composeReferenceDesign,
@@ -475,6 +477,27 @@ export async function POST(request: Request) {
     );
   }
 
+  const payload = await getPayloadClient();
+
+  try {
+    const quota = await consumeDailyGenerationQuota(payload, customer.id);
+
+    if (!quota.allowed) {
+      return NextResponse.json(
+        {
+          code: "daily_quota",
+          error: "Alcanzaste el límite de 3 generaciones por día. Vuelve a intentarlo mañana.",
+        },
+        { status: 429 },
+      );
+    }
+  } catch {
+    return errorResponse(
+      "No pudimos verificar tu límite de generaciones. Inténtalo de nuevo.",
+      503,
+    );
+  }
+
   const garmentName = getMockupBaseName(base);
   const basePath = path.join(process.cwd(), "public", base.file.replace(/^\//, ""));
   const loadBaseImage = async () => {
@@ -583,8 +606,8 @@ export async function POST(request: Request) {
     return errorResponse("No pudimos cargar la prenda seleccionada.", 500);
   }
 
-  let inputImage: Buffer = baseImage;
-  let inputMimeType = "image/jpeg";
+  const inputImage: Buffer = baseImage;
+  const inputMimeType = "image/jpeg";
 
   if (body.referenceImage !== undefined && body.referenceImage !== null) {
     const rawReference = parseReferenceImage(body.referenceImage);
@@ -623,8 +646,12 @@ export async function POST(request: Request) {
       });
     }
 
-    inputImage = referenceImage.buffer;
-    inputMimeType = referenceImage.mimeType;
+    // C-17: la referencia del cliente no se envía al modelo mientras la política
+    // de datos del proveedor no esté aprobada. El composite local sigue disponible.
+    return errorResponse(
+      "No pudimos aplicar la referencia automáticamente. Para proteger tus imágenes, la IA todavía no recibe referencias; usa una imagen de fondo claro o describe el diseño sin adjuntarla.",
+      422,
+    );
   }
 
   const prompt = buildCreatePrompt(garmentName, idea);

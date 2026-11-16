@@ -35,16 +35,15 @@ export const DeleteAccount = () => {
       return;
     }
 
-    await fetch("/api/customers/logout", { credentials: "include", method: "POST" }).catch(
-      () => null,
-    );
+    // La cuenta ya no existe: su cookie de sesión queda inválida y llamar al
+    // logout después provocaría un 400 "No User" innecesario.
     router.push("/");
     router.refresh();
   };
 
   return (
     <div className="account-danger">
-      <h2 className="detail-label">Eliminar cuenta</h2>
+      <h2 className="account-side-title">Eliminar cuenta</h2>
 
       {step === "idle" ? (
         <>

@@ -45,9 +45,13 @@ Notion conserva la fuente de verdad y este resumen debe actualizarse.
 
 Responsable registrado en Notion: Jhancarlos Gonzalez.
 
-- [ ] El cliente puede elegir una prenda del catálogo para personalizar.
-- [ ] Debe seleccionar talla y color antes de continuar al siguiente paso.
-- [ ] La selección queda guardada durante todo el proceso de personalización.
+- [x] El cliente puede elegir una prenda del catálogo para personalizar.
+- [x] Debe seleccionar talla y color antes de continuar al siguiente paso.
+- [x] La selección queda guardada durante todo el proceso de personalización.
+
+> **Validación de UI (2026-11-16).** Flujo completo con una cuenta temporal, eliminada al
+> terminar: se eligió camiseta negra talla M, se describió la idea y se generó una propuesta
+> real. La selección se conservó al pasar al diseñador y al resultado.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481a78ef0c2e48f5e96e8).
 
@@ -55,9 +59,13 @@ Responsable registrado en Notion: Jhancarlos Gonzalez.
 
 Responsable registrado en Notion: Jhancarlos Gonzalez.
 
-- [ ] El cliente dispone de un campo para describir su idea de diseño y enviarla.
-- [ ] No se puede enviar una descripción vacía; se informa el motivo.
-- [ ] La idea enviada queda asociada a la prenda, talla y color seleccionados.
+- [x] El cliente dispone de un campo para describir su idea de diseño y enviarla.
+- [x] No se puede enviar una descripción vacía; se informa el motivo.
+- [x] La idea enviada queda asociada a la prenda, talla y color seleccionados.
+
+> **Validación de UI (2026-11-16).** La idea válida se envió y la propuesta mostró la
+> camiseta negra talla M. El envío vacío se rechazó junto al campo con el mensaje «Falta tu
+> descripción» y `aria-invalid`, sin llamar a la IA.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481c79971c6d45b15b480).
 
@@ -90,6 +98,11 @@ Responsable registrado en Notion: Emanuel Giraldo.
 > referencia como `input_image` generaba un diseño nuevo, no la imagen subida. Ahora la
 > referencia se compone tal cual sobre la prenda; si el fondo no es claro, se mantiene el
 > modelo como respaldo. Detalle en `evidence/HU-13.md`.
+>
+> **Validación de UI (2026-11-16).** Se subió `imagen_referencia.png` (PNG, fondo claro) y
+> la imagen se aplicó tal cual sobre la camiseta; la propuesta se mostró correctamente. El
+> composite conserva el fondo claro de la referencia. Pendiente de confirmación del
+> responsable.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481a9b15de96e3dac18a1).
 
@@ -129,6 +142,11 @@ Responsable registrado en Notion: Kevin Burgos.
 - [ ] Mientras la IA procesa, se informa al cliente que la propuesta está en curso.
 - [ ] Si el servicio de IA falla o no responde, se muestra un mensaje de error y el cliente puede reintentar.
 
+> **Validación de UI (2026-11-16).** Criterios 1 y 2 verificados con una generación real:
+> el panel de progreso se mostró y la propuesta llegó a la vista. El criterio 3 está cubierto
+> por las pruebas automatizadas y el aviso con «Reintentar»; no se forzó un fallo del
+> proveedor. Pendiente de que el responsable lo marque.
+
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481f5997dd67dc712b3ce).
 
 ## Andrés Valencia — Developer Frontend
@@ -140,6 +158,10 @@ Responsable registrado en Notion: Andrés Valencia.
 - [ ] La propuesta generada se muestra aplicada sobre la prenda, talla y color elegidos.
 - [ ] El mockup se ve completo y legible en computador y móvil.
 - [ ] El cliente puede ver la propuesta antes de aprobarla o pedir cambios.
+
+> **Validación de UI (2026-11-16).** Criterios 1 a 3 verificados en escritorio y móvil: la
+> propuesta se mostró sobre la camiseta negra talla M y se pudo revisar antes de aprobar.
+> Pendiente de confirmación del responsable.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef3648138bccbda70f4425177).
 

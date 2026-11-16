@@ -32,6 +32,7 @@ export default async function ProposalPage({ searchParams }: ProposalPageProps) 
     return (
       <main className="page proposal-page">
         <section className="proposal-gate">
+          <p className="eyebrow">Diseño asistido</p>
           <h1 className="section-title">Propuesta con IA</h1>
           <p className="section-subtitle">
             Inicia sesión como cliente para generar una propuesta de diseño sobre tu prenda.
@@ -53,6 +54,7 @@ export default async function ProposalPage({ searchParams }: ProposalPageProps) 
   return (
     <main className="page proposal-page">
       <header className="proposal-head">
+        <p className="eyebrow">Diseño asistido</p>
         <h1 className="section-title">Propuesta con IA</h1>
         <p className="section-subtitle">
           Elige la prenda, escribe tu idea y recibe una propuesta generada automáticamente sobre la

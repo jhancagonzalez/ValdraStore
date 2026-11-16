@@ -50,7 +50,7 @@ export const MockupViewer = ({
           type="button"
           className="design-compare-frame mockup-viewer-frame"
           onClick={openZoom}
-          aria-label="Ampliar el mockup"
+          aria-label={`Ampliar el mockup: ${alt}`}
         >
           <Image
             src={imageSrc}

@@ -12,7 +12,7 @@ type LoginFormProps = {
 
 /** Only same-origin paths are accepted, so `next` cannot become an open redirect. */
 const safeNext = (next?: string): string => {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) {
+  if (!next?.startsWith("/") || next.startsWith("//") || next.includes("\\")) {
     return "/catalogo";
   }
 
