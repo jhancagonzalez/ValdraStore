@@ -98,6 +98,11 @@ Responsable registrado en Notion: Emanuel Giraldo.
 > referencia como `input_image` generaba un diseño nuevo, no la imagen subida. Ahora la
 > referencia se compone tal cual sobre la prenda; si el fondo no es claro, se mantiene el
 > modelo como respaldo. Detalle en `evidence/HU-13.md`.
+>
+> **Validación de UI (2026-11-16).** Se subió `imagen_referencia.png` (PNG, fondo claro) y
+> la imagen se aplicó tal cual sobre la camiseta; la propuesta se mostró correctamente. El
+> composite conserva el fondo claro de la referencia. Pendiente de confirmación del
+> responsable.
 
 [Historia en Notion](https://app.notion.com/p/3f6cd0bef36481a9b15de96e3dac18a1).
 
