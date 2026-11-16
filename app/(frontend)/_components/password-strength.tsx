@@ -36,9 +36,10 @@ export const PasswordStrength = ({ value }: PasswordStrengthProps) => {
         {level ? `Seguridad: ${level}` : ""}
       </p>
       {hasValue ? (
-        <ul className="password-rules">
+        <ul className="password-rules" id="password-rules">
           {checks.map((check) => (
             <li key={check.label} className={check.met ? "is-met" : undefined}>
+              <span className="sr-only">{check.met ? "Cumplido: " : "Pendiente: "}</span>
               {check.label}
             </li>
           ))}

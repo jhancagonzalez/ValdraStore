@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductVariants, getPublishedProductById } from "@/lib/catalog";
 import { formatCop } from "@/lib/format";
@@ -89,6 +90,16 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
           ) : basePrice ? (
             <span className="detail-price">{basePrice}</span>
           ) : null}
+          <div className="detail-personalize">
+            <span className="detail-label">Personalización</span>
+            <p>
+              ¿Quieres esta prenda con un diseño propio? Abre el personalizador, elige la prenda
+              base y describe tu idea.
+            </p>
+            <Link className="button button-secondary" href="/personalizar">
+              Abrir personalizador
+            </Link>
+          </div>
           <div className="detail-back">
             <BackToCatalogButton page={catalogPage} />
           </div>

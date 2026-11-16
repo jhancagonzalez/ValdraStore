@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionCustomer } from "@/lib/auth";
 import { getPayloadClient } from "@/lib/payload";
 import { getCustomerProfile } from "@/services/customers/profile";
 import { LogoutButton } from "../_components/logout-button";
+import { ChangePasswordForm } from "./change-password-form";
 import { DeleteAccount } from "./delete-account";
 import { ProfileForm } from "./profile-form";
 
@@ -28,19 +30,64 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
   }
 
   return (
-    <main className="page page-narrow">
-      <h1 className="section-title">Mi cuenta</h1>
-      <p className="section-subtitle">Consulta y actualiza tus datos personales.</p>
+    <main className="page account-page">
+      <div className="page-intro">
+        <p className="eyebrow">Cuenta</p>
+        <h1>Mi cuenta</h1>
+        <p className="section-subtitle">
+          Hola, {profile.name}. Consulta y actualiza tus datos personales.
+        </p>
+      </div>
+
       {params.bienvenida === "1" ? (
         <p className="form-success account-welcome" role="status">
           Tu cuenta se creó con éxito. Te damos la bienvenida a Valdra Store.
         </p>
       ) : null}
-      <section className="account-card">
-        <ProfileForm profile={profile} />
-        <LogoutButton className="button button-secondary account-action" />
-        <DeleteAccount />
-      </section>
+
+      <div className="account-layout">
+        <div className="account-main">
+          <section className="account-card" aria-labelledby="account-data-title">
+            <h2 id="account-data-title">Datos personales</h2>
+            <ProfileForm profile={profile} />
+          </section>
+
+          <section className="account-card" aria-labelledby="account-password-title">
+            <h2 id="account-password-title">Cambiar contraseña</h2>
+            <p className="form-hint">
+              Usa una contraseña distinta de la actual. Tu sesión en este navegador seguirá abierta.
+            </p>
+            <ChangePasswordForm />
+          </section>
+        </div>
+
+        <aside className="account-side" aria-label="Resumen de la cuenta">
+          <div className="account-side-block">
+            <p className="eyebrow">Sesión</p>
+            <h2>Sesión activa</h2>
+            <p>
+              Usas esta cuenta en este navegador. Si cierras sesión, tus diseños aprobados siguen
+              guardados.
+            </p>
+            <LogoutButton className="button button-secondary account-action" />
+          </div>
+          <div className="account-side-block">
+            <p className="eyebrow">Privacidad</p>
+            <h2>Tus datos</h2>
+            <p>
+              Puedes consultar cómo tratamos tus datos personales en los términos y condiciones.
+            </p>
+            <Link
+              className="button button-secondary account-action"
+              href="/terminos#datos-personales"
+            >
+              Leer términos
+            </Link>
+          </div>
+        </aside>
+      </div>
+
+      <DeleteAccount />
     </main>
   );
 }

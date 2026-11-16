@@ -5,9 +5,12 @@ export const metadata: Metadata = { title: "Términos y condiciones" };
 
 export default function TermsPage() {
   return (
-    <main className="page">
-      <h1 className="section-title">Términos y condiciones</h1>
-      <p className="section-subtitle">Condiciones de uso de Valdra Store.</p>
+    <main className="page legal-page">
+      <div className="page-intro">
+        <p className="eyebrow">Legal</p>
+        <h1>Términos y condiciones</h1>
+        <p className="section-subtitle">Condiciones de uso de Valdra Store.</p>
+      </div>
 
       <section className="prose">
         <h2>1. Sobre este sitio</h2>

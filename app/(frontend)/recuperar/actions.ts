@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { getPayloadClient } from "@/lib/payload";
 
 export type RecoverFormState = {
@@ -33,6 +34,9 @@ export const requestPasswordReset = async (
       collection: "customers",
       data: { email },
       overrideAccess: true,
+      // Sin las cabeceras reales, Payload crea un request local y el rate limit
+      // cae en una clave global compartida por todos los visitantes.
+      req: { headers: await headers() },
     });
   } catch {
     return {

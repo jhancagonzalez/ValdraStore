@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AuthLayout } from "../_components/auth-layout";
 import { ResetPasswordForm } from "./reset-password-form";
 
 export const metadata: Metadata = { title: "Nueva contraseña" };
@@ -14,23 +15,21 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
 
   if (!cleanToken) {
     return (
-      <main className="page page-narrow">
-        <h1 className="section-title">Nueva contraseña</h1>
-        <p className="state-message">
+      <AuthLayout title="Nueva contraseña" subtitle="Este enlace ya no está disponible.">
+        <p className="state-message" role="status">
           Este enlace no es válido. Solicita uno nuevo desde{" "}
           <Link href="/recuperar">recuperar contraseña</Link>.
         </p>
-      </main>
+      </AuthLayout>
     );
   }
 
   return (
-    <main className="page page-narrow">
-      <h1 className="section-title">Nueva contraseña</h1>
-      <p className="section-subtitle">
-        Elige una contraseña de al menos 8 caracteres. El enlace solo puede usarse una vez.
-      </p>
+    <AuthLayout
+      title="Nueva contraseña"
+      subtitle="Elige una contraseña de al menos 8 caracteres. El enlace solo puede usarse una vez."
+    >
       <ResetPasswordForm token={cleanToken} />
-    </main>
+    </AuthLayout>
   );
 }

@@ -5,7 +5,6 @@ import { type AiErrorCode, AiProviderError, toAiErrorMessage } from "./errors";
 import { findGarmentBase, isMockupSize } from "./garment-bases";
 import { detectImageMimeType } from "./image-bytes";
 import { buildProposalPrompt, IDEA_MAX_LENGTH, normalizeIdea } from "./proposal-prompt";
-import { parseReferenceImage } from "./reference-image";
 import { retryAsync } from "./retry";
 import type { AiImageResult, AiProvider } from "./types";
 
@@ -91,16 +90,13 @@ export const generateDesignProposal = async (
     return failure("invalid_size", "Selecciona una talla válida.");
   }
 
-  let referenceImage = null;
-
+  // C-17: mientras la política de datos del proveedor siga abierta, las
+  // imágenes del cliente no salen del servidor hacia el modelo.
   if (input.referenceImageBytes) {
-    const parsedReference = parseReferenceImage(input.referenceImageBytes);
-
-    if (!parsedReference.ok) {
-      return failure("invalid_reference", parsedReference.message);
-    }
-
-    referenceImage = parsedReference.image;
+    return failure(
+      "invalid_reference",
+      "Las imágenes de referencia no se envían a la IA mientras la política de datos esté pendiente.",
+    );
   }
 
   const readBaseImage = dependencies.readBaseImage ?? defaultReadBaseImage;
@@ -112,9 +108,8 @@ export const generateDesignProposal = async (
     return failure("unavailable", "No pudimos cargar la prenda seleccionada.");
   }
 
-  // La referencia del cliente, si existe, es la entrada visual al modelo;
-  // la prenda base define silueta y color en el prompt.
-  const inputImage = referenceImage ?? {
+  // Solo la prenda base (sintética) llega al modelo.
+  const inputImage = {
     bytes: baseImage,
     mimeType: detectImageMimeType(baseImage) ?? ("image/jpeg" as const),
   };

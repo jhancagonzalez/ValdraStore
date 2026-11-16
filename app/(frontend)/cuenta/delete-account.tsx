@@ -44,7 +44,7 @@ export const DeleteAccount = () => {
 
   return (
     <div className="account-danger">
-      <h2 className="detail-label">Eliminar cuenta</h2>
+      <h2 className="account-side-title">Eliminar cuenta</h2>
 
       {step === "idle" ? (
         <>

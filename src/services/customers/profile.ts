@@ -122,12 +122,12 @@ export const isEmailChange = (currentEmail: string, nextEmail: string): boolean 
 const LOCKED_STATUS = 423;
 
 /**
- * Checks the password typed before an email change. Payload has no standalone
- * verifier, so this runs its login operation against the stored password hash
- * and discards the returned token. A wrong password counts as a login attempt,
- * the same brute-force protection the login form already applies.
+ * Checks the password typed before an email or password change. Payload has no
+ * standalone verifier, so this runs its login operation against the stored
+ * password hash and discards the returned token. A wrong password counts as a
+ * login attempt, the same brute-force protection the login form already applies.
  */
-const verifyCurrentPassword = async (
+export const verifyCurrentPassword = async (
   payload: Payload,
   customer: Customer,
   password: string,

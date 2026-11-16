@@ -29,5 +29,23 @@
       "next": "recommended",
       "react": "recommended"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.ts", "**/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 600,
+                "skipBlankLines": true
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

@@ -47,6 +47,11 @@ describe("HU-05 criterio 2 — un cliente es rechazado en funciones administrati
     expect(hasAdminRole({ ...customerSession, roles: ["admin"] })).toBe(false);
   });
 
+  it("rechaza un rol de administrador sin colección", () => {
+    expect(hasAdminRole({ role: "admin" })).toBe(false);
+    expect(hasAdminRole({ role: "admin", collection: undefined })).toBe(false);
+  });
+
   it("niega el panel a un cliente aunque el bootstrap local esté activo", async () => {
     vi.stubEnv("ALLOW_ADMIN_BOOTSTRAP", "true");
     vi.stubEnv("NODE_ENV", "development");

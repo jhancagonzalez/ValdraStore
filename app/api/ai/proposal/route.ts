@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSessionCustomer } from "@/lib/auth";
+import { getPayloadClient } from "@/lib/payload";
 import { generateDesignProposal, type ProposalFailureReason } from "@/services/ai/proposal";
 import { MAX_REFERENCE_IMAGE_BYTES } from "@/services/ai/reference-image";
+import { consumeDailyGenerationQuota } from "@/services/personalization/generation-quota";
 
 export const runtime = "nodejs";
 
@@ -57,6 +59,27 @@ export async function POST(request: Request) {
     }
 
     referenceImageBytes = new Uint8Array(await reference.arrayBuffer());
+  }
+
+  if (referenceImageBytes) {
+    return jsonError(
+      "Las imágenes de referencia no se envían a la IA mientras la política de datos esté pendiente. Puedes generar sin adjuntarla.",
+      422,
+    );
+  }
+
+  try {
+    const payload = await getPayloadClient();
+    const quota = await consumeDailyGenerationQuota(payload, customer.id);
+
+    if (!quota.allowed) {
+      return jsonError(
+        "Alcanzaste el límite de 3 generaciones por día. Vuelve a intentarlo mañana.",
+        429,
+      );
+    }
+  } catch {
+    return jsonError("No pudimos verificar tu límite de generaciones. Inténtalo de nuevo.", 503);
   }
 
   const result = await generateDesignProposal({

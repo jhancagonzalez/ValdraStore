@@ -40,7 +40,7 @@ export const ProductGallery = ({ images, fallbackAlt }: ProductGalleryProps) => 
                 type="button"
                 className="product-gallery-thumb"
                 aria-pressed={index === activeIndex}
-                aria-label={`Ver ${image.kind === "design" ? "diseño" : "imagen"}: ${image.alt}`}
+                aria-label={`Ver ${image.kind === "design" ? "diseño" : "imagen"} ${index + 1} de ${images.length}: ${image.alt}`}
                 onClick={() => setActiveIndex(index)}
               >
                 <ProductImage src={image.url} alt="" sizes="96px" />

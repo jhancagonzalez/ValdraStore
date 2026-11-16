@@ -101,6 +101,11 @@ export const ApproveDesign = ({
         className="approval-dialog"
         aria-describedby={descriptionId}
         aria-labelledby={titleId}
+        onCancel={(event) => {
+          if (sending) {
+            event.preventDefault();
+          }
+        }}
       >
         <div className="approval-dialog-body">
           <h3 id={titleId}>¿Confirmas este diseño?</h3>

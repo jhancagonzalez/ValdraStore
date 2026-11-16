@@ -1,5 +1,6 @@
 import type { Access, CollectionConfig } from "payload";
 import { hasAdminRole, isAdmin } from "@/access/roles";
+import { enforceApprovedDesignLimit } from "./approved-designs-hooks";
 
 /** Solo un cliente con sesión puede registrar una aprobación (HU-17). */
 const isCustomerSession: Access = ({ req }) => req.user?.collection === "customers";
@@ -115,21 +116,7 @@ export const ApprovedDesigns: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeValidate: [
-      ({ data, operation, req }) => {
-        if (operation !== "create" || !data) {
-          return data;
-        }
-
-        // La propiedad se fija en el servidor: el cliente no puede aprobar en
-        // nombre de otra cuenta enviando otro id.
-        if (req.user?.collection === "customers") {
-          return { ...data, customer: req.user.id };
-        }
-
-        return data;
-      },
-    ],
+    beforeValidate: [enforceApprovedDesignLimit],
   },
   labels: {
     plural: "Diseños aprobados",

@@ -18,7 +18,7 @@ export const hasAdminRole = (user: unknown): user is RoleBearingUser => {
 
   const roleBearingUser = user as RoleBearingUser;
 
-  if (roleBearingUser.collection !== undefined && roleBearingUser.collection !== "admins") {
+  if (roleBearingUser.collection !== "admins") {
     return false;
   }
 

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useToast } from "./toast";
 
 type LogoutButtonProps = {
   /** Payload auth collection endpoint: customers by default, admins from the panel link. */
@@ -15,15 +16,33 @@ export const LogoutButton = ({
   className,
 }: LogoutButtonProps) => {
   const router = useRouter();
+  const { toast } = useToast();
   const [pending, setPending] = useState(false);
 
   const logout = async () => {
     setPending(true);
     try {
-      await fetch(endpoint, { credentials: "include", method: "POST" });
-    } finally {
+      const response = await fetch(endpoint, { credentials: "include", method: "POST" });
+
+      if (!response.ok) {
+        toast({
+          title: "No pudimos cerrar sesión",
+          description: "Inténtalo de nuevo.",
+          tone: "error",
+        });
+        return;
+      }
+
       router.push("/");
       router.refresh();
+    } catch {
+      toast({
+        title: "No pudimos conectar con el servidor",
+        description: "Revisa tu conexión e inténtalo de nuevo.",
+        tone: "error",
+      });
+    } finally {
+      setPending(false);
     }
   };
 

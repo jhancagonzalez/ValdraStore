@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { APIError } from "payload";
 import { getSessionCustomer } from "@/lib/auth";
 import { getMockupBase, getMockupBaseName } from "@/lib/mockup-bases";
 import { getPayloadClient } from "@/lib/payload";
@@ -69,7 +70,11 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ approvedAt: created.approvedAt, id: created.id });
-  } catch {
+  } catch (error) {
+    if (error instanceof APIError && error.status === 429) {
+      return errorResponse(error.message, 429);
+    }
+
     return errorResponse("No pudimos registrar la aprobación. Inténtalo de nuevo.", 500);
   }
 }

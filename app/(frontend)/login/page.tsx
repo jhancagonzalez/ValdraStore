@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionCustomer } from "@/lib/auth";
+import { AuthLayout } from "../_components/auth-layout";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Iniciar sesión" };
@@ -26,9 +27,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   }
 
   return (
-    <main className="page page-narrow">
-      <h1 className="section-title">Iniciar sesión</h1>
-      <p className="section-subtitle">Ingresa con el correo y la contraseña de tu cuenta.</p>
+    <AuthLayout
+      title="Iniciar sesión"
+      subtitle="Ingresa con el correo y la contraseña de tu cuenta."
+    >
       <LoginForm next={next} />
       <p className="form-footer">
         <Link href="/recuperar">¿Olvidaste tu contraseña?</Link>
@@ -39,6 +41,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           Crea una aquí
         </Link>
       </p>
-    </main>
+    </AuthLayout>
   );
 }
