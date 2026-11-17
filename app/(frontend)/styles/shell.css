@@ -515,8 +515,6 @@
 }
 
 .account-side {
-  position: sticky;
-  top: calc(var(--header-height) + 28px);
   display: grid;
   gap: 22px;
   padding: 24px;
@@ -727,10 +725,6 @@
 @media (max-width: 900px) {
   .account-layout {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .account-side {
-    position: static;
   }
 
   .site-footer-inner {

@@ -327,3 +327,35 @@
     transform: scaleY(0.7);
   }
 }
+
+/* Esqueletos de carga */
+
+.skeleton {
+  display: block;
+  height: 12px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--paper-deep) 25%,
+    var(--paper-soft) 37%,
+    var(--paper-deep) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 50%;
+  }
+
+  to {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
