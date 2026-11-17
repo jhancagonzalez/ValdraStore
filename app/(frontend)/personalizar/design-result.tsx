@@ -64,7 +64,9 @@ export const DesignResult = ({
     aria-labelledby="design-workspace-title"
   >
     <header className="design-result-head">
-      <h2 id="design-workspace-title">Así se ve tu idea</h2>
+      <h2 id="design-workspace-title">
+        {idea.trim() ? "Así se ve tu idea" : "Así se ve tu imagen"}
+      </h2>
       <p className="design-result-meta">
         {selectedName} · Talla {selectedSize}
         {lastZoneLabel ? ` · Zona: ${lastZoneLabel}` : ""}
@@ -103,7 +105,7 @@ export const DesignResult = ({
     )}
 
     <div className="design-result-copy">
-      <p className="design-result-idea">“{idea.trim()}”</p>
+      {idea.trim() ? <p className="design-result-idea">“{idea.trim()}”</p> : null}
       {approvedDesign ? (
         <div className="design-approval-note" role="status">
           <p className="design-approval-title">Diseño aprobado</p>
@@ -125,7 +127,9 @@ export const DesignResult = ({
             ? "El texto se agregó con una fuente legible; el resto del diseño anterior se conservó."
             : lastStrategy === "addition"
               ? "El elemento se agregó en la zona marcada. Los píxeles fuera de esa zona se conservaron; el dibujo nuevo puede cubrir lo que hubiera dentro."
-              : "La propuesta se generó a partir de tu idea."}{" "}
+              : idea.trim()
+                ? "La propuesta se generó a partir de tu idea."
+                : "La imagen de referencia se aplicó tal cual sobre la prenda."}{" "}
           Todavía no está registrada: si sales de esta página antes de aprobarla, se perderá.
           Descárgala si quieres conservarla.
         </p>
@@ -143,7 +147,9 @@ export const DesignResult = ({
         {approvedDesign ? null : selectedSize ? (
           <ApproveDesign
             baseId={selectedBase.id}
-            idea={idea.trim()}
+            // La aprobación exige una descripción; con solo la referencia se
+            // registra qué se estampó sin inventar una idea del cliente.
+            idea={idea.trim() || "Imagen de referencia aplicada tal cual."}
             image={generatedImage}
             size={selectedSize}
             onApproved={onApproved}

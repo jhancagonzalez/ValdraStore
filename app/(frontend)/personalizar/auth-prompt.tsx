@@ -91,6 +91,17 @@ export const AuthPrompt = ({
         aria-describedby="auth-dialog-description"
         tabIndex={-1}
       >
+        <button type="button" className="auth-dialog-close" aria-label="Cerrar" onClick={onClose}>
+          <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+            <path
+              d="m5 5 10 10M15 5 5 15"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
         <h2 id="auth-dialog-title">Inicia sesión para personalizar</h2>
         <p id="auth-dialog-description">
           Conserva tu prenda, talla y color y continúa con tu idea de diseño.

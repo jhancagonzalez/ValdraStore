@@ -435,7 +435,11 @@ export async function POST(request: Request) {
     return errorResponse("Selecciona una talla válida.", 400);
   }
 
-  if (idea.length === 0) {
+  // HU-13: con una referencia, la descripción es opcional; el estampado se
+  // compone tal cual y la idea solo ajusta la ubicación.
+  const referenceOnly = mode === "create" && idea.length === 0 && body.referenceImage != null;
+
+  if (idea.length === 0 && !referenceOnly) {
     return errorResponse("Describe tu idea antes de generar la propuesta.", 400);
   }
 
@@ -443,38 +447,45 @@ export async function POST(request: Request) {
     return errorResponse("La idea es demasiado larga.", 400);
   }
 
-  // Normas de uso: se revisan antes de gastar cuota del proveedor.
-  const guardMode: DesignGuardMode =
-    mode === "create" ? "create" : strategy === "text" && extractDesignText(idea) ? "text" : "zone";
-  const requestedSelection =
-    guardMode === "zone"
-      ? (parseMockupSelection(body.selection) ?? DEFAULT_REVISION_SELECTION)
-      : null;
-  const guardIssue = checkDesignRequest({
-    baseColorKey: base.colorKey,
-    idea,
-    mode: guardMode,
-    selectionArea: requestedSelection
-      ? requestedSelection.width * requestedSelection.height
-      : undefined,
-  });
+  // Normas de uso: se revisan antes de gastar cuota del proveedor. Sin texto
+  // no hay nada que moderar: solo se compone la referencia en el servidor.
+  if (idea.length > 0) {
+    const guardMode: DesignGuardMode =
+      mode === "create"
+        ? "create"
+        : strategy === "text" && extractDesignText(idea)
+          ? "text"
+          : "zone";
+    const requestedSelection =
+      guardMode === "zone"
+        ? (parseMockupSelection(body.selection) ?? DEFAULT_REVISION_SELECTION)
+        : null;
+    const guardIssue = checkDesignRequest({
+      baseColorKey: base.colorKey,
+      idea,
+      mode: guardMode,
+      selectionArea: requestedSelection
+        ? requestedSelection.width * requestedSelection.height
+        : undefined,
+    });
 
-  if (guardIssue) {
-    return NextResponse.json({ ...guardIssue, error: guardIssue.message }, { status: 422 });
-  }
+    if (guardIssue) {
+      return NextResponse.json({ ...guardIssue, error: guardIssue.message }, { status: 422 });
+    }
 
-  const moderation = await moderateDesignRequest(idea);
+    const moderation = await moderateDesignRequest(idea);
 
-  if (!moderation.allowed) {
-    return NextResponse.json(
-      {
-        code: "moderation",
-        error: moderation.message,
-        message: moderation.message,
-        title: "No podemos crear ese diseño",
-      },
-      { status: 422 },
-    );
+    if (!moderation.allowed) {
+      return NextResponse.json(
+        {
+          code: "moderation",
+          error: moderation.message,
+          message: moderation.message,
+          title: "No podemos crear ese diseño",
+        },
+        { status: 422 },
+      );
+    }
   }
 
   const payload = await getPayloadClient();

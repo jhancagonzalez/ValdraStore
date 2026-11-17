@@ -689,6 +689,7 @@
 }
 
 .auth-dialog {
+  position: relative;
   width: min(100%, 480px);
   max-height: calc(100dvh - 40px);
   overflow-y: auto;
@@ -704,8 +705,33 @@
   outline: none;
 }
 
+.auth-dialog-close {
+  position: absolute;
+  top: clamp(14px, 2.2vw, 20px);
+  right: clamp(14px, 2.2vw, 20px);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
+}
+
+.auth-dialog-close:hover {
+  border-color: var(--ink);
+  background: var(--paper-soft);
+}
+
 .auth-dialog h2 {
   margin: 0;
+  padding-right: 44px;
   font-size: clamp(2rem, 4.4vw, 2.75rem);
   line-height: 0.98;
 }

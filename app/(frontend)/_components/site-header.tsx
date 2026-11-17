@@ -170,6 +170,9 @@ export const SiteHeader = ({ isAdmin, isCustomer }: SiteHeaderProps) => {
                 {link.label}
               </Link>
             ))}
+            <Link href="/personalizar/avisos" onClick={() => setMenuOpen(false)}>
+              Avisos y recomendaciones
+            </Link>
             <Link href="/terminos" onClick={() => setMenuOpen(false)}>
               Términos y condiciones
             </Link>

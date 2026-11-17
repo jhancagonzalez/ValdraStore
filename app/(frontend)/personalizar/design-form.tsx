@@ -164,7 +164,9 @@ export const DesignForm = ({
               ? detectedText
                 ? "Texto a agregar"
                 : "Describe solo el elemento nuevo"
-              : "Describe tu idea"}
+              : referenceImage
+                ? "Describe tu idea (opcional)"
+                : "Describe tu idea"}
           </label>
           <textarea
             id="design-idea"
@@ -191,7 +193,9 @@ export const DesignForm = ({
                 ? detectedText
                   ? `Texto detectado: “${detectedText}”. Se agregará con una fuente legible en la zona marcada.`
                   : "Elige una zona sin dibujos que quieras conservar. El elemento aún no se adapta automáticamente a los pliegues."
-                : "La IA ampliará tu idea con composición, estilo y restricciones."}{" "}
+                : referenceImage
+                  ? "Sin descripción, aplicamos tu imagen tal cual en el pecho. Si escribes «bajo», la colocamos en la parte inferior."
+                  : "La IA ampliará tu idea con composición, estilo y restricciones."}{" "}
               Máximo {IDEA_MAX_LENGTH} caracteres.
             </p>
             <span className="design-form-count" aria-hidden="true">
@@ -260,7 +264,9 @@ export const DesignForm = ({
                 ? detectedText
                   ? "Agregar texto"
                   : "Agregar al diseño"
-                : "Generar propuesta"}
+                : referenceImage && idea.trim() === ""
+                  ? "Usar esta imagen"
+                  : "Generar propuesta"}
           </button>
           {previousImage && currentProposal ? (
             <button
