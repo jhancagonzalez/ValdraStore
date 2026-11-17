@@ -1,0 +1,361 @@
+/* Componentes base */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 30px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: none;
+  font: inherit;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.button-primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: var(--shadow-button);
+}
+
+.button-primary:hover:not(:disabled) {
+  border-color: #2b2b2b;
+  background: #2b2b2b;
+  color: var(--paper);
+  box-shadow:
+    0 2px 4px rgb(17 17 17 / 0.08),
+    0 14px 30px -20px rgb(17 17 17 / 0.55);
+}
+
+.button-secondary {
+  border-color: var(--line);
+  background: var(--paper-soft);
+  color: var(--ink);
+}
+
+.button-secondary:hover:not(:disabled) {
+  border-color: var(--line-strong);
+  background: var(--paper-deep);
+}
+
+.button-danger {
+  border-color: var(--danger-line);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.button-danger:hover:not(:disabled) {
+  border-color: var(--danger);
+  background: #fbe7e4;
+}
+
+.button-accent {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--paper);
+  box-shadow: var(--shadow-button);
+}
+
+.button-accent:hover:not(:disabled) {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+}
+
+.button-light {
+  border-color: var(--paper);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.button-light:hover:not(:disabled) {
+  border-color: var(--paper-deep);
+  background: var(--paper-deep);
+  color: var(--ink);
+}
+
+.button-light:focus-visible,
+.button-ghost-light:focus-visible {
+  outline-color: var(--paper);
+}
+
+.button-ghost-light {
+  border-color: rgb(255 255 255 / 0.28);
+  background: transparent;
+  color: var(--paper);
+}
+
+.button-ghost-light:hover:not(:disabled) {
+  border-color: rgb(255 255 255 / 0.6);
+  background: rgb(255 255 255 / 0.08);
+  color: var(--paper);
+}
+
+/* Secciones editoriales */
+
+.section-title {
+  margin: 0;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: clamp(2.4rem, 4.8vw, 4rem);
+  font-weight: 600;
+  letter-spacing: -0.05em;
+  line-height: 0.98;
+}
+
+.section-subtitle {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.catalog-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px 32px;
+  margin-bottom: clamp(24px, 3vw, 36px);
+  padding-bottom: clamp(20px, 2.6vw, 30px);
+  border-bottom: 1px solid var(--line);
+}
+
+.catalog-head > div {
+  display: grid;
+  gap: 12px;
+}
+
+.catalog-head .section-title {
+  font-size: clamp(2.8rem, 5.6vw, 4.8rem);
+  font-weight: 600;
+  letter-spacing: -0.06em;
+}
+
+/* Estados */
+
+.state-message {
+  margin: 0;
+  padding: clamp(44px, 7vw, 76px) clamp(24px, 4vw, 40px);
+  border: 1px solid var(--line);
+  background: var(--paper-soft);
+  color: var(--ink-soft);
+  font-size: 1rem;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.state-message a {
+  color: var(--accent);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Notificaciones no bloqueantes */
+
+.toast-viewport {
+  position: fixed;
+  right: clamp(14px, 2vw, 24px);
+  bottom: calc(clamp(14px, 2vw, 24px) + env(safe-area-inset-bottom));
+  z-index: var(--z-toast);
+  display: grid;
+  gap: 10px;
+  width: min(calc(100vw - 28px), 390px);
+  pointer-events: none;
+}
+
+.toast {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  padding: 14px 12px 14px 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: var(--shadow-lift);
+  pointer-events: auto;
+  animation: toast-in 300ms var(--ease) both;
+}
+
+.toast[data-tone="error"] {
+  border-left-color: var(--danger);
+}
+
+.toast[data-tone="info"] {
+  border-left-color: var(--ink);
+}
+
+.toast-icon {
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.toast[data-tone="error"] .toast-icon {
+  color: var(--danger);
+}
+
+.toast[data-tone="info"] .toast-icon {
+  color: var(--ink);
+}
+
+.toast-body {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.toast-title {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.toast-description {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.toast-dismiss {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -10px -4px -10px 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color var(--dur-fast) ease;
+}
+
+.toast-dismiss:hover {
+  color: var(--ink);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 760px) {
+  .toast-viewport {
+    bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Marca de estado para la generación (inspirada en StatusMark de React Bits) */
+
+.status-mark {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  width: 26px;
+  height: 22px;
+}
+
+.status-mark span {
+  flex: 1;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: bottom;
+  animation: status-mark-pulse 1.15s ease-in-out infinite;
+}
+
+.status-mark span:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.status-mark span:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+@keyframes status-mark-pulse {
+  0%,
+  100% {
+    transform: scaleY(0.32);
+    opacity: 0.55;
+  }
+
+  45% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+
+  .status-mark span {
+    animation: none;
+    opacity: 1;
+    transform: scaleY(0.7);
+  }
+}
+
+/* Esqueletos de carga */
+
+.skeleton {
+  display: block;
+  height: 12px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--paper-deep) 25%,
+    var(--paper-soft) 37%,
+    var(--paper-deep) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 50%;
+  }
+
+  to {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

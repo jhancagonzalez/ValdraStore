@@ -7,6 +7,7 @@ dist/
 coverage/
 playwright-report/
 test-results/
+.playwright-mcp/
 .env
 .env.*
 !.env.example
@@ -15,3 +16,9 @@ test-results/
 .codex-tools/
 .DS_Store
 Thumbs.db
+/private-spike-media/
+/media/
+
+# Pruebas locales de generación con IA
+test-flux-*.jpg
+test-flux-*.png

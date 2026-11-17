@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-12",
+  "provider": "Cloudflare Workers AI",
+  "model": "@cf/black-forest-labs/flux-2-klein-4b",
+  "size": 1024,
+  "promptTemplate": "Professional e-commerce product photograph of a plain {color} {garment}, front view, flat lay, centered, no person, no design, no print, no logo, no text, no graphics, soft studio lighting, light gray seamless background, high resolution, square composition",
+  "categories": {
+    "camisetas": {
+      "label": "Camiseta",
+      "colors": {
+        "black": { "label": "Negro", "file": "/mockups/tshirt-black.jpg" },
+        "white": { "label": "Blanco", "file": "/mockups/tshirt-white.jpg" },
+        "red": { "label": "Rojo", "file": "/mockups/tshirt-red.jpg" },
+        "beige": { "label": "Beige", "file": "/mockups/tshirt-beige.jpg" },
+        "blue": { "label": "Azul", "file": "/mockups/tshirt-blue.jpg" }
+      }
+    },
+    "hoodies": {
+      "label": "Hoodie",
+      "colors": {
+        "black": { "label": "Negro", "file": "/mockups/hoodie-black.jpg" },
+        "white": { "label": "Blanco", "file": "/mockups/hoodie-white.jpg" },
+        "red": { "label": "Rojo", "file": "/mockups/hoodie-red.jpg" },
+        "beige": { "label": "Beige", "file": "/mockups/hoodie-beige.jpg" },
+        "blue": { "label": "Azul", "file": "/mockups/hoodie-blue.jpg" }
+      }
+    }
+  }
+}

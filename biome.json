@@ -10,6 +10,7 @@
       "*.{js,jsx,ts,tsx,mjs,cjs,json,jsonc,css,graphql}",
       "**/*.{js,jsx,ts,tsx,mjs,cjs,json,jsonc,css,graphql}",
       "!**/importMap.js",
+      "!payload-types.ts",
       "!**/.specify",
       "!**/.agents"
     ]
@@ -28,5 +29,23 @@
       "next": "recommended",
       "react": "recommended"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.ts", "**/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 600,
+                "skipBlankLines": true
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

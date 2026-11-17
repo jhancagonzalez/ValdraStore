@@ -41,6 +41,9 @@ Pega el resultado en `PAYLOAD_SECRET` dentro de `.env.local`. Completa también:
 - `DATABASE_URL_MIGRATIONS`: cadena del mismo Session Pooler, reservada para crear
   y ejecutar migraciones.
 - `NEXT_PUBLIC_SERVER_URL`: conserva `http://localhost:3000` para desarrollo local.
+  Payload usa este valor para `serverURL`, `csrf` y `cors`, así que debe coincidir
+  exactamente con el origen (sin barra final ni ruta) en cada entorno; si no, el
+  panel rechaza el inicio de sesión por cookie.
 - `ALLOW_ADMIN_BOOTSTRAP=true`: permite crear el primer administrador únicamente
   en desarrollo local y mientras la colección de administradores esté vacía. El
   código lo bloquea en producción.
@@ -62,11 +65,77 @@ una imagen WebP de prueba desde Payload. Falta comprobar expiración efectiva, r
 de un cliente sin rol admin, límites de tipo/tamaño y borrado desde Payload. CORS no
 sustituye la autorización del servidor ni el bucket privado.
 
+Las imágenes del catálogo usan la colección `media` y el bucket público
+`valdra-catalog-media` (creado el 2026-10-23 con límite de 10 MB y JPEG/PNG/WebP).
+`S3_CATALOG_BUCKET` y `SUPABASE_URL` deben existir en `.env.local`; `SUPABASE_URL` solo
+se usa en servidor para construir la URL pública del objeto. Solo las imágenes de
+catálogo son públicas; referencias, propuestas y mockups permanecen privados.
+
+Límite efectivo en despliegue: `media` sube los bytes a través del servidor, y
+Vercel Hobby corta el cuerpo de una función en 4,5 MB, por debajo del límite
+configurado de 10 MB. En local se aceptan hasta 10 MB. Si se necesita el límite
+completo en producción, hay que habilitar `clientUploads` en el adaptador de
+catálogo y configurar CORS del bucket; queda pendiente de aprobación.
+
 Usa el Session Pooler en modo de sesión, puerto `5432`, para ambas cadenas. Mantén
 `sslmode=verify-full` y `sslrootcert` con la ruta local al certificado raíz descargado
 desde **Supabase Dashboard → Database Settings → SSL Configuration**. No ignores
 errores de certificado. Si la contraseña de Postgres contiene caracteres reservados,
 codifícala para URL en ambas cadenas.
+
+## Cloudflare Workers AI para personalización
+
+El Sprint 2 usa **Cloudflare Workers AI** con el modelo
+`@cf/black-forest-labs/flux-2-klein-4b` para generar el mockup completo sobre una
+prenda base predefinida. Hay 5 camisetas y 5 hoodies en negro, blanco, rojo, beige y
+azul; las imágenes y el mapa de rutas están en `public/mockups/`. No se genera un
+diseño aislado ni se compone con overlay.
+
+Cada integrante debe crear su propia cuenta gratuita de Cloudflare:
+
+1. Crear una cuenta en Cloudflare. La cuota de Workers AI del plan gratuito no exige
+   tarjeta: incluye 10.000 neuronos por día.
+2. Entrar a **Workers AI → Use REST API**.
+3. Copiar el **Account ID**.
+4. Crear un **Workers AI API Token** con permisos de Workers AI y copiarlo.
+5. Agregar estas variables a `.env.local`:
+
+   ```text
+   CLOUDFLARE_ACCOUNT_ID=tu_account_id
+   CLOUDFLARE_API_TOKEN=tu_token
+   ```
+
+Las dos variables son de servidor. No usar `NEXT_PUBLIC_`, no ponerlas en componentes
+de cliente y no subirlas a Git. Para la demo desplegada se usa una cuenta de equipo en
+Vercel, no el token personal de un integrante.
+
+El mismo token ejecuta la moderación `@cf/meta/llama-guard-3-8b`, que revisa cada idea
+antes de generar; no requiere variables adicionales. Las reglas deterministas de uso
+están en `src/lib/design-guard.ts` y se aplican en el navegador del personalizador y en
+`/api/personalization/mockup`. Se recomienda que cualquier otra ruta que llame al
+proveedor las evalúe antes de gastar cuota; `/api/ai/proposal` (HU-14) queda como
+propuesta para su responsable.
+
+Probar la conexión con:
+
+```powershell
+node scripts/test-flux-klein.mjs
+```
+
+El script guarda `test-flux-klein.jpg` en la raíz. Para probar una prenda base:
+
+```powershell
+$env:REFERENCE_IMAGE="public/mockups/tshirt-black.jpg"
+$env:FLUX_OUTPUT="test-flux-klein-edit.jpg"
+node scripts/test-flux-klein.mjs
+```
+
+Las diez bases disponibles están en `public/mockups/` y se listan en
+`public/mockups/manifest.json`.
+
+Por ahora no se implementa el contador de 3 propuestas por usuario al día; se activará
+más adelante. No hay fallback pagado. Si se agota la cuota gratuita de Cloudflare, la
+petición falla; no se cambia a un modelo pagado.
 
 ## Crear y aplicar el esquema Payload
 
@@ -106,8 +175,22 @@ Después de aplicar la migración, levanta la aplicación y abre `/admin`. Mient
 haya administradores, Payload permite la creación inicial solo si se cumple todo lo
 siguiente: entorno no productivo, `ALLOW_ADMIN_BOOTSTRAP=true` y colección vacía.
 El hook asigna el rol de administrador en el servidor. Al terminar, cambia la variable
-a `false` en `.env.local` y reinicia el servidor. La colección de clientes no permite
-crear cuentas todavía; el registro se incorporará al implementar la HU correspondiente.
+a `false` en `.env.local` y reinicia el servidor. Los clientes se registran desde
+`/registro` (HU-01); su rol lo asigna el servidor y no acceden al panel.
+
+El cambio de contraseña con sesión iniciada no está implementado: la recuperación
+por correo es el único flujo. El hook `beforeChange` de `customers` rechaza un
+`password` enviado por `PATCH` REST salvo la marca interna
+`passwordChangeVerified`, reservada para una futura acción que verifique la
+contraseña actual. Esa marca vive en el contexto del servidor y nunca debe llegar
+desde el cliente.
+
+Los intentos de registro, inicio de sesión y recuperación se limitan por IP con
+una ventana fija en la tabla `rate_limit_hits`: 30 registros por hora, 30 inicios
+de sesión cada 15 minutos y 3 recuperaciones cada 15 minutos. El límite de
+recuperación mantiene una IP por debajo de los 300 correos diarios de Brevo. En
+desarrollo, las peticiones desde `localhost` no se limitan para no bloquear las
+pruebas. Es una defensa básica; no sustituye los límites del proveedor de correo.
 
 No despliegues un proyecto vacío con una cuenta administradora pendiente de crear.
 La configuración de producción siempre bloquea el modo de bootstrap.
@@ -122,7 +205,11 @@ pnpm dev
 
 Rutas locales:
 
-- `http://localhost:3000`: portada inicial del prototipo.
+- `http://localhost:3000`: portada del prototipo.
+- `http://localhost:3000/catalogo`: catálogo público con paginación.
+- `http://localhost:3000/catalogo/[id]`: detalle de prenda.
+- `http://localhost:3000/registro` y `/login`: registro e inicio de sesión de clientes.
+- `http://localhost:3000/cuenta`: vista privada del cliente autenticado.
 - `http://localhost:3000/admin`: panel Payload.
 - `http://localhost:3000/api`: API REST integrada de Payload.
 

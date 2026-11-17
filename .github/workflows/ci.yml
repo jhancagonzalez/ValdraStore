@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [integracion, develop, main]
+  push:
+    branches: [integracion]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  calidad:
+    name: Chequeos del proyecto
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm typecheck
+
+  trazabilidad:
+    name: Trazabilidad
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validar IDs, commits y archivos prohibidos
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          ids='(HU-[0-9]+|RF-[0-9]+|RNF-[0-9]+|SPRINT-[0-9]+)'
+          fallos=0
+
+          case "$HEAD_REF" in
+            integracion|develop|main) ;;
+            feat/*|branch/*)
+              grep -Eq "$ids" <<<"$HEAD_REF" ||
+                { echo "::error::La rama '$HEAD_REF' debe incluir un ID (HU-XX, RF-X, RNF-X o SPRINT-X)."; fallos=1; }
+              ;;
+            *)
+              echo "::error::La rama '$HEAD_REF' debe empezar por feat/ o branch/."
+              fallos=1
+              ;;
+          esac
+
+          grep -Eq "$ids" <<<"$PR_TITLE" ||
+            { echo "::error::El título del PR debe incluir un ID (HU-XX, RF-X, RNF-X o SPRINT-X)."; fallos=1; }
+
+          while IFS= read -r asunto; do
+            grep -Eq "$ids" <<<"$asunto" ||
+              { echo "::error::Commit sin ID de trazabilidad: $asunto"; fallos=1; }
+          done < <(git log --no-merges --format=%s "$BASE_SHA..$HEAD_SHA")
+
+          prohibidos=$(git diff --name-only --diff-filter=ACMR "$BASE_SHA...$HEAD_SHA" |
+            grep -E '(^|/)\.env($|\.)|\.(dump|sql|pem|key)$' |
+            grep -vE '(^|/)\.env\.example$' || true)
+
+          if [ -n "$prohibidos" ]; then
+            echo "::error::El PR agrega archivos que no deben versionarse (secretos, dumps o claves):"
+            echo "$prohibidos"
+            fallos=1
+          fi
+
+          exit "$fallos"
