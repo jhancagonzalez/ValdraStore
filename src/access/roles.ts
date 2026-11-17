@@ -1,16 +1,26 @@
 import type { Access, FieldAccess, PayloadRequest } from "payload";
 
 type RoleBearingUser = {
+  collection?: unknown;
   role?: unknown;
   roles?: unknown;
 };
 
+/**
+ * The administrator role lives only in the `admins` collection (HU-05). A session
+ * from another auth collection is never an administrator, even if its document
+ * carried an admin-looking role value.
+ */
 export const hasAdminRole = (user: unknown): user is RoleBearingUser => {
   if (!user || typeof user !== "object") {
     return false;
   }
 
   const roleBearingUser = user as RoleBearingUser;
+
+  if (roleBearingUser.collection !== "admins") {
+    return false;
+  }
 
   return (
     roleBearingUser.role === "admin" ||
@@ -23,26 +33,61 @@ export const isAdminField: FieldAccess = ({ req }) => hasAdminRole(req.user);
 export const isCustomer: FieldAccess = ({ req }) => Boolean(req.user) && !hasAdminRole(req.user);
 
 /**
- * Allow initial administrator setup only in a local, non-production
- * environment and only while the administrator collection is empty.
+ * Administrators keep full access; an authenticated customer is limited to their
+ * own document (HU-04). The returned Where is combined by Payload with the
+ * requested id, so a customer cannot reach someone else's record by sending
+ * another id from the client.
  */
-export const canAccessAdminPanel = async ({ req }: { req: PayloadRequest }): Promise<boolean> => {
+export const isAdminOrSelf: Access = ({ req }) => {
   if (hasAdminRole(req.user)) {
     return true;
   }
 
-  if (process.env.NODE_ENV === "production" || process.env.ALLOW_ADMIN_BOOTSTRAP !== "true") {
+  const userId = req.user?.id;
+
+  if (userId === undefined || userId === null) {
     return false;
   }
 
-  const { totalDocs } = await req.payload.count({
-    collection: "admins",
-    overrideAccess: true,
-  });
-
-  return totalDocs === 0;
+  return { id: { equals: userId } };
 };
 
-export const isAdminOrLocalBootstrap: Access = canAccessAdminPanel;
+/**
+ * Panel access: only a signed-in administrator gets in. The local bootstrap
+ * check lives in `isAdminOrLocalBootstrap`; running it here made every anonymous
+ * page view query the admin collection.
+ */
+export const canAccessAdminPanel = ({ req }: { req: PayloadRequest }): boolean =>
+  hasAdminRole(req.user);
+
+export const isLocalBootstrapEnabled = (): boolean =>
+  process.env.NODE_ENV !== "production" && process.env.ALLOW_ADMIN_BOOTSTRAP === "true";
+
+/**
+ * Allow initial administrator setup only in a local, non-production
+ * environment and only while the administrator collection is empty.
+ */
+export const isAdminOrLocalBootstrap: Access = async ({ req }) => {
+  if (hasAdminRole(req.user)) {
+    return true;
+  }
+
+  if (!isLocalBootstrapEnabled()) {
+    return false;
+  }
+
+  try {
+    const { totalDocs } = await req.payload.count({
+      collection: "admins",
+      overrideAccess: true,
+    });
+
+    return totalDocs === 0;
+  } catch {
+    // If the database is unreachable, never expose the bootstrap form.
+    return false;
+  }
+};
+
 export const isAdminOrLocalBootstrapField: FieldAccess = async ({ req }) =>
-  canAccessAdminPanel({ req });
+  Boolean(await isAdminOrLocalBootstrap({ req }));

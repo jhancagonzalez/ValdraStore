@@ -1,0 +1,210 @@
+/* Formularios */
+
+.form {
+  display: grid;
+  gap: 22px;
+  margin-top: 30px;
+}
+
+.form-error,
+.form-success {
+  margin: 0;
+  padding: 13px 16px;
+  border: 1px solid transparent;
+  border-left-width: 3px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.form-error {
+  border-color: var(--danger-line);
+  border-left-color: var(--danger);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.form-success {
+  border-color: var(--success-line);
+  border-left-color: var(--success);
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.form-field-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.form-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.form-field input[aria-invalid="true"] {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.password-strength {
+  display: grid;
+  gap: 8px;
+}
+
+.password-meter {
+  display: flex;
+  gap: 4px;
+}
+
+.password-meter span {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+}
+
+.password-meter span.is-filled {
+  background: var(--accent);
+}
+
+.password-strength-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.password-rules {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.password-rules li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.password-rules li::before {
+  content: "○";
+  color: var(--muted-soft);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.password-rules li.is-met {
+  color: var(--ink);
+}
+
+.password-rules li.is-met::before {
+  content: "✓";
+  color: var(--accent);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.form button[type="submit"] {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.form-terms {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.form-terms a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.form-terms a:hover {
+  color: var(--accent);
+}
+
+.form-footer {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.auth-meta .form-footer,
+.auth-panel > .form-footer {
+  text-align: left;
+}
+
+.form-footer a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 0.2em;
+}
+
+.form-footer a:hover {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
+}
+
+/* Texto largo, términos */
+
+.prose {
+  max-width: 68ch;
+  margin-top: clamp(24px, 4vw, 40px);
+}
+
+.prose h2 {
+  margin: 38px 0 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: clamp(1.3rem, 2vw, 1.65rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.prose h2:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.prose p,
+.prose li {
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  line-height: 1.75;
+}
+
+.prose ul {
+  margin: 0 0 16px;
+  padding-left: 20px;
+}
+
+.prose p {
+  margin: 0 0 16px;
+}
+
+.prose a {
+  color: var(--accent-strong);
+}
+
+.prose .form-hint {
+  margin-top: 32px;
+}
+
+.legal-page .page-intro {
+  margin-bottom: 0;
+}

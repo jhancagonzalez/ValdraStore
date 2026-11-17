@@ -1,0 +1,479 @@
+/* Portada monocroma */
+
+.hero-card {
+  position: relative;
+  border-radius: var(--radius-hero);
+  background: var(--paper-soft);
+  overflow: hidden;
+}
+
+.hero-copy {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: clamp(24px, 4.5vw, 64px);
+  display: grid;
+  align-content: center;
+  gap: 18px;
+  width: min(44%, 520px);
+  transform: translateY(-50%);
+}
+
+.hero-copy .eyebrow {
+  color: var(--ink-soft);
+}
+
+.hero-title {
+  max-width: 12ch;
+  margin: 0;
+  font-size: clamp(2.6rem, 4.6vw, 4.6rem);
+  font-weight: 600;
+  letter-spacing: -0.065em;
+  line-height: 0.9;
+}
+
+.hero-lead {
+  max-width: 38ch;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: clamp(1rem, 1.2vw, 1.125rem);
+  line-height: 1.55;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.hero-dots-label {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-dots {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: -4px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.hero-dot {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+
+.hero-dot::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-soft);
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.8);
+  transition:
+    background-color var(--dur-fast) ease,
+    transform var(--dur-fast) ease;
+}
+
+.hero-dot:hover::after {
+  background: var(--muted);
+}
+
+.hero-dot[aria-pressed="true"]::after {
+  background: var(--ink);
+  transform: scale(1.35);
+}
+
+.hero-media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--paper-deep);
+  overflow: hidden;
+}
+
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  animation: hero-fade 420ms var(--ease) both;
+}
+
+.hero-slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@keyframes hero-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.hero-media-caption {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  left: 14px;
+  width: fit-content;
+  max-width: calc(100% - 28px);
+  margin: 0;
+  padding: 9px 14px;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 0.92);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+/* Secciones de portada */
+
+.home-section {
+  padding: clamp(48px, 7vw, 92px) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.home-section-cta {
+  border-bottom: 0;
+}
+
+.home-section-inner {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.home-catalog-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px 32px;
+  margin-bottom: clamp(24px, 3vw, 36px);
+}
+
+.home-catalog-head > div {
+  display: grid;
+  gap: 10px;
+}
+
+.home-catalog-head h2 {
+  margin: 0;
+  font-size: clamp(2.2rem, 4.4vw, 3.6rem);
+  font-weight: 600;
+  letter-spacing: -0.055em;
+  line-height: 0.96;
+}
+
+.home-catalog-head p:not(.eyebrow) {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+/* Pills de categorías */
+
+.category-pills {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 clamp(24px, 3vw, 34px);
+  padding: 0 0 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  list-style: none;
+}
+
+.category-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.category-pills li {
+  flex: 0 0 auto;
+}
+
+.category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  transition:
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+
+.category-pill svg {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.category-pill:hover {
+  border-color: var(--line-strong);
+  background: var(--paper-soft);
+  color: var(--ink);
+}
+
+.category-pill.is-active {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.category-pill.is-active svg {
+  color: var(--paper);
+}
+
+/* Catálogo de portada */
+
+.home-catalog-footer {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: clamp(24px, 3vw, 34px);
+}
+
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+}
+
+.text-link span {
+  transition: transform var(--dur) var(--ease);
+}
+
+.text-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.35em;
+}
+
+.text-link:hover span {
+  transform: translateX(4px);
+}
+
+/* Pasos */
+
+.home-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.home-steps li {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 24px clamp(16px, 2.4vw, 30px) 4px 0;
+}
+
+.home-steps li + li {
+  padding-left: clamp(16px, 2.4vw, 30px);
+  border-left: 1px solid var(--line);
+}
+
+.home-step-number {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.home-steps h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.home-steps p {
+  max-width: 34ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+/* CTA final */
+
+.home-cta-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 26px;
+  padding: clamp(28px, 4.6vw, 60px);
+  border-radius: var(--radius-hero);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.home-cta-eyebrow {
+  margin: 0 0 12px;
+  color: rgb(255 255 255 / 0.62);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.home-cta-card h2 {
+  margin: 0;
+  color: var(--paper);
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+  font-weight: 600;
+  letter-spacing: -0.06em;
+  line-height: 0.94;
+}
+
+.home-cta-card p:not(.home-cta-eyebrow) {
+  max-width: 42ch;
+  margin: 14px 0 0;
+  color: rgb(255 255 255 / 0.66);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.home-cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .hero-card {
+    display: grid;
+  }
+
+  .hero-copy {
+    position: static;
+    width: auto;
+    padding: 26px 24px 12px;
+    transform: none;
+  }
+
+  .hero-title {
+    max-width: 11ch;
+    font-size: clamp(2.8rem, 10vw, 4.2rem);
+  }
+
+  .product-grid.product-grid-home {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-catalog-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .home-steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-steps li {
+    padding: 20px 0;
+  }
+
+  .home-steps li + li {
+    padding-left: 0;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .home-cta-card {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero-card {
+    border-radius: var(--radius-card);
+  }
+
+  .hero-copy {
+    padding: 20px 18px 6px;
+  }
+
+  .hero-actions {
+    align-items: flex-start;
+  }
+
+  .home-catalog-head h2 {
+    font-size: 2.1rem;
+  }
+
+  .home-cta-actions {
+    width: 100%;
+  }
+
+  .home-cta-actions .button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide {
+    animation: none;
+  }
+
+  .hero-dot::after,
+  .text-link span {
+    transition: none;
+  }
+
+  .text-link:hover span {
+    transform: none;
+  }
+}

@@ -2,7 +2,7 @@
 
 ## Datos del sprint
 
-- **Estado en Notion:** En construcción.
+- **Estado en Notion:** Hecho (10 de 10 historias).
 - **Periodo registrado:** 20 de octubre al 3 de noviembre de 2026.
 - **Objetivo:** permitir que un cliente se registre, inicie sesión y consulte, busque y filtre el catálogo.
 - **Alcance:** HU-01 a HU-10; 29 puntos de historia.
@@ -19,12 +19,12 @@
 | Emanuel Giraldo | Product Owner, Developer Frontend | HU-08 |
 | Andrés Valencia | Developer Frontend | HU-09, HU-10 |
 
-Las asignaciones y estados se consultaron en Notion el 22 de octubre de 2026. Si
-cambian allí, actualizar este resumen para mantenerlo sincronizado; Notion conserva
-la fuente de verdad.
+Las asignaciones y estados se consultaron en Notion el 12 de noviembre de 2026. Las
+diez historias figuran como «Hecho». Si cambian allí, actualizar este resumen para
+mantenerlo sincronizado; Notion conserva la fuente de verdad.
 
 ## Seguimiento
 
-Los TODO y criterios de aceptación están en [TODO.md](TODO.md). Se conservan los
-estados «En construcción» que aparecen en Notion; este documento no marca historias
-como terminadas ni añade criterios nuevos.
+Los TODO y criterios de aceptación están en [TODO.md](TODO.md). El estado se sincronizó
+con Notion el 12 de noviembre de 2026; las evidencias técnicas están en
+`plan-HU-03-HU-04.md`, `plan-HU-05.md` y el informe del Sprint 1.
