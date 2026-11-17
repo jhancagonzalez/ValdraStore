@@ -826,6 +826,10 @@
   border-block: 1px solid var(--line);
 }
 
+.catalog-advanced[open] {
+  padding-bottom: 22px;
+}
+
 .catalog-advanced summary {
   display: flex;
   align-items: center;

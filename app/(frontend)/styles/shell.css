@@ -553,6 +553,7 @@
 
 .account-danger {
   display: grid;
+  justify-items: start;
   gap: 12px;
   margin-top: clamp(40px, 6vw, 72px);
   padding-top: 24px;

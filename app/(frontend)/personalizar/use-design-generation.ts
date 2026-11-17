@@ -285,8 +285,11 @@ export const useDesignGeneration = ({
   const handleIdeaSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedIdea = idea.trim();
+    // HU-13: con una imagen de referencia la descripción es opcional; la
+    // imagen se imprime tal cual y solo el texto ajusta la ubicación.
+    const referenceOnly = !previousImage && trimmedIdea === "" && referenceImage !== null;
 
-    if (trimmedIdea === "") {
+    if (trimmedIdea === "" && !referenceOnly) {
       setIdeaError(
         checkDesignRequest({ idea: "", mode: previousImage ? "zone" : "create" }) ??
           formIssue("Falta tu descripción", "Escribe tu idea antes de continuar."),
@@ -315,15 +318,19 @@ export const useDesignGeneration = ({
       return;
     }
 
-    // Normas de uso: mismas reglas que el servidor, sin gastar cuota.
+    // Normas de uso: mismas reglas que el servidor, sin gastar cuota. Sin
+    // descripción no hay texto que revisar: solo se compone la referencia.
     const guardMode: DesignGuardMode = !previousImage ? "create" : detectedText ? "text" : "zone";
-    const guardIssue = checkDesignRequest({
-      baseColorKey: selectedBase.colorKey,
-      idea: trimmedIdea,
-      mode: guardMode,
-      selectionArea:
-        guardMode === "zone" && selection ? selection.width * selection.height : undefined,
-    });
+    const guardIssue =
+      trimmedIdea === ""
+        ? null
+        : checkDesignRequest({
+            baseColorKey: selectedBase.colorKey,
+            idea: trimmedIdea,
+            mode: guardMode,
+            selectionArea:
+              guardMode === "zone" && selection ? selection.width * selection.height : undefined,
+          });
 
     if (guardIssue) {
       setIdeaError(guardIssue);

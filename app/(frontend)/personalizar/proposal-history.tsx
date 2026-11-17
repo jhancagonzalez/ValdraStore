@@ -82,7 +82,9 @@ export const ProposalHistoryPanel = ({
                   {PROPOSAL_STRATEGY_LABELS[item.strategy]}
                   {item.basedOn ? ` desde V${item.basedOn}` : ""}
                 </span>
-                <span className="proposal-history-request">“{item.request}”</span>
+                {item.request ? (
+                  <span className="proposal-history-request">“{item.request}”</span>
+                ) : null}
               </button>
             </li>
           );
