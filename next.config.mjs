@@ -7,6 +7,7 @@ const supabaseHostname = process.env.SUPABASE_URL
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
+    agentUpgrade: "security",
     globalNotFound: true,
   },
   images: {
