@@ -12,7 +12,7 @@ El flujo completo que se busca es:
 
 No incluye pagos, checkout, carrito, envíos ni WhatsApp. Las historias de pedidos usan el diseño aprobado en HU-17.
 
-Las decisiones confirmadas y la base protegida están en [DECISIONS.md](DECISIONS.md). La base de pedidos e inventario ya está implementada en `branch/SPRINT-3-orders-core` (commit `62d0365`); falta revisar/aplicar la migración, sembrar stock y construir la UI.
+Las decisiones confirmadas y la base protegida están en [DECISIONS.md](DECISIONS.md). La base de pedidos e inventario está implementada, la migración aplicada y el stock sembrado; HU-18 está validada. Faltan HU-19/HU-20, HU-22/HU-23, HU-24 y la prueba del formulario de admin.
 
 ## 2. Base técnica concreta
 
@@ -55,7 +55,7 @@ Solo un administrador cambia el estado. Cada cambio deja una fila en `statusHist
 - **Actualizar:** solo administradores. El cliente no puede cambiar estado, precio, prenda ni diseño.
 - **Eliminar:** solo administradores; el stock se devuelve si el pedido no estaba cancelado.
 - **Validaciones de servidor:** el diseño debe existir, pertenecer al cliente y estar aprobado; la prenda debe tener precio fijo; la cantidad debe ser 1–10; el stock debe alcanzar. El precio se toma de la tabla del servidor, no del navegador.
-- **Migración:** se revisa antes de aplicarla, conserva privilegios de Data API revocados y RLS activo. **Aún no está aplicada.**
+- **Migración:** aplicada el 21 de noviembre de 2026, con privilegios de Data API revocados y RLS activo.
 - **Auditoría:** `statusHistory` cubre HU-21; el historial está oculto para el cliente.
 
 ### 2.4 Panel administrativo (D-11)
@@ -84,9 +84,9 @@ No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/
 | ID | Tarea | HU | Responsable propuesto | Depende de |
 | --- | --- | --- | --- | --- |
 | S3-T00 | Decisiones confirmadas y alcance congelado | Transversal | Jhancarlos + Emanuel | Hecho |
-| S3-T01 | Modelo `orders`, inventario, estados, acceso, RLS y migración | HU-18/21/24 | Jhancarlos | Implementado; migración sin aplicar |
+| S3-T01 | Modelo `orders`, inventario, estados, acceso, RLS y migración | HU-18/21/24 | Jhancarlos | Implementado y migrado |
 | S3-T02 | Servicio de creación, stock, validaciones e instantáneas de precio | HU-18 | Jhancarlos | Implementado |
-| S3-T03 | UI de creación y confirmación del pedido | HU-18 | Jhancarlos + Kevin | S3-T02 |
+| S3-T03 | UI de creación y confirmación del pedido | HU-18 | Jhancarlos + Kevin | Implementado y validado |
 | S3-T04 | Historial y estado del pedido para el cliente | HU-19/20 | Kevin + Andrés | S3-T03 |
 | S3-T05 | Cambio de estado con historial y auditoría | HU-21 | Daniel | S3-T01, D-05 |
 | S3-T06 | Lista/detalle/filtro de clientes y pedidos en el admin | HU-24 | Daniel + Emanuel | S3-T01, S3-T05 |
@@ -94,14 +94,14 @@ No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/
 | S3-T08 | Colección `designs`, relación con prendas, migración y admin | HU-23 | Andrés | D-10; revisión de Jhancarlos |
 | S3-T09 | Edición de precio/información y prueba de instantánea fija | HU-25 | Emanuel | S3-T01, D-07 |
 | S3-T10 | Integración, E2E, seguridad/RLS, responsive, evidencias y Notion | Transversal | Jhancarlos + Andrés | Todas |
-| S3-T11 | Semilla de inventario y pruebas de stock | HU-18/19 | Jhancarlos | S3-T01 |
+| S3-T11 | Semilla de inventario y pruebas de stock | HU-18/19 | Jhancarlos | Hecho: 40 filas |
 
 ## 4. Fases y calendario propuesto
 
 | Fecha | Foco | Entregable |
 | --- | --- | --- |
-| 21–22 nov | Decisiones y base | Decisiones confirmadas, `orders`/`garment-stock` implementados, migración escrita; sin aplicar |
-| 23–25 nov | Pedido inicial y catálogo | Revisar/aplicar migración, sembrar stock, UI de HU-18; S3-T07/T08/T09 en paralelo |
+| 21–22 nov | Decisiones y base | Decisiones confirmadas, `orders`/`garment-stock` implementados, migración aplicada y stock sembrado |
+| 23–25 nov | Pedido inicial y catálogo | HU-18 validada de punta a punta; S3-T07/T08/T09 en paralelo |
 | 25–28 nov | Estado e historial | S3-T04 (HU-19/20), S3-T05 (HU-21), cierre de HU-22/23/25 |
 | 28 nov–1 dic | Administración y QA | S3-T06 (HU-24), E2E, seguridad/RLS, responsive, evidencias, demo y Notion |
 
@@ -111,12 +111,12 @@ El calendario es una propuesta: el sprint ya está en curso y el equipo debe aju
 
 **Jhancarlos, en este orden:**
 
-1. Revisar y aplicar la migración `20261121_120000_orders_core`; ejecutar `pnpm seed:order-stock`.
-2. Implementar la UI de creación y confirmación del pedido (S3-T03, HU-18).
+1. Revisar los cambios de esquema de HU-22/HU-23 antes de que se mezclen.
+2. Apoyar HU-19/HU-20 y HU-24 sobre los contratos ya implementados.
 3. Integrar, probar el recorrido completo y mantener la documentación.
-4. Revisar los cambios de esquema de HU-22/HU-23 antes de que se mezclen.
+4. Preparar la evidencia y la demo.
 
-HU-18 es la ruta crítica: sin ella no se pueden probar HU-19, HU-20, HU-21 ni HU-24.
+HU-18 está validada y habilita HU-19, HU-20, HU-21 y HU-24.
 
 ## 6. Qué no depende de nadie
 
@@ -130,8 +130,8 @@ HU-18 es la ruta crítica: sin ella no se pueden probar HU-19, HU-20, HU-21 ni H
 
 - **D-09/D-10:** las colecciones `categories` y `designs` amplían el alcance con dos migraciones y cambios en el catálogo; deben coordinarse con Jhancarlos.
 - **D-05:** la máquina de estados ya está implementada; cualquier cambio de nombres/transiciones afecta la UI y los datos.
-- **Ruta crítica:** la migración y la semilla de stock deben aplicarse antes de probar pedidos.
 - **Stock:** la comprobación y el descuento no son atómicos; dos pedidos simultáneos podrían competir por la última unidad. Está marcado con `ponytail:` y se corrige con transacción/row lock cuando haga falta.
+- **Formulario de admin:** la creación por API/hooks está validada; falta probar el formulario de Payload con una sesión de administrador.
 - **Capacidad:** 28 puntos en dos semanas con 5 personas; el trabajo independiente de catálogo debe empezar ya.
 - **Pagos:** no se habilitan; el pedido es una solicitud de producción, no una compra pagada.
 - **Tiempo real:** el estado se actualiza al consultar; no se promete notificación en vivo.

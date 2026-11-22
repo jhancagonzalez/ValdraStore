@@ -2,7 +2,7 @@
 
 Criterios transcritos del [Product Backlog de Notion](https://app.notion.com/p/4ea53e76abd442718800c1c4aeba29e1) el 21 de noviembre de 2026. Las 8 historias figuran en **Backlog** y sin responsable asignado. Este documento no agrega criterios nuevos.
 
-La base y los límites están en [DECISIONS.md](DECISIONS.md). **Núcleo Jhancarlos:** `orders`, `garment-stock`, migraciones, acceso/RLS, servicios, tipos/estados/precios y artefactos generados no se editan sin su revisión. La base de pedidos e inventario está implementada en `branch/SPRINT-3-orders-core` (commit `62d0365`); la migración aún no se aplica.
+La base y los límites están en [DECISIONS.md](DECISIONS.md). **Núcleo Jhancarlos:** `orders`, `garment-stock`, migraciones, acceso/RLS, servicios, tipos/estados/precios y artefactos generados no se editan sin su revisión. La base está implementada, la migración aplicada, el stock sembrado y HU-18 validada; la evidencia está en [evidence/HU-18.md](evidence/HU-18.md).
 
 ## Resumen y reparto propuesto
 
@@ -20,12 +20,12 @@ La base y los límites están en [DECISIONS.md](DECISIONS.md). **Núcleo Jhancar
 
 ## Primero (Jhancarlos)
 
-1. Revisar y aplicar la migración `20261121_120000_orders_core`; ejecutar `pnpm seed:order-stock`.
-2. UI de creación y confirmación del pedido (HU-18).
+1. Apoyar HU-19/HU-20 y HU-24 sobre los contratos ya implementados.
+2. Revisar los cambios de esquema de HU-22/HU-23.
 3. Integración, E2E, evidencias y actualización de Notion.
-4. Revisar los cambios de esquema de HU-22/HU-23.
+4. Probar el formulario de creación del administrador en Payload.
 
-HU-18 bloquea HU-19, HU-20, HU-21 y HU-24. No debe empezar por la UI.
+HU-18 ya está implementada y validada; HU-19/HU-20/HU-24 pueden empezar sobre la base.
 
 ## Puede empezar ya (sin depender de pedidos)
 
@@ -40,9 +40,11 @@ HU-18 bloquea HU-19, HU-20, HU-21 y HU-24. No debe empezar por la UI.
 
 Responsable propuesto: **Jhancarlos Gonzalez**. Depende de S3-T01.
 
-- [ ] El cliente puede crear un pedido con la prenda, talla, color y diseño aprobado.
-- [ ] El pedido se guarda con fecha, cliente, productos y estado inicial.
-- [ ] El sistema confirma al cliente que el pedido fue creado y no permite crear un pedido sin diseño o prenda.
+- [x] El cliente puede crear un pedido con la prenda, talla, color y diseño aprobado.
+- [x] El pedido se guarda con fecha, cliente, productos y estado inicial.
+- [x] El sistema confirma al cliente que el pedido fue creado y no permite crear un pedido sin diseño o prenda.
+
+> **Validación (2026-11-21).** Flujo E2E con una cuenta temporal: diseño aprobado, pedido de 2 unidades, confirmación “Pedido #5 creado”, total $120.000 y stock 20 → 18. La eliminación de la cuenta borró pedido y diseño y devolvió el stock a 20. Evidencia completa en [evidence/HU-18.md](evidence/HU-18.md).
 
 Tareas: modelo de `orders` con diseño, cantidad 1–10, stock e instantáneas; precio fijo de la prenda base; creación por cliente o administrador; UI de creación y confirmación; pruebas negativas sin diseño, sin prenda o sin stock.
 

@@ -41,7 +41,7 @@ Las asignaciones de Notion están en «Por definir». Esta es una propuesta de r
 | Emanuel Giraldo | PO, Frontend | HU-22 + HU-25 | 7 | Administración de productos/categorías, precios y apoyo en el panel |
 | Andrés Valencia | Frontend | HU-23 + HU-19 | 5 | Diseños disponibles, historial del cliente y apoyo de UI/QA |
 
-**Primero, en Jhancarlos:** la base de pedidos e inventario ya está implementada en `branch/SPRINT-3-orders-core` (commit `62d0365`). Falta revisar y aplicar la migración, sembrar el stock y construir la UI de HU-18; después vienen HU-19, HU-20, HU-21 y HU-24.
+**Primero, en Jhancarlos:** la base de pedidos e inventario está implementada, la migración aplicada, el stock sembrado y HU-18 validada de punta a punta. Sigue la UI de HU-19/HU-20 y la coordinación de los cambios de HU-22/HU-23.
 
 ## Qué puede empezar ya, sin depender de pedidos
 
@@ -79,4 +79,4 @@ La lista completa está en [DECISIONS.md](DECISIONS.md). Decisiones confirmadas:
 
 ## Estado del documento
 
-Decisiones confirmadas el 21 de noviembre de 2026. La base de pedidos e inventario está implementada en `branch/SPRINT-3-orders-core` (commit `62d0365`); la migración no se ha aplicado y la UI sigue pendiente. Notion conserva la fuente de verdad del estado de las historias.
+Decisiones confirmadas el 21 de noviembre de 2026. La base de pedidos e inventario está implementada, la migración aplicada, el stock sembrado y HU-18 validada. Quedan HU-19/HU-20, HU-22/HU-23, HU-24 y la prueba del formulario de admin. Notion conserva la fuente de verdad del estado de las historias.
