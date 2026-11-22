@@ -105,8 +105,16 @@ export const Customers: CollectionConfig = {
     beforeValidate: [enforcePasswordPolicy, requireCustomerLastName],
     beforeDelete: [
       async ({ id, req }) => {
-        // HU-17: los diseños aprobados son datos personales del cliente y su
-        // relación es obligatoria, así que se eliminan antes de borrar la cuenta.
+        // HU-17/HU-18: los pedidos y los diseños aprobados son datos personales
+        // del cliente. Se eliminan los pedidos primero (sus hooks devuelven el
+        // stock) y después los diseños, porque la relación del pedido los exige.
+        await req.payload.delete({
+          collection: "orders",
+          overrideAccess: true,
+          req,
+          where: { customer: { equals: id } },
+        });
+
         await req.payload.delete({
           collection: "approved-designs",
           overrideAccess: true,
