@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { formatCop } from "@/lib/format";
+import { isOrderNumber } from "@/lib/orders/order-number";
 import { calculateOrderTotal, getDesignPricing } from "@/lib/orders/pricing";
 import { isOrderStatus, ORDER_STATUS_LABELS } from "@/lib/orders/status";
 
@@ -11,7 +12,7 @@ type OrderPanelProps = {
 };
 
 type Confirmation = {
-  id: number;
+  orderNumber: string;
   quantity: number;
   status: string;
   total: number;
@@ -43,20 +44,20 @@ export const OrderPanel = ({ approvedDesignId, baseId }: OrderPanelProps) => {
     setError(null);
 
     try {
-      const response = await fetch("/api/orders", {
+      const response = await fetch("/api/orders/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ designId: approvedDesignId, quantity }),
       });
       const data = (await response.json().catch(() => null)) as {
         error?: unknown;
-        id?: unknown;
+        orderNumber?: unknown;
         quantity?: unknown;
         status?: unknown;
         total?: unknown;
       } | null;
 
-      if (!response.ok || typeof data?.id !== "number") {
+      if (!response.ok || !isOrderNumber(data?.orderNumber)) {
         throw new Error(
           typeof data?.error === "string"
             ? data.error
@@ -65,7 +66,7 @@ export const OrderPanel = ({ approvedDesignId, baseId }: OrderPanelProps) => {
       }
 
       setConfirmation({
-        id: data.id,
+        orderNumber: data.orderNumber,
         quantity: typeof data.quantity === "number" ? data.quantity : quantity,
         status: typeof data.status === "string" ? data.status : "pendiente",
         total: typeof data.total === "number" ? data.total : total,
@@ -88,10 +89,11 @@ export const OrderPanel = ({ approvedDesignId, baseId }: OrderPanelProps) => {
 
     return (
       <div className="design-approval-note" role="status">
-        <p className="design-approval-title">Pedido #{confirmation.id} creado</p>
+        <p className="design-approval-title">Pedido #{confirmation.orderNumber} creado</p>
         <p>
           Estado: {statusLabel}. Cantidad: {confirmation.quantity}. Total:{" "}
-          {formatCop(confirmation.total)}. Guarda el número de pedido para consultarlo.
+          {formatCop(confirmation.total)}. Guarda este número y consulta el estado en{" "}
+          <a href={`/cuenta?pedido=${confirmation.orderNumber}`}>Mi cuenta</a>.
         </p>
       </div>
     );

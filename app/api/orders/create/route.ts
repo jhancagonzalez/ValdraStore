@@ -10,7 +10,12 @@ export const runtime = "nodejs";
 const errorResponse = (message: string, status: number) =>
   NextResponse.json({ error: message }, { status });
 
-/** Crea un pedido para el cliente autenticado (HU-18). */
+/**
+ * Crea un pedido para el cliente autenticado (HU-18).
+ *
+ * Vive en `/api/orders/create` para no tapar el REST de Payload en
+ * `/api/orders`, que usa el panel de administración.
+ */
 export async function POST(request: Request) {
   if (!hasValidOrigin(request)) {
     return errorResponse("Origen no permitido.", 403);
@@ -60,6 +65,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         id: order.id,
+        orderNumber: order.orderNumber,
         quantity: order.quantity,
         status: order.status,
         total: order.total,

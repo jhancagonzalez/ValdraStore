@@ -52,12 +52,24 @@ export const Orders: CollectionConfig = {
     update: isAdmin,
   },
   admin: {
-    defaultColumns: ["customer", "status", "quantity", "total", "createdAt"],
+    defaultColumns: ["orderNumber", "customer", "status", "quantity", "total", "createdAt"],
     description:
       "Pedidos de prendas personalizadas. El cliente, el precio y las instantáneas se fijan en servidor.",
     group: "Pedidos",
   },
   fields: [
+    {
+      name: "orderNumber",
+      type: "text",
+      admin: {
+        description:
+          "Se genera al crear el pedido. El cliente lo usa para consultar el estado en Mi cuenta.",
+        position: "sidebar",
+        readOnly: true,
+      },
+      label: "Número de pedido",
+      unique: true,
+    },
     {
       name: "customer",
       type: "relationship",
@@ -91,49 +103,45 @@ export const Orders: CollectionConfig = {
       min: MIN_ORDER_QUANTITY,
       required: true,
     },
+    // Los campos calculados se completan en `setOrderData`. No se marcan
+    // `required` porque la validación del panel los bloquearía vacíos antes
+    // de enviar; el hook y las columnas NOT NULL siguen garantizando el dato.
     {
       name: "garmentBase",
       type: "text",
       admin: { readOnly: true },
-      required: true,
     },
     {
       name: "garmentLabel",
       type: "text",
       admin: { readOnly: true },
-      required: true,
     },
     {
       name: "category",
       type: "text",
       admin: { readOnly: true },
-      required: true,
     },
     {
       name: "colorLabel",
       type: "text",
       admin: { readOnly: true },
-      required: true,
     },
     {
       name: "size",
       type: "text",
       admin: { readOnly: true },
-      required: true,
     },
     {
       name: "unitPrice",
       type: "number",
       admin: { readOnly: true },
       min: 0,
-      required: true,
     },
     {
       name: "total",
       type: "number",
       admin: { readOnly: true },
       min: 0,
-      required: true,
     },
     {
       name: "status",
@@ -158,7 +166,6 @@ export const Orders: CollectionConfig = {
         { label: "Cliente", value: "customer" },
         { label: "Administrador", value: "admin" },
       ],
-      required: true,
     },
     {
       name: "createdBy",

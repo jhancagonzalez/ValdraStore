@@ -11,6 +11,7 @@ import { getMockupBase, getMockupBaseName, isMockupSize } from "@/lib/mockup-bas
 import { calculateOrderTotal, getDesignPricing, isOrderQuantity } from "@/lib/orders/pricing";
 import { canTransitionOrderStatus, isOrderStatus } from "@/lib/orders/status";
 import { getStockKey, hasEnoughStock } from "@/lib/orders/stock";
+import { generateOrderNumber } from "@/services/orders/order-number";
 
 type Row = Record<string, unknown>;
 
@@ -28,6 +29,7 @@ const relationID = (value: unknown): number | null => {
 };
 
 const IMMUTABLE_FIELDS = [
+  "orderNumber",
   "customer",
   "design",
   "quantity",
@@ -83,6 +85,29 @@ const findStock = async (req: PayloadRequest, key: string) => {
   });
 
   return result.docs[0] ?? null;
+};
+
+/**
+ * Genera un número de seis cifras libre. `ponytail:` la comprobación y la
+ * inserción no son atómicas; el índice único es la garantía final y, si dos
+ * pedidos simultáneos chocan, el cliente puede reintentar.
+ */
+const generateUniqueOrderNumber = async (req: PayloadRequest): Promise<string> => {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const candidate = generateOrderNumber();
+    const { totalDocs } = await req.payload.count({
+      collection: "orders",
+      overrideAccess: true,
+      req,
+      where: { orderNumber: { equals: candidate } },
+    });
+
+    if (totalDocs === 0) {
+      return candidate;
+    }
+  }
+
+  throw new APIError("No pudimos asignar un número de pedido. Inténtalo de nuevo.", 500);
 };
 
 const adjustStock = async (req: PayloadRequest, key: string, delta: number): Promise<void> => {
@@ -175,6 +200,8 @@ export const setOrderData: CollectionBeforeValidateHook = async ({ data, operati
     throw new APIError("No hay stock suficiente para esa prenda y talla.", 409);
   }
 
+  const orderNumber = await generateUniqueOrderNumber(req);
+
   return {
     ...input,
     category: pricing.base.categoryLabel,
@@ -184,6 +211,7 @@ export const setOrderData: CollectionBeforeValidateHook = async ({ data, operati
     design: designId,
     garmentBase: pricing.base.id,
     garmentLabel: getMockupBaseName(pricing.base),
+    orderNumber,
     quantity,
     size,
     source: isAdminUser ? "admin" : "customer",

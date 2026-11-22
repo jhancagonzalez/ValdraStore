@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionCustomer } from "@/lib/auth";
+import { formatCop } from "@/lib/format";
+import { isOrderNumber } from "@/lib/orders/order-number";
+import { isOrderStatus, ORDER_STATUS_LABELS } from "@/lib/orders/status";
 import { getPayloadClient } from "@/lib/payload";
 import { getCustomerProfile } from "@/services/customers/profile";
+import type { Order } from "../../../payload-types";
 import { LogoutButton } from "../_components/logout-button";
 import { ChangePasswordForm } from "./change-password-form";
 import { DeleteAccount } from "./delete-account";
@@ -12,7 +16,7 @@ import { ProfileForm } from "./profile-form";
 export const metadata: Metadata = { title: "Mi cuenta" };
 
 type AccountPageProps = {
-  searchParams: Promise<{ bienvenida?: string }>;
+  searchParams: Promise<{ bienvenida?: string; pedido?: string }>;
 };
 
 export default async function AccountPage({ searchParams }: AccountPageProps) {
@@ -28,6 +32,40 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
   if (!profile) {
     redirect("/login");
   }
+
+  const requestedOrderNumber = typeof params.pedido === "string" ? params.pedido.trim() : "";
+  let lookupError: string | null = null;
+  let lookedUpOrder: Order | null = null;
+
+  if (requestedOrderNumber) {
+    if (!isOrderNumber(requestedOrderNumber)) {
+      lookupError = "Escribe un número de pedido de seis cifras.";
+    } else {
+      const result = await payload.find({
+        collection: "orders",
+        depth: 0,
+        limit: 1,
+        overrideAccess: false,
+        pagination: false,
+        user: customer,
+        where: {
+          customer: { equals: customer.id },
+          orderNumber: { equals: requestedOrderNumber },
+        },
+      });
+
+      lookedUpOrder = result.docs[0] ?? null;
+
+      if (!lookedUpOrder) {
+        lookupError = "No encontramos un pedido con ese número en tu cuenta.";
+      }
+    }
+  }
+
+  const lookedUpStatusLabel =
+    lookedUpOrder && isOrderStatus(lookedUpOrder.status)
+      ? ORDER_STATUS_LABELS[lookedUpOrder.status]
+      : lookedUpOrder?.status;
 
   return (
     <main className="page account-page">
@@ -50,6 +88,61 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
           <section className="account-card" aria-labelledby="account-data-title">
             <h2 id="account-data-title">Datos personales</h2>
             <ProfileForm profile={profile} />
+          </section>
+
+          <section className="account-card" aria-labelledby="account-orders-title">
+            <h2 id="account-orders-title">Consultar pedido</h2>
+            <p className="form-hint">
+              Escribe el número de seis cifras que viste al crear el pedido para conocer su estado.
+            </p>
+            <form className="form" method="get" action="/cuenta">
+              <div className="form-field">
+                <label htmlFor="order-number">Número de pedido</label>
+                <input
+                  id="order-number"
+                  name="pedido"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={6}
+                  pattern="[0-9]{6}"
+                  placeholder="123456"
+                  defaultValue={requestedOrderNumber}
+                  aria-invalid={Boolean(lookupError)}
+                  aria-describedby={
+                    lookupError ? "order-number-hint order-number-error" : "order-number-hint"
+                  }
+                />
+                <p className="form-hint" id="order-number-hint">
+                  Solo puedes consultar los pedidos de tu cuenta.
+                </p>
+              </div>
+              <button type="submit" className="button button-secondary">
+                Consultar
+              </button>
+            </form>
+
+            {lookupError ? (
+              <p className="form-error" id="order-number-error" role="alert">
+                {lookupError}
+              </p>
+            ) : null}
+
+            {lookedUpOrder ? (
+              <div className="order-lookup-result" role="status">
+                <p className="order-lookup-number">
+                  Pedido #{lookedUpOrder.orderNumber ?? requestedOrderNumber}
+                </p>
+                <p className="order-lookup-status">Estado: {lookedUpStatusLabel}</p>
+                <p>
+                  {lookedUpOrder.garmentLabel} · Talla {lookedUpOrder.size} · Color{" "}
+                  {lookedUpOrder.colorLabel}
+                </p>
+                <p>
+                  Cantidad: {lookedUpOrder.quantity} · Total: {formatCop(lookedUpOrder.total)}
+                </p>
+              </div>
+            ) : null}
           </section>
 
           <section className="account-card" aria-labelledby="account-password-title">

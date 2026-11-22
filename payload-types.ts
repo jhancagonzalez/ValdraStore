@@ -306,6 +306,10 @@ export interface ApprovedDesign {
 export interface Order {
   id: number;
   /**
+   * Se genera al crear el pedido. El cliente lo usa para consultar el estado en Mi cuenta.
+   */
+  orderNumber?: string | null;
+  /**
    * El cliente se toma de la sesión. Un administrador puede seleccionarlo al crear el pedido.
    */
   customer: number | Customer;
@@ -317,18 +321,18 @@ export interface Order {
    * Cantidad de unidades entre 1 y 10. Descuenta stock.
    */
   quantity: number;
-  garmentBase: string;
-  garmentLabel: string;
-  category: string;
-  colorLabel: string;
-  size: string;
-  unitPrice: number;
-  total: number;
+  garmentBase?: string | null;
+  garmentLabel?: string | null;
+  category?: string | null;
+  colorLabel?: string | null;
+  size?: string | null;
+  unitPrice?: number | null;
+  total?: number | null;
   /**
    * Solo el administrador puede cambiarlo.
    */
   status: 'pendiente' | 'en_produccion' | 'lista' | 'entregada' | 'cancelada';
-  source: 'customer' | 'admin';
+  source?: ('customer' | 'admin') | null;
   createdBy?: (number | null) | Admin;
   stockRestored?: boolean | null;
   statusHistory?:
@@ -685,6 +689,7 @@ export interface ApprovedDesignsSelect<T extends boolean = true> {
  * via the `definition` "orders_select".
  */
 export interface OrdersSelect<T extends boolean = true> {
+  orderNumber?: T;
   customer?: T;
   design?: T;
   quantity?: T;
