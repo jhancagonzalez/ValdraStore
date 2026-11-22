@@ -41,7 +41,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   CREATE TABLE "orders_status_history" (
   	"_order" integer NOT NULL,
   	"_parent_id" integer NOT NULL,
-  	"id" serial PRIMARY KEY NOT NULL,
+  	"id" varchar PRIMARY KEY NOT NULL,
   	"from_status" "enum_orders_status_history_from_status" NOT NULL,
   	"to_status" "enum_orders_status_history_to_status" NOT NULL,
   	"changed_at" timestamp(3) with time zone NOT NULL,
@@ -90,7 +90,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   ALTER TABLE public."orders_status_history" ENABLE ROW LEVEL SECURITY;
   ALTER TABLE public."garment_stock" ENABLE ROW LEVEL SECURITY;
   REVOKE ALL PRIVILEGES ON TABLE public.orders, public.orders_status_history, public.garment_stock FROM anon, authenticated, service_role, PUBLIC;
-  REVOKE ALL PRIVILEGES ON SEQUENCE public.orders_id_seq, public.orders_status_history_id_seq, public.garment_stock_id_seq FROM anon, authenticated, service_role, PUBLIC;`);
+  REVOKE ALL PRIVILEGES ON SEQUENCE public.orders_id_seq, public.garment_stock_id_seq FROM anon, authenticated, service_role, PUBLIC;`);
 }
 
 export async function down({ db }: MigrateDownArgs): Promise<void> {
