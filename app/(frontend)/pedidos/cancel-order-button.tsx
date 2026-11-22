@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { CONTACT_EMAIL, CONTACT_EMAIL_HREF } from "@/lib/contact";
 import { cancelOrder } from "./actions";
 
@@ -9,40 +9,77 @@ type CancelOrderButtonProps = {
   orderNumber: string;
 };
 
-/** Cancelación del pedido por el cliente, con confirmación. */
+/** Cancelación del pedido por el cliente, con confirmación y foco controlado. */
 export const CancelOrderButton = ({ orderNumber }: CancelOrderButtonProps) => {
   const router = useRouter();
+  const warningId = useId();
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
+  const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<{
     message: string;
     reason?: "not_cancellable";
   } | null>(null);
+  const startButtonRef = useRef<HTMLButtonElement>(null);
+  const confirmButtonRef = useRef<HTMLButtonElement>(null);
+  const previousConfirming = useRef(confirming);
+  const submitting = useRef(false);
+
+  // Mantiene el foco en el botón que revela cada paso de la confirmación.
+  useEffect(() => {
+    if (previousConfirming.current === confirming) {
+      return;
+    }
+    previousConfirming.current = confirming;
+    (confirming ? confirmButtonRef : startButtonRef).current?.focus();
+  }, [confirming]);
 
   const cancel = async () => {
-    setPending(true);
-    setError(null);
-
-    const result = await cancelOrder(orderNumber);
-
-    if (result.status === "success") {
-      router.refresh();
+    if (submitting.current) {
       return;
     }
 
-    setError({
-      message: result.message ?? "No pudimos cancelar el pedido.",
-      reason: result.reason,
-    });
-    setPending(false);
+    submitting.current = true;
+    setPending(true);
+    setError(null);
+
+    try {
+      const result = await cancelOrder(orderNumber);
+
+      if (result.status === "success") {
+        setDone(result.message ?? "Pedido cancelado.");
+        router.refresh();
+        return;
+      }
+
+      setError({
+        message: result.message ?? "No pudimos cancelar el pedido. Inténtalo de nuevo.",
+        reason: result.reason,
+      });
+    } catch {
+      setError({
+        message: "No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.",
+      });
+    } finally {
+      submitting.current = false;
+      setPending(false);
+    }
   };
+
+  if (done) {
+    return (
+      <p className="form-success" role="status">
+        {done}
+      </p>
+    );
+  }
 
   return (
     <div className="order-cancel">
       {confirming ? (
         <>
-          <p className="form-hint">
-            ¿Seguro? Se devolverá el stock y el pedido no se puede reabrir.
+          <p className="form-hint" id={warningId}>
+            ¿Cancelar el pedido #{orderNumber}? Se devolverá el stock y no se podrá reabrir.
           </p>
           {error ? (
             <>
@@ -59,14 +96,17 @@ export const CancelOrderButton = ({ orderNumber }: CancelOrderButtonProps) => {
           ) : null}
           <div className="account-danger-actions">
             <button
+              ref={confirmButtonRef}
               type="button"
               className="button button-danger"
               onClick={() => {
                 void cancel();
               }}
               disabled={pending}
+              aria-busy={pending}
+              aria-describedby={warningId}
             >
-              {pending ? "Cancelando…" : "Sí, cancelar pedido"}
+              {pending ? "Cancelando pedido…" : "Sí, cancelar pedido"}
             </button>
             <button
               type="button"
@@ -83,6 +123,7 @@ export const CancelOrderButton = ({ orderNumber }: CancelOrderButtonProps) => {
         </>
       ) : (
         <button
+          ref={startButtonRef}
           type="button"
           className="button button-secondary"
           onClick={() => setConfirming(true)}
