@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CONTACT_EMAIL, CONTACT_EMAIL_HREF } from "@/lib/contact";
 
 export const metadata: Metadata = { title: "Términos y condiciones" };
 
@@ -62,7 +63,8 @@ export default function TermsPage() {
           >
             Instagram
           </a>{" "}
-          o vuelve al <Link href="/catalogo">catálogo</Link>.
+          o a <a href={CONTACT_EMAIL_HREF}>{CONTACT_EMAIL}</a>, o vuelve al{" "}
+          <Link href="/catalogo">catálogo</Link>.
         </p>
       </section>
     </main>

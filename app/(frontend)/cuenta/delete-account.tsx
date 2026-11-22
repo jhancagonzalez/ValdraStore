@@ -1,14 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { CONTACT_EMAIL, CONTACT_EMAIL_HREF } from "@/lib/contact";
 import { deleteAccount } from "./actions";
 
 /** Two-step confirmation for the destructive account deletion (HU-04). */
 export const DeleteAccount = () => {
   const router = useRouter();
   const [step, setStep] = useState<"confirm" | "idle">("idle");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{
+    message: string;
+    reason?: "active_orders";
+  } | null>(null);
   const [pending, setPending] = useState(false);
   const startButtonRef = useRef<HTMLButtonElement>(null);
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
@@ -30,7 +35,10 @@ export const DeleteAccount = () => {
     const result = await deleteAccount();
 
     if (result.status !== "success") {
-      setError(result.message ?? "No se pudo eliminar la cuenta. Inténtalo de nuevo.");
+      setError({
+        message: result.message ?? "No se pudo eliminar la cuenta. Inténtalo de nuevo.",
+        reason: result.reason,
+      });
       setPending(false);
       return;
     }
@@ -48,7 +56,8 @@ export const DeleteAccount = () => {
       {step === "idle" ? (
         <>
           <p className="form-hint">
-            Borra tu cuenta y tus datos personales. Esta acción no se puede deshacer.
+            Borra tu cuenta y tus datos personales. Esta acción no se puede deshacer. Si tienes un
+            pedido en curso, primero tendrás que cancelarlo o escribirnos explicando la situación.
           </p>
           <button
             type="button"
@@ -63,9 +72,17 @@ export const DeleteAccount = () => {
         <>
           <p className="form-hint">¿Seguro? Tu cuenta se eliminará de forma permanente.</p>
           {error ? (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
+            <>
+              <p className="form-error" role="alert">
+                {error.message}
+              </p>
+              {error.reason === "active_orders" ? (
+                <p className="form-hint">
+                  <Link href="/pedidos">Ir a Mis pedidos</Link> o escríbenos a{" "}
+                  <a href={CONTACT_EMAIL_HREF}>{CONTACT_EMAIL}</a>.
+                </p>
+              ) : null}
+            </>
           ) : null}
           <div className="account-danger-actions">
             <button

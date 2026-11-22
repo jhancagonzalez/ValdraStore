@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canTransitionOrderStatus,
+  isOrderInProgress,
   isOrderStatus,
   ORDER_STATUS_LABELS,
   ORDER_STATUSES,
@@ -40,5 +41,14 @@ describe("order status", () => {
     for (const status of ORDER_STATUSES) {
       expect(ORDER_STATUS_LABELS[status].length).toBeGreaterThan(0);
     }
+  });
+
+  it("considera en curso los pedidos no entregados ni cancelados", () => {
+    expect(isOrderInProgress("pendiente")).toBe(true);
+    expect(isOrderInProgress("en_produccion")).toBe(true);
+    expect(isOrderInProgress("lista")).toBe(true);
+    expect(isOrderInProgress("entregada")).toBe(false);
+    expect(isOrderInProgress("cancelada")).toBe(false);
+    expect(isOrderInProgress("desconocido")).toBe(false);
   });
 });

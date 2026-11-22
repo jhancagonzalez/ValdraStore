@@ -9,6 +9,12 @@ export const ORDER_STATUSES = [
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
+/** Pedidos que todavía no terminaron: pendientes, en producción o listos. */
+export const ORDER_ACTIVE_STATUSES = ["pendiente", "en_produccion", "lista"] as const;
+
+export const isOrderInProgress = (status: unknown): boolean =>
+  typeof status === "string" && (ORDER_ACTIVE_STATUSES as readonly string[]).includes(status);
+
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pendiente: "Pendiente",
   en_produccion: "En producción",

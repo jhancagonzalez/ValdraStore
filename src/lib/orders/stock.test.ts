@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getStockKey, hasEnoughStock, parseStockKey } from "./stock";
+import { getStockKey, hasEnoughStock, parseStockKey, shouldRestoreStockOnDelete } from "./stock";
 
 describe("order stock", () => {
   it("genera una clave estable por prenda y talla", () => {
@@ -25,5 +25,14 @@ describe("order stock", () => {
     expect(hasEnoughStock(1, 2)).toBe(false);
     expect(hasEnoughStock(undefined, 1)).toBe(false);
     expect(hasEnoughStock(Number.NaN, 1)).toBe(false);
+  });
+
+  it("solo devuelve stock de pedidos no entregados ni ya devueltos", () => {
+    expect(shouldRestoreStockOnDelete("pendiente", false)).toBe(true);
+    expect(shouldRestoreStockOnDelete("en_produccion", false)).toBe(true);
+    expect(shouldRestoreStockOnDelete("lista", false)).toBe(true);
+    expect(shouldRestoreStockOnDelete("entregada", false)).toBe(false);
+    expect(shouldRestoreStockOnDelete("cancelada", true)).toBe(false);
+    expect(shouldRestoreStockOnDelete("cancelada", false)).toBe(true);
   });
 });

@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionCustomer } from "@/lib/auth";
+import { CONTACT_EMAIL, CONTACT_EMAIL_HREF } from "@/lib/contact";
 import { formatCop } from "@/lib/format";
 import { isOrderNumber } from "@/lib/orders/order-number";
-import { isOrderStatus, ORDER_STATUS_LABELS } from "@/lib/orders/status";
+import { canTransitionOrderStatus, isOrderStatus, ORDER_STATUS_LABELS } from "@/lib/orders/status";
 import { getPayloadClient } from "@/lib/payload";
 import type { Order } from "../../../payload-types";
+import { CancelOrderButton } from "./cancel-order-button";
 
 export const metadata: Metadata = { title: "Pedidos" };
 
@@ -121,7 +123,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         ) : null}
 
         {lookedUpOrder ? (
-          <div className="order-lookup-result" role="status">
+          <div className="order-lookup-result">
             <p className="order-lookup-number">
               Pedido #{lookedUpOrder.orderNumber ?? requestedOrderNumber}
             </p>
@@ -134,6 +136,16 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
               Cantidad: {lookedUpOrder.quantity} · Total: {formatCop(lookedUpOrder.total)}
             </p>
             <p>Fecha: {formatOrderDate(lookedUpOrder.createdAt)}</p>
+            {isOrderStatus(lookedUpOrder.status) &&
+            canTransitionOrderStatus(lookedUpOrder.status, "cancelada") ? (
+              <CancelOrderButton orderNumber={lookedUpOrder.orderNumber ?? requestedOrderNumber} />
+            ) : null}
+            {lookedUpOrder.status === "lista" ? (
+              <p className="form-hint">
+                Este pedido ya está listo y no se puede cancelar desde la cuenta. Escríbenos a{" "}
+                <a href={CONTACT_EMAIL_HREF}>{CONTACT_EMAIL}</a>.
+              </p>
+            ) : null}
             <Link href="/pedidos">Ver todos mis pedidos</Link>
           </div>
         ) : null}

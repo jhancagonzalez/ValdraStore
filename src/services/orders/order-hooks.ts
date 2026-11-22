@@ -10,7 +10,7 @@ import { hasAdminRole } from "@/access/roles";
 import { getMockupBase, getMockupBaseName, isMockupSize } from "@/lib/mockup-bases";
 import { calculateOrderTotal, getDesignPricing, isOrderQuantity } from "@/lib/orders/pricing";
 import { canTransitionOrderStatus, isOrderStatus } from "@/lib/orders/status";
-import { getStockKey, hasEnoughStock } from "@/lib/orders/stock";
+import { getStockKey, hasEnoughStock, shouldRestoreStockOnDelete } from "@/lib/orders/stock";
 import { generateOrderNumber } from "@/services/orders/order-number";
 
 type Row = Record<string, unknown>;
@@ -239,6 +239,7 @@ export const updateOrderStatus: CollectionBeforeChangeHook = async ({
 
   const input = data as Row;
   const previous = originalDoc as Row;
+  const isCustomerCancellation = req.context?.customerCancellation === true;
 
   for (const key of IMMUTABLE_FIELDS) {
     if (changedValue(key, input[key], previous[key])) {
@@ -248,6 +249,10 @@ export const updateOrderStatus: CollectionBeforeChangeHook = async ({
 
   if (input.status === undefined || input.status === previous.status) {
     return input;
+  }
+
+  if (isCustomerCancellation && input.status !== "cancelada") {
+    throw new APIError("El cliente solo puede cancelar su pedido.", 403);
   }
 
   if (!isOrderStatus(input.status) || !isOrderStatus(previous.status)) {
@@ -266,8 +271,9 @@ export const updateOrderStatus: CollectionBeforeChangeHook = async ({
       ...history,
       {
         changedAt: new Date().toISOString(),
-        changedBy: relationID(req.user),
+        changedBy: isCustomerCancellation ? null : relationID(req.user),
         fromStatus: previous.status,
+        note: isCustomerCancellation ? "Cancelado por el cliente" : undefined,
         toStatus: input.status,
       },
     ],
@@ -312,7 +318,7 @@ export const applyStockChange: CollectionAfterChangeHook = async ({
 export const restoreStockOnDelete: CollectionAfterDeleteHook = async ({ doc, req }) => {
   const order = doc as Row;
 
-  if (order.stockRestored !== true) {
+  if (shouldRestoreStockOnDelete(order.status, order.stockRestored)) {
     await adjustStock(req, stockKeyFromDoc(order), Number(order.quantity ?? 0));
   }
 

@@ -541,6 +541,16 @@
   font-weight: 600;
 }
 
+.order-cancel {
+  display: grid;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.order-cancel > .button {
+  justify-self: start;
+}
+
 /* Pedidos */
 
 .orders-card {

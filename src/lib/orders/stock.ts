@@ -30,3 +30,10 @@ export const parseStockKey = (key: string): ParsedStockKey | null => {
 
 export const hasEnoughStock = (available: unknown, requested: number): boolean =>
   typeof available === "number" && Number.isFinite(available) && available >= requested;
+
+/**
+ * Al borrar un pedido se devuelve el stock solo si no estaba entregado ni ya
+ * devuelto por una cancelación.
+ */
+export const shouldRestoreStockOnDelete = (status: unknown, stockRestored: unknown): boolean =>
+  stockRestored !== true && status !== "entregada";

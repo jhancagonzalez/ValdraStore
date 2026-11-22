@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { APIError } from "payload";
 import { getSessionCustomer } from "@/lib/auth";
 import { getPayloadClient } from "@/lib/payload";
 import {
@@ -8,8 +9,13 @@ import {
   type ProfileFormState,
   updateCustomerProfile,
 } from "@/services/customers/profile";
+import { countActiveOrdersForCustomer } from "@/services/orders/customer-account";
 
-export type DeleteAccountState = { message?: string; status: "error" | "idle" | "success" };
+export type DeleteAccountState = {
+  message?: string;
+  reason?: "active_orders";
+  status: "error" | "idle" | "success";
+};
 
 /** Deletes the signed-in customer's own account only; the id always comes from the session. */
 export const deleteAccount = async (): Promise<DeleteAccountState> => {
@@ -20,15 +26,32 @@ export const deleteAccount = async (): Promise<DeleteAccountState> => {
   }
 
   const payload = await getPayloadClient();
+  const activeOrders = await countActiveOrdersForCustomer(payload, customer.id);
+
+  if (activeOrders > 0) {
+    return {
+      message:
+        activeOrders === 1
+          ? "Tienes un pedido en curso. Cancélalo desde Mis pedidos o escríbenos explicando la situación."
+          : `Tienes ${activeOrders} pedidos en curso. Cancélalos desde Mis pedidos o escríbenos explicando la situación.`,
+      reason: "active_orders",
+      status: "error",
+    };
+  }
 
   try {
     await payload.delete({
       collection: "customers",
       id: customer.id,
       overrideAccess: true,
+      user: customer,
     });
     return { status: "success" };
-  } catch {
+  } catch (error) {
+    if (error instanceof APIError && error.status === 409) {
+      return { message: error.message, reason: "active_orders", status: "error" };
+    }
+
     return { message: "No se pudo eliminar la cuenta. Inténtalo de nuevo.", status: "error" };
   }
 };
