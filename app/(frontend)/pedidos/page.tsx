@@ -128,6 +128,12 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
               Pedido #{lookedUpOrder.orderNumber ?? requestedOrderNumber}
             </p>
             <p className="order-lookup-status">Estado: {statusLabel(lookedUpOrder.status)}</p>
+            {lookedUpOrder.status === "en_produccion" ? (
+              <p className="order-status-message">
+                El equipo se conectará contigo por tu correo electrónico y te enviará la información
+                de cuándo tu prenda esté lista.
+              </p>
+            ) : null}
             <p>
               {lookedUpOrder.garmentLabel} · Talla {lookedUpOrder.size} · Color{" "}
               {lookedUpOrder.colorLabel}

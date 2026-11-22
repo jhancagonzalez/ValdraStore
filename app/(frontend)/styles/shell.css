@@ -541,6 +541,16 @@
   font-weight: 600;
 }
 
+.order-status-message {
+  margin: 4px 0 0;
+  padding: 14px 16px;
+  border-left: 3px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
 .order-cancel {
   display: grid;
   gap: 12px;
