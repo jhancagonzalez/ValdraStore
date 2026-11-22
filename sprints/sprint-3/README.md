@@ -9,7 +9,7 @@
 - **Módulo:** Pedidos y administración.
 - **Fuente:** Product Backlog — Valdra Store (Notion), consultado el 21 de noviembre de 2026.
 - **Página del sprint:** <https://app.notion.com/p/3f6cd0bef3648148b1ecc7c06f44334a>
-- **Documentos de trabajo:** [PLAN.md](PLAN.md) y [TODO.md](TODO.md).
+- **Documentos de trabajo:** [DECISIONS.md](DECISIONS.md), [PLAN.md](PLAN.md) y [TODO.md](TODO.md).
 
 ## Listo cuando
 
@@ -24,9 +24,9 @@ Las asignaciones de Notion están en «Por definir». Esta es una propuesta de r
 | HU-18 | Crear un pedido | 5 | Must Have | Jhancarlos Gonzalez | Modelo de pedidos (S3-T01) |
 | HU-19 | Consultar historial de pedidos | 2 | Could Have | Andrés Valencia | HU-18 |
 | HU-20 | Consultar estado del pedido | 3 | Must Have | Kevin Burgos | HU-18 |
-| HU-21 | Actualizar estado del pedido | 3 | Must Have | Daniel Cárdenas | S3-T01 y C-20 |
-| HU-22 | Gestionar productos y categorías | 5 | Must Have | Emanuel Giraldo | C-18; no depende de pedidos |
-| HU-23 | Gestionar diseños disponibles | 3 | Should Have | Andrés Valencia | C-19; no depende de pedidos |
+| HU-21 | Actualizar estado del pedido | 3 | Must Have | Daniel Cárdenas | S3-T01 y D-05 |
+| HU-22 | Gestionar productos y categorías | 5 | Must Have | Emanuel Giraldo | D-09; no depende de pedidos |
+| HU-23 | Gestionar diseños disponibles | 3 | Should Have | Andrés Valencia | D-10; no depende de pedidos |
 | HU-24 | Gestionar clientes y pedidos | 5 | Must Have | Daniel Cárdenas | S3-T01 y HU-21 |
 | HU-25 | Actualizar precios e información | 2 | Should Have | Emanuel Giraldo | HU-22; instantánea de precio depende de pedidos |
 | **Total** | | **28** | **5 Must · 2 Should · 1 Could** | | |
@@ -41,12 +41,12 @@ Las asignaciones de Notion están en «Por definir». Esta es una propuesta de r
 | Emanuel Giraldo | PO, Frontend | HU-22 + HU-25 | 7 | Administración de productos/categorías, precios y apoyo en el panel |
 | Andrés Valencia | Frontend | HU-23 + HU-19 | 5 | Diseños disponibles, historial del cliente y apoyo de UI/QA |
 
-**Primero, en Jhancarlos:** cerrar las decisiones C-18 a C-21, congelar el modelo de `orders`, escribir la migración con acceso/RLS y sacar HU-18. Es la ruta crítica que desbloquea HU-19, HU-20, HU-21 y HU-24.
+**Primero, en Jhancarlos:** cerrar las decisiones D-02 a D-15, congelar el modelo de `orders`, escribir la migración con acceso/RLS y sacar HU-18. Es la ruta crítica que desbloquea HU-19, HU-20, HU-21 y HU-24.
 
 ## Qué puede empezar ya, sin depender de pedidos
 
-- **HU-22 (Emanuel):** inventario del admin actual de prendas, validaciones de nombre/categoría/precio y edición de categorías. La decisión C-18 puede convertirla en una colección nueva.
-- **HU-23 (Andrés):** inventario del campo `designs` de cada prenda y de la gestión de medios; definir si se queda como carga asociada o pasa a una colección con estado activo (C-19).
+- **HU-22 (Emanuel):** inventario del admin actual de prendas, validaciones de nombre/categoría/precio y edición dentro del `select` actual (D-09). Si el cliente exige una colección de categorías, se replanifica.
+- **HU-23 (Andrés):** inventario del campo `designs` de cada prenda y de la gestión de medios; se mantiene la carga por prenda (D-10).
 - **HU-25 (Emanuel):** edición de precio e información de producto. La prueba de que un pedido conserva el precio anterior requiere que exista `orders`.
 - **Andrés:** textos, estados vacíos y revisión responsive de historial/estado; se conectan cuando exista el backend.
 - **Daniel:** checklist de acceso, RLS y auditoría para `orders`, usando el modelo propuesto.
@@ -56,21 +56,24 @@ Las asignaciones de Notion están en «Por definir». Esta es una propuesta de r
 
 - **HU-18** depende del modelo de `orders`, de la relación con `approved-designs` y de que el diseño pertenezca al cliente.
 - **HU-19 y HU-20** dependen de HU-18.
-- **HU-21** depende de `orders` y del catálogo de estados aprobado (C-20).
+- **HU-21** depende de `orders` y del catálogo de estados aprobado (D-05).
 - **HU-24** depende de `orders` y de HU-21 para el filtro por estado.
-- **HU-22, HU-23 y HU-25** no dependen de pedidos, pero C-18/C-19 pueden ampliar su alcance.
+- **HU-22, HU-23 y HU-25** no dependen de pedidos, pero D-09/D-10 pueden ampliar su alcance.
 - No hay pagos, checkout, carrito ni envíos en este sprint. WhatsApp (HU-26 a HU-28) y otros módulos quedan fuera.
 
-## Decisiones que requieren aprobación
+## Decisiones y base protegida
 
-| ID | Tema | Propuesta |
-| --- | --- | --- |
-| C-18 | Categorías | Hoy `category` es un `select` fijo en `products`. La historia pide crear/editar/deshabilitar categorías. Propuesta: colección `categories` y relación; alternativa: mantener el select y limitar la gestión a elegir una opción existente. |
-| C-19 | Diseños disponibles | Hoy `designs` es una carga múltiple de `media` por prenda. La historia pide crear/editar/eliminar/deshabilitar. Propuesta: colección `designs` con imagen, prendas relacionadas y `active`; alternativa: mantener `media` y quitar la asociación para “deshabilitar”. |
-| C-20 | Estados del pedido | Propuesta: `pendiente`, `en_produccion`, `lista`, `entregada`, `cancelada`. Definir nombres y transiciones permitidas. |
-| C-21 | Cantidad y alcance del pedido | Propuesta: un pedido por diseño aprobado, cantidad 1, sin carrito ni pagos. Confirmar si se permiten varias unidades. |
-| C-22 | Precio y moneda | Propuesta: COP, precio de la variante al momento del pedido, guardado como instantánea; sin envío ni impuestos. |
-| C-23 | Panel administrativo | Propuesta: usar el panel de Payload para clientes, pedidos, prendas y diseños; no crear un panel paralelo. |
+La lista completa está en [DECISIONS.md](DECISIONS.md). Recomendaciones para no frenar el sprint:
+
+- **Categorías:** mantener el `select` actual; no crear una colección dinámica (D-09).
+- **Diseños:** mantener la carga de medios por prenda; «deshabilitar» = quitar la asociación o dejar la prenda en borrador (D-10).
+- **Estados:** `pendiente`, `en_produccion`, `lista`, `entregada`, `cancelada` (D-05).
+- **Pedido:** uno por diseño aprobado, cantidad 1, COP sin envío ni impuestos (D-02, D-07).
+- **Panel:** usar el admin de Payload (D-11).
+- **Cuenta eliminada:** se borran también sus pedidos en el prototipo (D-13).
+- **Avisos:** ninguno en este sprint; el estado se ve al consultar (D-15).
+
+**Base que no se delega:** Jhancarlos conserva el modelo `orders`, migraciones, acceso/RLS, servicios, tipos/estados, registro en Payload y artefactos generados. El equipo consume los contratos y no edita esos archivos sin revisión.
 
 ## Estado del documento
 
