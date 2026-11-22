@@ -1,7 +1,9 @@
 import { Admins } from "@/collections/Admins";
 import { ApprovedDesigns } from "@/collections/ApprovedDesigns";
 import { Customers } from "@/collections/Customers";
+import { GarmentStock } from "@/collections/GarmentStock";
 import { Media } from "@/collections/Media";
+import { Orders } from "@/collections/Orders";
 import { PrivateSpikeMedia } from "@/collections/PrivateSpikeMedia";
 import { withRoleManagement } from "@/plugins/role-management";
 
@@ -12,4 +14,6 @@ export const collections = withRoleManagement([
   Media,
   PrivateSpikeMedia,
   ApprovedDesigns,
+  Orders,
+  GarmentStock,
 ]);

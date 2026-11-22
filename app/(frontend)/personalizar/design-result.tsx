@@ -5,6 +5,7 @@ import type { ProposalHistory, ProposalVersion } from "@/lib/proposal-history";
 import type { Approval } from "./approve-design";
 import { ApproveDesign } from "./approve-design";
 import { MockupViewer } from "./mockup-viewer";
+import { OrderPanel } from "./order-panel";
 import { ChevronDownIcon } from "./personalization-icons";
 import { ProposalHistoryPanel } from "./proposal-history";
 
@@ -134,6 +135,9 @@ export const DesignResult = ({
           Descárgala si quieres conservarla.
         </p>
       )}
+      {approvedDesign ? (
+        <OrderPanel approvedDesignId={approvedDesign.id} baseId={selectedBase.id} />
+      ) : null}
       {generatedPrompt ? (
         <details className="design-prompt-details">
           <summary>

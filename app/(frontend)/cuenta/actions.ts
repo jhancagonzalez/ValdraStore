@@ -1,34 +1,85 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { APIError } from "payload";
 import { getSessionCustomer } from "@/lib/auth";
 import { getPayloadClient } from "@/lib/payload";
 import {
   type ProfileFieldValues,
   type ProfileFormState,
   updateCustomerProfile,
+  verifyCurrentPassword,
 } from "@/services/customers/profile";
+import { countActiveOrdersForCustomer } from "@/services/orders/customer-account";
 
-export type DeleteAccountState = { message?: string; status: "error" | "idle" | "success" };
+export type DeleteAccountState = {
+  message?: string;
+  reason?: "active_orders" | "invalid_password" | "locked" | "password_required";
+  status: "error" | "idle" | "success";
+};
 
 /** Deletes the signed-in customer's own account only; the id always comes from the session. */
-export const deleteAccount = async (): Promise<DeleteAccountState> => {
+export const deleteAccount = async (password: string): Promise<DeleteAccountState> => {
   const customer = await getSessionCustomer();
 
   if (!customer) {
     return { message: "Tu sesión expiró. Inicia sesión de nuevo.", status: "error" };
   }
 
+  const currentPassword = password.trim();
+
+  if (!currentPassword) {
+    return {
+      message: "Escribe tu contraseña actual para eliminar la cuenta.",
+      reason: "password_required",
+      status: "error",
+    };
+  }
+
   const payload = await getPayloadClient();
+  const verification = await verifyCurrentPassword(payload, customer, currentPassword);
+
+  if (verification !== "valid") {
+    return verification === "locked"
+      ? {
+          message:
+            "La cuenta está bloqueada temporalmente por intentos fallidos. Espera unos minutos y vuelve a intentarlo.",
+          reason: "locked",
+          status: "error",
+        }
+      : {
+          message: "La contraseña actual no es correcta. No se eliminó la cuenta.",
+          reason: "invalid_password",
+          status: "error",
+        };
+  }
+
+  const activeOrders = await countActiveOrdersForCustomer(payload, customer.id);
+
+  if (activeOrders > 0) {
+    return {
+      message:
+        activeOrders === 1
+          ? "Tienes un pedido en curso. Cancélalo desde Mis pedidos o escríbenos explicando la situación."
+          : `Tienes ${activeOrders} pedidos en curso. Cancélalos desde Mis pedidos o escríbenos explicando la situación.`,
+      reason: "active_orders",
+      status: "error",
+    };
+  }
 
   try {
     await payload.delete({
       collection: "customers",
       id: customer.id,
       overrideAccess: true,
+      user: customer,
     });
     return { status: "success" };
-  } catch {
+  } catch (error) {
+    if (error instanceof APIError && error.status === 409) {
+      return { message: error.message, reason: "active_orders", status: "error" };
+    }
+
     return { message: "No se pudo eliminar la cuenta. Inténtalo de nuevo.", status: "error" };
   }
 };

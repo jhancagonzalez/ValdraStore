@@ -73,6 +73,8 @@ export interface Config {
     media: Media;
     'private-spike-media': PrivateSpikeMedia;
     'approved-designs': ApprovedDesign;
+    orders: Order;
+    'garment-stock': GarmentStock;
     variants: Variant;
     variantTypes: VariantType;
     variantOptions: VariantOption;
@@ -96,6 +98,8 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     'private-spike-media': PrivateSpikeMediaSelect<false> | PrivateSpikeMediaSelect<true>;
     'approved-designs': ApprovedDesignsSelect<false> | ApprovedDesignsSelect<true>;
+    orders: OrdersSelect<false> | OrdersSelect<true>;
+    'garment-stock': GarmentStockSelect<false> | GarmentStockSelect<true>;
     variants: VariantsSelect<false> | VariantsSelect<true>;
     variantTypes: VariantTypesSelect<false> | VariantTypesSelect<true>;
     variantOptions: VariantOptionsSelect<false> | VariantOptionsSelect<true>;
@@ -126,6 +130,7 @@ export interface Config {
   ecommerce: {
     collections: {
       customers: Customer;
+      orders: Order;
       products: Product;
       variantOptions: VariantOption;
       variants: Variant;
@@ -293,6 +298,80 @@ export interface ApprovedDesign {
   createdAt: string;
 }
 /**
+ * Pedidos de prendas personalizadas. El cliente, el precio y las instantáneas se fijan en servidor.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders".
+ */
+export interface Order {
+  id: number;
+  /**
+   * Se genera al crear el pedido. El cliente lo usa para consultar el estado en Mi cuenta.
+   */
+  orderNumber?: string | null;
+  /**
+   * El cliente se toma de la sesión. Un administrador puede seleccionarlo al crear el pedido.
+   */
+  customer: number | Customer;
+  /**
+   * Diseño aprobado que se va a producir. Debe pertenecer al cliente.
+   */
+  design: number | ApprovedDesign;
+  /**
+   * Cantidad de unidades entre 1 y 10. Descuenta stock.
+   */
+  quantity: number;
+  garmentBase?: string | null;
+  garmentLabel?: string | null;
+  category?: string | null;
+  colorLabel?: string | null;
+  size?: string | null;
+  unitPrice?: number | null;
+  total?: number | null;
+  /**
+   * Solo el administrador puede cambiarlo.
+   */
+  status: 'pendiente' | 'en_produccion' | 'lista' | 'entregada' | 'cancelada';
+  source?: ('customer' | 'admin') | null;
+  createdBy?: (number | null) | Admin;
+  stockRestored?: boolean | null;
+  statusHistory?:
+    | {
+        fromStatus: 'pendiente' | 'en_produccion' | 'lista' | 'entregada' | 'cancelada';
+        toStatus: 'pendiente' | 'en_produccion' | 'lista' | 'entregada' | 'cancelada';
+        changedAt: string;
+        changedBy?: (number | null) | Admin;
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Stock disponible por prenda base y talla. Se descuenta al crear un pedido y se devuelve al cancelarlo.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "garment-stock".
+ */
+export interface GarmentStock {
+  id: number;
+  key: string;
+  /**
+   * ID de la prenda base, por ejemplo `camisetas-black` o `hoodies-blue`.
+   */
+  baseId: string;
+  label: string;
+  /**
+   * S, M, L o XL.
+   */
+  size: string;
+  quantity: number;
+  active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "variants".
  */
@@ -423,6 +502,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'approved-designs';
         value: number | ApprovedDesign;
+      } | null)
+    | ({
+        relationTo: 'orders';
+        value: number | Order;
+      } | null)
+    | ({
+        relationTo: 'garment-stock';
+        value: number | GarmentStock;
       } | null)
     | ({
         relationTo: 'variants';
@@ -594,6 +681,53 @@ export interface ApprovedDesignsSelect<T extends boolean = true> {
   image?: T;
   approvedAt?: T;
   orderReference?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders_select".
+ */
+export interface OrdersSelect<T extends boolean = true> {
+  orderNumber?: T;
+  customer?: T;
+  design?: T;
+  quantity?: T;
+  garmentBase?: T;
+  garmentLabel?: T;
+  category?: T;
+  colorLabel?: T;
+  size?: T;
+  unitPrice?: T;
+  total?: T;
+  status?: T;
+  source?: T;
+  createdBy?: T;
+  stockRestored?: T;
+  statusHistory?:
+    | T
+    | {
+        fromStatus?: T;
+        toStatus?: T;
+        changedAt?: T;
+        changedBy?: T;
+        note?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "garment-stock_select".
+ */
+export interface GarmentStockSelect<T extends boolean = true> {
+  key?: T;
+  baseId?: T;
+  label?: T;
+  size?: T;
+  quantity?: T;
+  active?: T;
   updatedAt?: T;
   createdAt?: T;
 }

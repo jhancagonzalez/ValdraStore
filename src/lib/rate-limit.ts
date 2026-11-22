@@ -1,6 +1,7 @@
 import type { CollectionBeforeOperationHook, PayloadRequest } from "payload";
 import { APIError } from "payload";
 import { hasAdminRole } from "@/access/roles";
+import { MAX_ORDER_CREATIONS_PER_HOUR } from "@/lib/orders/limits";
 
 /**
  * Fixed-window counter in PostgreSQL (security audit, rate limiting decision).
@@ -80,6 +81,40 @@ export const enforceOperationRateLimit: CollectionBeforeOperationHook = async ({
   if (Math.random() < 0.01) {
     await req.payload.db.pool.query(
       `DELETE FROM public.rate_limit_hits WHERE "window_start" < now() - interval '1 day'`,
+    );
+  }
+};
+
+/**
+ * Límite por cliente para la creación de pedidos. La clave no depende de la IP:
+ * un cliente autenticado no puede eludirlo rotando direcciones. En desarrollo
+ * local se omite para no bloquear las pruebas; producción sí lo aplica.
+ */
+export const enforceCustomerOrderRateLimit = async (
+  req: PayloadRequest,
+  customerId: number,
+): Promise<void> => {
+  if (process.env.NODE_ENV !== "production") {
+    return;
+  }
+
+  const windowMs = 60 * 60 * 1000;
+  const windowStart = new Date(Math.floor(Date.now() / windowMs) * windowMs);
+  const key = `orders:create:customer:${customerId}`;
+
+  const { rows } = await req.payload.db.pool.query<{ hits: number }>(
+    `INSERT INTO public.rate_limit_hits ("key", "window_start", "hits")
+     VALUES ($1, $2, 1)
+     ON CONFLICT ("key", "window_start")
+     DO UPDATE SET "hits" = rate_limit_hits."hits" + 1
+     RETURNING "hits"`,
+    [key, windowStart],
+  );
+
+  if ((rows[0]?.hits ?? 0) > MAX_ORDER_CREATIONS_PER_HOUR) {
+    throw new APIError(
+      "Has creado demasiados pedidos en la última hora. Espera antes de crear otro.",
+      429,
     );
   }
 };

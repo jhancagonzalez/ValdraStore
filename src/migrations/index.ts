@@ -8,6 +8,9 @@ import * as migration_20261030_130000_last_admin_guard from "./20261030_130000_l
 import * as migration_20261030_131000_rate_limit from "./20261030_131000_rate_limit";
 import * as migration_20261030_140000_customer_last_name from "./20261030_140000_customer_last_name";
 import * as migration_20261115_120000_approved_designs from "./20261115_120000_approved_designs";
+import * as migration_20261121_120000_orders_core from "./20261121_120000_orders_core";
+import * as migration_20261121_140000_order_number from "./20261121_140000_order_number";
+import * as migration_20261122_120000_order_number_check from "./20261122_120000_order_number_check";
 
 export const migrations = [
   {
@@ -59,5 +62,20 @@ export const migrations = [
     up: migration_20261115_120000_approved_designs.up,
     down: migration_20261115_120000_approved_designs.down,
     name: "20261115_120000_approved_designs",
+  },
+  {
+    up: migration_20261121_120000_orders_core.up,
+    down: migration_20261121_120000_orders_core.down,
+    name: "20261121_120000_orders_core",
+  },
+  {
+    up: migration_20261121_140000_order_number.up,
+    down: migration_20261121_140000_order_number.down,
+    name: "20261121_140000_order_number",
+  },
+  {
+    up: migration_20261122_120000_order_number_check.up,
+    down: migration_20261122_120000_order_number_check.down,
+    name: "20261122_120000_order_number_check",
   },
 ];

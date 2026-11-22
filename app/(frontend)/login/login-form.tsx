@@ -2,21 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
+import { safeNextPath } from "@/lib/safe-next";
 
 const GENERIC_ERROR = "Correo o contraseña incorrectos. Inténtalo de nuevo.";
 
 /** Signs in via Payload REST; never reveals which credential failed (HU-02). */
 type LoginFormProps = {
   next?: string;
-};
-
-/** Only same-origin paths are accepted, so `next` cannot become an open redirect. */
-const safeNext = (next?: string): string => {
-  if (!next?.startsWith("/") || next.startsWith("//") || next.includes("\\")) {
-    return "/catalogo";
-  }
-
-  return next;
 };
 
 export const LoginForm = ({ next }: LoginFormProps) => {
@@ -46,7 +38,7 @@ export const LoginForm = ({ next }: LoginFormProps) => {
         return;
       }
 
-      router.push(safeNext(next));
+      router.push(safeNextPath(next, "/catalogo") ?? "/catalogo");
       router.refresh();
     } catch {
       setError("No pudimos conectar con el servidor. Inténtalo de nuevo.");

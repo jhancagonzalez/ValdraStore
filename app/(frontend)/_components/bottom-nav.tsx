@@ -91,6 +91,25 @@ const AccountIcon = () => (
   </svg>
 );
 
+const OrdersIcon = () => (
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+    <path
+      d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5v-7Z"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M4 8.5 12 13l8-4.5M12 13v7"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 /**
  * Navegación inferior real de móvil: cuatro destinos existentes, estado activo
  * visible y área táctil de 56 px.
@@ -104,6 +123,7 @@ export const BottomNav = ({ isAdmin, isCustomer }: BottomNavProps) => {
     { href: "/", label: "Inicio", icon: <HomeIcon /> },
     { href: "/catalogo", label: "Catálogo", icon: <CatalogIcon /> },
     { href: "/personalizar", label: "Personalizador", icon: <CustomizeIcon /> },
+    ...(isCustomer ? [{ href: "/pedidos", label: "Pedidos", icon: <OrdersIcon /> }] : []),
     { href: accountHref, label: accountLabel, icon: <AccountIcon /> },
   ];
 

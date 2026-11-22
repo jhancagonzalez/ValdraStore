@@ -1,3 +1,4 @@
+import { type PostgresAdapter, sql } from "@payloadcms/db-postgres";
 import { APIError, type CollectionConfig } from "payload";
 import {
   canAccessAdminPanel,
@@ -9,9 +10,11 @@ import {
 import { enforcePasswordPolicy } from "@/hooks/enforce-password-policy";
 import { requireCustomerLastName } from "@/hooks/require-customer-last-name";
 import { validateResetPassword } from "@/hooks/validate-reset-password";
+import { CONTACT_EMAIL } from "@/lib/contact";
 import { enforceOperationRateLimit } from "@/lib/rate-limit";
 import { isEmailChange } from "@/services/customers/profile";
 import { passwordResetEmailHtml } from "@/services/email/templates";
+import { countActiveOrdersForCustomer } from "@/services/orders/customer-account";
 
 /** Accepts digits with optional country prefix, spaces, hyphens or parentheses. */
 const PHONE_PATTERN = /^\+?[\d\s()-]{7,20}$/;
@@ -105,8 +108,41 @@ export const Customers: CollectionConfig = {
     beforeValidate: [enforcePasswordPolicy, requireCustomerLastName],
     beforeDelete: [
       async ({ id, req }) => {
-        // HU-17: los diseños aprobados son datos personales del cliente y su
-        // relación es obligatoria, así que se eliminan antes de borrar la cuenta.
+        // Un cliente con un pedido en curso no puede eliminar su cuenta: debe
+        // cancelarlo primero. Un administrador puede resolver el caso manual.
+        if (!hasAdminRole(req.user)) {
+          // Bloquea la fila del cliente dentro de la transacción para que un
+          // pedido no pueda crearse entre el conteo y el borrado.
+          const adapter = req.payload.db as unknown as PostgresAdapter;
+          const transactionID = req.transactionID != null ? await req.transactionID : undefined;
+          const transaction =
+            transactionID !== undefined ? adapter.sessions[String(transactionID)]?.db : undefined;
+          const db = transaction ?? adapter.drizzle;
+
+          await db.execute(sql`
+            SELECT "id" FROM "customers" WHERE "id" = ${Number(id)} FOR UPDATE
+          `);
+
+          const activeOrders = await countActiveOrdersForCustomer(req.payload, Number(id), req);
+
+          if (activeOrders > 0) {
+            throw new APIError(
+              `La cuenta tiene un pedido en curso. Cancélalo antes de eliminarla o escribe a ${CONTACT_EMAIL} explicando la situación.`,
+              409,
+            );
+          }
+        }
+
+        // HU-17/HU-18: los pedidos y los diseños aprobados son datos personales
+        // del cliente. Se eliminan los pedidos primero (sus hooks devuelven el
+        // stock) y después los diseños, porque la relación del pedido los exige.
+        await req.payload.delete({
+          collection: "orders",
+          overrideAccess: true,
+          req,
+          where: { customer: { equals: id } },
+        });
+
         await req.payload.delete({
           collection: "approved-designs",
           overrideAccess: true,

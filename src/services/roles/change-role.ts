@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { APIError, type Payload, type PayloadRequest } from "payload";
 import { hasAdminRole } from "../../access/roles";
+import { countActiveOrdersForCustomer } from "../orders/customer-account";
 
 /**
  * HU-05: the role of an account is the auth collection that holds it. Changing a
@@ -124,6 +125,18 @@ export const changeAccountRole = async (args: ChangeRoleArgs): Promise<ChangeRol
   }
 
   const target = TARGET_COLLECTION[collection];
+
+  if (collection === "customers") {
+    const activeOrders = await countActiveOrdersForCustomer(payload, Number(source.id), req);
+
+    if (activeOrders > 0) {
+      throw new APIError(
+        "El cliente tiene un pedido en curso. Cancélalo antes de cambiar su rol.",
+        409,
+      );
+    }
+  }
+
   const { totalDocs: existing } = await payload.count({
     collection: target,
     overrideAccess: true,

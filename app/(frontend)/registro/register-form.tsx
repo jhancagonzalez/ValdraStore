@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
+import { safeNextPath } from "@/lib/safe-next";
 import { PasswordStrength } from "../_components/password-strength";
 
 type FieldErrors = Record<string, string>;
@@ -80,25 +81,13 @@ const translateIssue = (field: string, message: string): string => {
 };
 
 /** Only same-origin paths are accepted, so `next` cannot become an open redirect. */
-const safeNext = (next?: string): string | undefined => {
-  if (!next?.startsWith("/") || next.startsWith("//") || next.includes("\\")) {
-    return undefined;
-  }
-  return next;
-};
-
-/**
- * Public customer registration (HU-01). Empty or malformed fields are blocked
- * by the inputs and by Payload's own validation; duplicates and server errors
- * are reported with a specific message.
- */
 type RegisterFormProps = {
   next?: string;
 };
 
 export const RegisterForm = ({ next }: RegisterFormProps) => {
   const router = useRouter();
-  const nextPath = safeNext(next);
+  const nextPath = safeNextPath(next);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [password, setPassword] = useState("");
