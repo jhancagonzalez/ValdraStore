@@ -1,3 +1,4 @@
+import { type PostgresAdapter, sql } from "@payloadcms/db-postgres";
 import { APIError, type CollectionConfig } from "payload";
 import {
   canAccessAdminPanel,
@@ -110,6 +111,18 @@ export const Customers: CollectionConfig = {
         // Un cliente con un pedido en curso no puede eliminar su cuenta: debe
         // cancelarlo primero. Un administrador puede resolver el caso manual.
         if (!hasAdminRole(req.user)) {
+          // Bloquea la fila del cliente dentro de la transacción para que un
+          // pedido no pueda crearse entre el conteo y el borrado.
+          const adapter = req.payload.db as unknown as PostgresAdapter;
+          const transactionID = req.transactionID != null ? await req.transactionID : undefined;
+          const transaction =
+            transactionID !== undefined ? adapter.sessions[String(transactionID)]?.db : undefined;
+          const db = transaction ?? adapter.drizzle;
+
+          await db.execute(sql`
+            SELECT "id" FROM "customers" WHERE "id" = ${Number(id)} FOR UPDATE
+          `);
+
           const activeOrders = await countActiveOrdersForCustomer(req.payload, Number(id), req);
 
           if (activeOrders > 0) {

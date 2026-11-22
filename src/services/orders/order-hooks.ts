@@ -9,9 +9,12 @@ import type {
 import { APIError } from "payload";
 import { hasAdminRole } from "@/access/roles";
 import { getMockupBase, getMockupBaseName, isMockupSize } from "@/lib/mockup-bases";
+import { MAX_ACTIVE_ORDERS } from "@/lib/orders/limits";
 import { calculateOrderTotal, getDesignPricing, isOrderQuantity } from "@/lib/orders/pricing";
 import { canTransitionOrderStatus, isOrderStatus } from "@/lib/orders/status";
 import { getStockKey, hasEnoughStock, shouldRestoreStockOnDelete } from "@/lib/orders/stock";
+import { enforceCustomerOrderRateLimit } from "@/lib/rate-limit";
+import { countActiveOrdersForCustomer } from "@/services/orders/customer-account";
 import { generateOrderNumber } from "@/services/orders/order-number";
 
 type Row = Record<string, unknown>;
@@ -246,6 +249,19 @@ export const setOrderData: CollectionBeforeValidateHook = async ({ data, operati
 
   if (!isOrderQuantity(quantity)) {
     throw new APIError("La cantidad debe ser un entero entre 1 y 10.", 400);
+  }
+
+  const activeOrders = await countActiveOrdersForCustomer(req.payload, customerId, req);
+
+  if (activeOrders >= MAX_ACTIVE_ORDERS) {
+    throw new APIError(
+      `Ya tienes ${MAX_ACTIVE_ORDERS} pedidos en curso. Cancela o espera a que terminen antes de crear otro.`,
+      409,
+    );
+  }
+
+  if (!isAdminUser) {
+    await enforceCustomerOrderRateLimit(req, customerId);
   }
 
   const stockKey = getStockKey(pricing.base.id, size);
