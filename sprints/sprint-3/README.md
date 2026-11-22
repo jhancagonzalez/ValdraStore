@@ -76,10 +76,10 @@ La lista completa está en [DECISIONS.md](DECISIONS.md). Decisiones confirmadas:
 - **Panel:** usar el admin de Payload (D-11).
 - **Cuenta eliminada:** se borran también sus pedidos y diseños (D-13); el stock se devuelve solo para pedidos no entregados.
 - **Cuenta con pedidos en curso:** no se puede eliminar; el cliente cancela desde `/pedidos` o escribe a `valdra.administracion@gmail.com` (D-21).
-- **Avisos:** ninguno en este sprint; el estado se ve al consultar (D-15).
+- **Avisos:** no hay correo ni WhatsApp automáticos en este sprint; el estado se ve al consultar. En producción, el detalle avisa que el equipo contactará por correo (D-15).
 
 **Base que no se delega:** Jhancarlos conserva `orders`, `garment-stock`, migraciones, acceso/RLS, servicios, precios/estados, registro en Payload y artefactos generados. El equipo consume los contratos y no edita esos archivos sin revisión. Las colecciones de categorías y diseños pertenecen a HU-22/HU-23 y requieren revisión de Jhancarlos por el cambio de esquema.
 
 ## Estado del documento
 
-Decisiones confirmadas el 21 de noviembre de 2026. La base de pedidos e inventario está implementada, las migraciones están aplicadas, el stock está sembrado y HU-18, HU-19 y HU-20 están validadas; el formulario de admin fue probado, los pedidos se consultan en `/pedidos` y la cuenta con pedidos en curso queda protegida. Quedan HU-22/HU-23 y HU-24. Notion conserva la fuente de verdad del estado de las historias.
+Decisiones confirmadas el 21 de noviembre de 2026. La base de pedidos e inventario está implementada, las migraciones están aplicadas, el stock está sembrado y HU-18, HU-19 y HU-20 están validadas; el formulario de admin fue probado, los pedidos se consultan en `/pedidos`, el aviso de producción está visible y la cuenta con pedidos en curso queda protegida. Quedan HU-22/HU-23 y HU-24. Notion conserva la fuente de verdad del estado de las historias.

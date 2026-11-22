@@ -42,7 +42,7 @@ Confirmados con el cliente (D-05):
 | Estado | Significado | Transiciones permitidas |
 | --- | --- | --- |
 | `pendiente` | Pedido recibido, aún sin producir | `en_produccion`, `cancelada` |
-| `en_produccion` | En producción | `lista`, `cancelada` |
+| `en_produccion` | En producción; el detalle informa que el equipo contactará por correo | `lista`, `cancelada` |
 | `lista` | Lista para entrega | `entregada` |
 | `entregada` | Entregada al cliente | — |
 | `cancelada` | Cancelada | — |
@@ -90,7 +90,7 @@ No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/
 | S3-T01 | Modelo `orders`, inventario, estados, acceso, RLS y migración | HU-18/21/24 | Jhancarlos | Implementado y migrado |
 | S3-T02 | Servicio de creación, stock, validaciones e instantáneas de precio | HU-18 | Jhancarlos | Implementado |
 | S3-T03 | UI de creación, confirmación y consulta por número del pedido | HU-18/20 | Jhancarlos + Kevin | Implementado y validado |
-| S3-T04 | Lista, detalle y estado del pedido para el cliente (`/pedidos`) | HU-19/20 | Kevin + Andrés | Implementado y validado; revisión de UI |
+| S3-T04 | Lista, detalle, estado y aviso de producción para el cliente (`/pedidos`) | HU-19/20 | Kevin + Andrés | Implementado y validado; revisión de UI |
 | S3-T05 | Cambio de estado con historial y auditoría | HU-21 | Daniel | S3-T01, D-05 |
 | S3-T06 | Lista/detalle/filtro de clientes y pedidos en el admin | HU-24 | Daniel + Emanuel | S3-T01, S3-T05 |
 | S3-T07 | Colección `categories`, relación con productos, migración y admin | HU-22 | Emanuel | D-09; revisión de Jhancarlos |
@@ -142,7 +142,7 @@ HU-18, HU-19 y HU-20 están validadas y habilitan HU-21 y HU-24.
 - **Stock al borrar:** no se devuelve para pedidos entregados; solo para pedidos no entregados y no devueltos por una cancelación.
 - **Capacidad:** 28 puntos en dos semanas con 5 personas; el trabajo independiente de catálogo debe empezar ya.
 - **Pagos:** no se habilitan; el pedido es una solicitud de producción, no una compra pagada.
-- **Tiempo real:** el estado se actualiza al consultar; no se promete notificación en vivo.
+- **Tiempo real:** el estado se actualiza al consultar; no se promete notificación en vivo. En producción, el detalle avisa que el equipo contactará por correo; el envío es manual.
 - **Privacidad:** los pedidos contienen datos personales; se aplican acceso por propietario, RLS y revisión de la migración.
 
 ## 8. Definition of Done

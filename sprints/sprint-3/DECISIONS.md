@@ -20,7 +20,7 @@ Decisiones cerradas con el usuario el 21 de noviembre de 2026. Sustituyen las re
 | D-12 | Historial del cliente en `/pedidos` con lista y detalle simple; sin tiempo real | Implementada (HU-19/20) |
 | D-13 | Al eliminar la cuenta se eliminan también sus pedidos y diseños; el stock se devuelve solo para pedidos no entregados. Con pedidos en curso, la eliminación se bloquea | Implementada |
 | D-14 | Número de pedido aleatorio de seis cifras, único y guardado en `orderNumber`; el cliente lo usa para consultar el estado en `/pedidos` | Implementada y validada |
-| D-15 | Sin avisos por correo o WhatsApp en Sprint 3; el estado se ve al consultar | Confirmada |
+| D-15 | Sin avisos automáticos por correo o WhatsApp en Sprint 3; el estado se ve al consultar. En producción, el detalle informa que el equipo contactará por correo | Confirmada |
 | D-16 | Cliente: crear y leer solo sus pedidos. Administrador: leer todos, cambiar estado y eliminar. Data API revocada y RLS activo | Implementada en código y migraciones aplicadas |
 | D-17 | Cada migración revisada; `push: false`; se aplica solo con aprobación y verificación de RLS | Aplicadas el 21 nov 2026 (`orders_core` y `order_number`); RLS y revocación incluidos |
 | D-18 | Datos de prueba sintéticos y limpieza al terminar | Pruebas de integración, UI y formulario de admin realizadas; datos de prueba limpiados |
@@ -30,7 +30,7 @@ Decisiones cerradas con el usuario el 21 de noviembre de 2026. Sustituyen las re
 
 ## 2. Base implementada y protegida
 
-Rama `branch/SPRINT-3-orders-core`, commits `62d0365`, `b53b9e6`, `07cfc17`, `9b3a2e1`, `64d37e1`, `5acab13` y `6352a48`.
+Rama `branch/SPRINT-3-orders-core`, commits `62d0365`, `b53b9e6`, `07cfc17`, `9b3a2e1`, `64d37e1`, `5acab13`, `6352a48` y `bf9d1f9`.
 
 | Área | Archivos | Regla |
 | --- | --- | --- |
@@ -81,6 +81,7 @@ Las colecciones `categories` y `designs` pertenecen a HU-22/HU-23. Sus responsab
 - [x] Añadir el número de pedido aleatorio de seis cifras y la consulta por número.
 - [x] Implementar la lista, el detalle y el menú «Pedidos» del cliente (HU-19/20).
 - [x] Bloquear la eliminación de la cuenta con pedidos en curso y ofrecer cancelación o correo a Valdra (D-21).
+- [x] Mostrar el aviso de producción: el equipo contactará por correo y avisará cuando la prenda esté lista.
 - [ ] Implementar HU-22 (colección `categories`) y HU-23 (colección `designs`).
 - [ ] Probar el flujo completo en móvil, con datos sintéticos.
 - [ ] Actualizar Notion y registrar evidencias.
@@ -94,8 +95,8 @@ Las colecciones `categories` y `designs` pertenecen a HU-22/HU-23. Sus responsab
 - **Stock al borrar:** no se devuelve para pedidos entregados; solo para pedidos no entregados y no devueltos por una cancelación.
 - **Categorías y diseños:** las colecciones nuevas de HU-22/HU-23 amplían el alcance con dos migraciones y cambios en el catálogo.
 - **UI pendiente:** HU-18, HU-19 y HU-20 están implementadas; faltan los ajustes de administración (HU-24).
-- **Sin avisos:** el cliente solo ve el estado al consultar; no hay correo ni WhatsApp en este sprint.
+- **Sin avisos:** no hay correo ni WhatsApp automáticos. En producción, el detalle informa que el equipo contactará por correo; el envío es manual y no se promete una fecha exacta.
 
 ## 6. Estado del documento
 
-Decisiones confirmadas. Notion sigue siendo la fuente de verdad para el estado de las historias. Las migraciones están aplicadas, el stock sembrado y HU-18, HU-19 y HU-20 validadas; los pedidos se consultan en `/pedidos` y la cuenta con pedidos en curso queda protegida (D-21). Siguen HU-22/HU-23 y HU-24. No se ha creado ningún PR.
+Decisiones confirmadas. Notion sigue siendo la fuente de verdad para el estado de las historias. Las migraciones están aplicadas, el stock sembrado y HU-18, HU-19 y HU-20 validadas; los pedidos se consultan en `/pedidos`, el aviso de producción está visible y la cuenta con pedidos en curso queda protegida (D-21). Siguen HU-22/HU-23 y HU-24. No se ha creado ningún PR.
