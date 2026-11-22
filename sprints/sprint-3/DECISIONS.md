@@ -1,6 +1,6 @@
 # Decisiones confirmadas del Sprint 3
 
-Decisiones cerradas con el usuario el 21 de noviembre de 2026. Sustituyen las recomendaciones anteriores del documento. La base de pedidos e inventario está implementada, las migraciones aplicadas y el stock sembrado; HU-18 está validada de punta a punta y la consulta por número está operativa. La rama de desarrollo es `branch/SPRINT-3-orders-core`.
+Decisiones cerradas con el usuario el 21 de noviembre de 2026. Sustituyen las recomendaciones anteriores del documento. La base de pedidos e inventario está implementada, las migraciones aplicadas y el stock sembrado; HU-18, HU-19 y HU-20 están validadas de punta a punta y los pedidos se consultan en `/pedidos`. La rama de desarrollo es `branch/SPRINT-3-orders-core`.
 
 ## 1. Decisiones
 
@@ -17,9 +17,9 @@ Decisiones cerradas con el usuario el 21 de noviembre de 2026. Sustituyen las re
 | D-09 | Crear colección `categories` y cambiar `products.category` a relación; permite crear, editar y deshabilitar categorías | Pendiente (HU-22) |
 | D-10 | Crear colección `designs` con imagen, relación a prendas y `active`; permite crear, editar, eliminar y deshabilitar diseños | Pendiente (HU-23) |
 | D-11 | Usar el panel de Payload para pedidos, inventario, clientes, prendas y diseños | Implementada para pedidos e inventario |
-| D-12 | Historial del cliente en `/cuenta` con lista y detalle simple; sin tiempo real | Parcial: consulta por número implementada; falta la lista de pedidos (HU-19/20) |
+| D-12 | Historial del cliente en `/pedidos` con lista y detalle simple; sin tiempo real | Implementada (HU-19/20) |
 | D-13 | Al eliminar la cuenta se eliminan también sus pedidos; el stock se devuelve | Implementada |
-| D-14 | Número de pedido aleatorio de seis cifras, único y guardado en `orderNumber`; el cliente lo usa para consultar el estado en `/cuenta` | Implementada y validada |
+| D-14 | Número de pedido aleatorio de seis cifras, único y guardado en `orderNumber`; el cliente lo usa para consultar el estado en `/pedidos` | Implementada y validada |
 | D-15 | Sin avisos por correo o WhatsApp en Sprint 3; el estado se ve al consultar | Confirmada |
 | D-16 | Cliente: crear y leer solo sus pedidos. Administrador: leer todos, cambiar estado y eliminar. Data API revocada y RLS activo | Implementada en código y migraciones aplicadas |
 | D-17 | Cada migración revisada; `push: false`; se aplica solo con aprobación y verificación de RLS | Aplicadas el 21 nov 2026 (`orders_core` y `order_number`); RLS y revocación incluidos |
@@ -29,7 +29,7 @@ Decisiones cerradas con el usuario el 21 de noviembre de 2026. Sustituyen las re
 
 ## 2. Base implementada y protegida
 
-Rama `branch/SPRINT-3-orders-core`, commits `62d0365`, `b53b9e6`, `07cfc17`, `9b3a2e1` y `64d37e1`.
+Rama `branch/SPRINT-3-orders-core`, commits `62d0365`, `b53b9e6`, `07cfc17`, `9b3a2e1`, `64d37e1` y `5acab13`.
 
 | Área | Archivos | Regla |
 | --- | --- | --- |
@@ -43,7 +43,7 @@ Rama `branch/SPRINT-3-orders-core`, commits `62d0365`, `b53b9e6`, `07cfc17`, `9b
 | Borrado de cuenta | Hook de `src/collections/Customers.ts` | Solo Jhancarlos |
 | Semilla de stock | `scripts/seed-order-stock.ts` | Solo Jhancarlos |
 | API y UI de HU-18 | `app/api/orders/create/route.ts`, `app/(frontend)/personalizar/order-panel.tsx` | Solo Jhancarlos |
-| Número y consulta | `src/lib/orders/order-number.ts`, `src/services/orders/order-number.ts` y la sección «Consultar pedido» de `app/(frontend)/cuenta/page.tsx` | Número: Jhancarlos; historial/lista: Andrés y Kevin |
+| Número y consulta | `src/lib/orders/order-number.ts`, `src/services/orders/order-number.ts`, `app/(frontend)/pedidos/page.tsx` y los enlaces de navegación de `site-header.tsx`/`bottom-nav.tsx` | Número y página: Jhancarlos; revisión de UI de HU-19/20: Andrés y Kevin |
 | Dependencias | `package.json`, `pnpm-lock.yaml` | Solo Jhancarlos |
 
 ### Contratos que el equipo puede consumir
@@ -75,8 +75,8 @@ Las colecciones `categories` y `designs` pertenecen a HU-22/HU-23. Sus responsab
 - [x] Implementar la UI de creación del pedido para el cliente (HU-18) y probarla de punta a punta.
 - [x] Validar la creación por administrador a nivel de API y hooks.
 - [x] Probar el formulario de creación del administrador en el panel de Payload.
-- [x] Añadir el número de pedido aleatorio de seis cifras y la consulta por número en `/cuenta`.
-- [ ] Implementar HU-19/HU-20 (lista e historial completo; la consulta por número ya existe).
+- [x] Añadir el número de pedido aleatorio de seis cifras y la consulta por número.
+- [x] Implementar la lista, el detalle y el menú «Pedidos» del cliente (HU-19/20).
 - [ ] Implementar HU-22 (colección `categories`) y HU-23 (colección `designs`).
 - [ ] Probar el flujo completo en móvil, con datos sintéticos.
 - [ ] Actualizar Notion y registrar evidencias.
@@ -85,11 +85,11 @@ Las colecciones `categories` y `designs` pertenecen a HU-22/HU-23. Sus responsab
 
 - **Stock no atómico:** la comprobación y el descuento no comparten transacción; dos pedidos simultáneos podrían competir por la última unidad. Está marcado con `ponytail:` en `order-hooks.ts`; se resuelve con transacción/row lock cuando haga falta.
 - **Número de pedido:** se genera aleatoriamente y se comprueba antes de insertar; el índice único evita duplicados. Dos creaciones simultáneas podrían chocar y requerir reintento.
-- **Consulta por número:** requiere sesión de cliente y solo muestra pedidos de esa cuenta. No es una consulta pública por número.
+- **Consulta por número:** la página `/pedidos` requiere sesión de cliente y solo muestra pedidos de esa cuenta. No es una consulta pública por número; muestra el estado actual, no el historial de cambios.
 - **Categorías y diseños:** las colecciones nuevas de HU-22/HU-23 amplían el alcance con dos migraciones y cambios en el catálogo.
-- **UI pendiente:** HU-18 crea, confirma y consulta por número; faltan la lista/historial completo (HU-19/20) y los ajustes de administración (HU-24).
+- **UI pendiente:** HU-18, HU-19 y HU-20 están implementadas; faltan los ajustes de administración (HU-24).
 - **Sin avisos:** el cliente solo ve el estado al consultar; no hay correo ni WhatsApp en este sprint.
 
 ## 6. Estado del documento
 
-Decisiones confirmadas. Notion sigue siendo la fuente de verdad para el estado de las historias. Las migraciones están aplicadas, el stock sembrado, HU-18 validada y la consulta por número operativa; la lista/historial completo sigue pendiente. No se ha creado ningún PR.
+Decisiones confirmadas. Notion sigue siendo la fuente de verdad para el estado de las historias. Las migraciones están aplicadas, el stock sembrado y HU-18, HU-19 y HU-20 validadas; los pedidos se consultan en `/pedidos`. Siguen HU-22/HU-23 y HU-24. No se ha creado ningún PR.

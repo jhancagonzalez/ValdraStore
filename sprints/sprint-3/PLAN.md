@@ -12,13 +12,13 @@ El flujo completo que se busca es:
 
 No incluye pagos, checkout, carrito, envíos ni WhatsApp. Las historias de pedidos usan el diseño aprobado en HU-17.
 
-Las decisiones confirmadas y la base protegida están en [DECISIONS.md](DECISIONS.md). La base de pedidos e inventario está implementada, las migraciones aplicadas y el stock sembrado; HU-18 y la consulta por número están validadas. Faltan la lista/historial completo (HU-19/20), HU-22/HU-23 y HU-24.
+Las decisiones confirmadas y la base protegida están en [DECISIONS.md](DECISIONS.md). La base de pedidos e inventario está implementada, las migraciones aplicadas y el stock sembrado; HU-18, HU-19 y HU-20 están validadas y los pedidos se consultan en `/pedidos`. Faltan HU-22/HU-23 y HU-24.
 
 ## 2. Base técnica concreta
 
 ### 2.1 Colección `orders` (implementada)
 
-La base está en `branch/SPRINT-3-orders-core` (commit `62d0365`). Los pedidos del plugin siguen desactivados.
+La base está en `branch/SPRINT-3-orders-core` (commits `62d0365` a `5acab13`). Los pedidos del plugin siguen desactivados.
 
 - `customer` — relación con `customers`, obligatoria, indexada.
 - `design` — relación con `approved-designs`, obligatoria; debe pertenecer al cliente.
@@ -53,6 +53,7 @@ Solo un administrador cambia el estado. Cada cambio deja una fila en `statusHist
 
 - **Crear:** cliente con sesión o administrador. El hook fija el cliente cuando es cliente, valida el cliente elegido cuando es admin, y fija diseño, instantáneas, precio, total, estado inicial, número y stock. El cliente usa `/api/orders/create`; el panel usa el REST de Payload en `/api/orders`.
 - **Leer:** el cliente solo ve sus pedidos; el administrador ve todos. Se aplica control de acceso de Payload y, cuando corresponda, RLS en PostgreSQL.
+- **Pedidos del cliente:** `/pedidos` muestra la lista con número, prenda/talla, fecha, estado y total, y permite consultar por número. La página exige sesión y filtra por propietario; el detalle no expone el historial de cambios.
 - **Actualizar:** solo administradores. El cliente no puede cambiar estado, precio, prenda ni diseño.
 - **Eliminar:** solo administradores; el stock se devuelve si el pedido no estaba cancelado.
 - **Validaciones de servidor:** el diseño debe existir, pertenecer al cliente y estar aprobado; la prenda debe tener precio fijo; la cantidad debe ser 1–10; el stock debe alcanzar. El precio se toma de la tabla del servidor, no del navegador.
@@ -78,7 +79,7 @@ Las dos se implementan como colecciones nuevas, con migración y cambio de catá
 
 ### 2.6 Núcleo Jhancarlos
 
-No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/*`, tipos/estados/precios/stock/número en `src/lib/orders/*`, migraciones de pedidos e inventario, acceso/RLS, registro en `payload.config.ts` y `src/collections/index.ts`, `payload-types.ts`, hook de borrado de `Customers`, semilla de stock, `package.json` e import map. El equipo importa los contratos y no edita esos archivos sin revisión. El detalle está en [DECISIONS.md](DECISIONS.md).
+No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/*`, tipos/estados/precios/stock/número en `src/lib/orders/*`, migraciones de pedidos e inventario, acceso/RLS, registro en `payload.config.ts` y `src/collections/index.ts`, `payload-types.ts`, hook de borrado de `Customers`, semilla de stock, `app/(frontend)/pedidos/page.tsx`, navegación de pedidos, `package.json` e import map. El equipo importa los contratos y no edita esos archivos sin revisión. El detalle está en [DECISIONS.md](DECISIONS.md).
 
 ## 3. Tareas técnicas
 
@@ -88,7 +89,7 @@ No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/
 | S3-T01 | Modelo `orders`, inventario, estados, acceso, RLS y migración | HU-18/21/24 | Jhancarlos | Implementado y migrado |
 | S3-T02 | Servicio de creación, stock, validaciones e instantáneas de precio | HU-18 | Jhancarlos | Implementado |
 | S3-T03 | UI de creación, confirmación y consulta por número del pedido | HU-18/20 | Jhancarlos + Kevin | Implementado y validado |
-| S3-T04 | Historial y estado del pedido para el cliente | HU-19/20 | Kevin + Andrés | Parcial: consulta por número; falta lista |
+| S3-T04 | Lista, detalle y estado del pedido para el cliente (`/pedidos`) | HU-19/20 | Kevin + Andrés | Implementado y validado; revisión de UI |
 | S3-T05 | Cambio de estado con historial y auditoría | HU-21 | Daniel | S3-T01, D-05 |
 | S3-T06 | Lista/detalle/filtro de clientes y pedidos en el admin | HU-24 | Daniel + Emanuel | S3-T01, S3-T05 |
 | S3-T07 | Colección `categories`, relación con productos, migración y admin | HU-22 | Emanuel | D-09; revisión de Jhancarlos |
@@ -102,8 +103,8 @@ No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/
 | Fecha | Foco | Entregable |
 | --- | --- | --- |
 | 21-22 nov | Decisiones y base | Decisiones confirmadas, `orders`/`garment-stock` implementados, migraciones aplicadas y stock sembrado |
-| 23–25 nov | Pedido inicial y catálogo | HU-18 validada de punta a punta; S3-T07/T08/T09 en paralelo |
-| 25–28 nov | Estado e historial | S3-T04 (HU-19/20), S3-T05 (HU-21), cierre de HU-22/23/25 |
+| 23–25 nov | Pedido inicial y catálogo | HU-18, HU-19 y HU-20 validadas; S3-T07/T08/T09 en paralelo |
+| 25–28 nov | Estado e historial | Revisión de S3-T04, S3-T05 (HU-21), cierre de HU-22/23/25 |
 | 28 nov–1 dic | Administración y QA | S3-T06 (HU-24), E2E, seguridad/RLS, responsive, evidencias, demo y Notion |
 
 El calendario es una propuesta: el sprint ya está en curso y el equipo debe ajustar según la capacidad real.
@@ -113,11 +114,11 @@ El calendario es una propuesta: el sprint ya está en curso y el equipo debe aju
 **Jhancarlos, en este orden:**
 
 1. Revisar los cambios de esquema de HU-22/HU-23 antes de que se mezclen.
-2. Apoyar HU-19/HU-20 y HU-24 sobre los contratos ya implementados.
+2. Apoyar HU-24 y revisar la UI de `/pedidos` con Kevin y Andrés.
 3. Integrar, probar el recorrido completo y mantener la documentación.
 4. Preparar la evidencia y la demo.
 
-HU-18 está validada y habilita HU-19, HU-20, HU-21 y HU-24.
+HU-18, HU-19 y HU-20 están validadas y habilitan HU-21 y HU-24.
 
 ## 6. Qué no depende de nadie
 
@@ -134,7 +135,7 @@ HU-18 está validada y habilita HU-19, HU-20, HU-21 y HU-24.
 - **Stock:** la comprobación y el descuento no son atómicos; dos pedidos simultáneos podrían competir por la última unidad. Está marcado con `ponytail:` y se corrige con transacción/row lock cuando haga falta.
 - **Formulario de admin:** validado con una sesión real; los campos calculados no se marcan `required` en el panel porque el hook los completa antes de validar.
 - **Número de pedido:** la generación comprueba duplicados y el índice único es la garantía final; dos creaciones simultáneas podrían requerir reintento.
-- **Consulta por número:** requiere sesión y solo muestra pedidos de la cuenta; no es una consulta pública ni el historial completo.
+- **Consulta por número:** la página `/pedidos` requiere sesión y solo muestra pedidos de la cuenta; no es una consulta pública ni muestra el historial de cambios.
 - **Capacidad:** 28 puntos en dos semanas con 5 personas; el trabajo independiente de catálogo debe empezar ya.
 - **Pagos:** no se habilitan; el pedido es una solicitud de producción, no una compra pagada.
 - **Tiempo real:** el estado se actualiza al consultar; no se promete notificación en vivo.
