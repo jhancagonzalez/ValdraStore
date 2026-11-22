@@ -1,7 +1,7 @@
 # Evidencia — Flujo completo de pedido, estado, borrado y cuenta
 
 Fecha: 21 de noviembre de 2026.
-Rama: `branch/SPRINT-3-orders-core`, commit `bf9d1f9`.
+Rama: `feat/SPRINT-3-HU-18-19-20-21-orders-core`, commit `bf9d1f9`.
 Entorno: local, Supabase con las migraciones de pedidos aplicadas y el stock sembrado.
 
 ## Flujo probado

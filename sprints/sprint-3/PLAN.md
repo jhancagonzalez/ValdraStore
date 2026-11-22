@@ -18,7 +18,7 @@ Las decisiones confirmadas y la base protegida están en [DECISIONS.md](DECISION
 
 ### 2.1 Colección `orders` (implementada)
 
-La base está en `branch/SPRINT-3-orders-core` (commits `62d0365` a `5acab13`). Los pedidos del plugin siguen desactivados.
+La base está en `feat/SPRINT-3-HU-18-19-20-21-orders-core` (commits `62d0365` a `7b6848f`). Los pedidos del plugin siguen desactivados.
 
 - `customer` — relación con `customers`, obligatoria, indexada.
 - `design` — relación con `approved-designs`, obligatoria; debe pertenecer al cliente.

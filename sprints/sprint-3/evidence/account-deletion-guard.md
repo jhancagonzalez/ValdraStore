@@ -1,7 +1,7 @@
 # Evidencia — Cuenta con pedidos en curso (D-21)
 
 Fecha: 21 de noviembre de 2026.
-Rama: `branch/SPRINT-3-orders-core`, commit `6352a48`.
+Rama: `feat/SPRINT-3-HU-18-19-20-21-orders-core`, commit `6352a48`.
 Entorno: local, Supabase con las migraciones de pedidos aplicadas y el stock sembrado.
 
 ## Implementación

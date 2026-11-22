@@ -1,6 +1,6 @@
 # Decisiones confirmadas del Sprint 3
 
-Decisiones cerradas con el usuario el 21 de noviembre de 2026. Sustituyen las recomendaciones anteriores del documento. La base de pedidos e inventario está implementada, las migraciones aplicadas y el stock sembrado; HU-18, HU-19 y HU-20 están validadas de punta a punta y los pedidos se consultan en `/pedidos`. La rama de desarrollo es `branch/SPRINT-3-orders-core`.
+Decisiones cerradas con el usuario el 21 de noviembre de 2026. Sustituyen las recomendaciones anteriores del documento. La base de pedidos e inventario está implementada, las migraciones aplicadas y el stock sembrado; HU-18, HU-19 y HU-20 están validadas de punta a punta y los pedidos se consultan en `/pedidos`. La rama de desarrollo es `feat/SPRINT-3-HU-18-19-20-21-orders-core`.
 
 ## 1. Decisiones
 
@@ -32,7 +32,7 @@ Decisiones cerradas con el usuario el 21 de noviembre de 2026. Sustituyen las re
 
 ## 2. Base implementada y protegida
 
-Rama `branch/SPRINT-3-orders-core`, commits `62d0365`, `b53b9e6`, `07cfc17`, `9b3a2e1`, `64d37e1`, `5acab13`, `6352a48`, `bf9d1f9`, `fe3de8e`, `964efe6` y `7b6848f`.
+Rama `feat/SPRINT-3-HU-18-19-20-21-orders-core`, commits `62d0365`, `b53b9e6`, `07cfc17`, `9b3a2e1`, `64d37e1`, `5acab13`, `6352a48`, `bf9d1f9`, `fe3de8e`, `964efe6` y `7b6848f`.
 
 | Área | Archivos | Regla |
 | --- | --- | --- |

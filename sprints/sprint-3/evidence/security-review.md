@@ -1,7 +1,7 @@
 # Evidencia — Revisión de seguridad y endurecimiento
 
 Fecha: 22 de noviembre de 2026.
-Rama: `branch/SPRINT-3-orders-core`, commits `fe3de8e`, `964efe6` y `7b6848f`.
+Rama: `feat/SPRINT-3-HU-18-19-20-21-orders-core`, commits `fe3de8e`, `964efe6` y `7b6848f`.
 Base revisada: `e009cfe`; cambios de pedidos hasta `bf9d1f9`.
 
 ## Alcance
