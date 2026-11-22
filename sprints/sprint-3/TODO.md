@@ -2,7 +2,7 @@
 
 Criterios transcritos del [Product Backlog de Notion](https://app.notion.com/p/4ea53e76abd442718800c1c4aeba29e1) el 21 de noviembre de 2026. Las 8 historias figuran en **Backlog** y sin responsable asignado. Este documento no agrega criterios nuevos.
 
-La base y los límites están en [DECISIONS.md](DECISIONS.md). **Núcleo Jhancarlos:** `orders`, `garment-stock`, migraciones, acceso/RLS, servicios, tipos/estados/precios y artefactos generados no se editan sin su revisión. La base está implementada, la migración aplicada, el stock sembrado y HU-18 validada; la evidencia está en [evidence/HU-18.md](evidence/HU-18.md).
+La base y los límites están en [DECISIONS.md](DECISIONS.md). **Núcleo Jhancarlos:** `orders`, `garment-stock`, migraciones, acceso/RLS, servicios, tipos/estados/precios y artefactos generados no se editan sin su revisión. La base está implementada, las migraciones aplicadas, el stock sembrado, HU-18 validada y la consulta por número operativa; la evidencia está en [evidence/HU-18.md](evidence/HU-18.md).
 
 ## Resumen y reparto propuesto
 
@@ -23,9 +23,9 @@ La base y los límites están en [DECISIONS.md](DECISIONS.md). **Núcleo Jhancar
 1. Apoyar HU-19/HU-20 y HU-24 sobre los contratos ya implementados.
 2. Revisar los cambios de esquema de HU-22/HU-23.
 3. Integración, E2E, evidencias y actualización de Notion.
-4. Probar el formulario de creación del administrador en Payload.
+4. Revisar con Kevin/Andrés la consulta por número antes de ampliar HU-19/20.
 
-HU-18 ya está implementada y validada; HU-19/HU-20/HU-24 pueden empezar sobre la base.
+HU-18 ya está implementada y validada, incluida la consulta por número; HU-19/HU-20/HU-24 pueden empezar sobre la base.
 
 ## Puede empezar ya (sin depender de pedidos)
 
@@ -44,7 +44,7 @@ Responsable propuesto: **Jhancarlos Gonzalez**. Depende de S3-T01.
 - [x] El pedido se guarda con fecha, cliente, productos y estado inicial.
 - [x] El sistema confirma al cliente que el pedido fue creado y no permite crear un pedido sin diseño o prenda.
 
-> **Validación (2026-11-21).** Flujo E2E con una cuenta temporal: diseño aprobado, pedido de 2 unidades, confirmación “Pedido #5 creado”, total $120.000 y stock 20 → 18. La eliminación de la cuenta borró pedido y diseño y devolvió el stock a 20. Evidencia completa en [evidence/HU-18.md](evidence/HU-18.md).
+> **Validación (2026-11-21).** Flujo E2E con una cuenta temporal: diseño aprobado, pedido de 2 unidades, confirmación «Pedido #823488 creado», total $120.000 y stock 20 → 18. La consulta en `/cuenta?pedido=823488` mostró el estado y, tras el cambio del administrador, «En producción». La eliminación de la cuenta borró pedido y diseño y devolvió el stock a 20. El formulario de creación del administrador también se validó con una sesión real. Evidencia completa en [evidence/HU-18.md](evidence/HU-18.md).
 
 Tareas: modelo de `orders` con diseño, cantidad 1–10, stock e instantáneas; precio fijo de la prenda base; creación por cliente o administrador; UI de creación y confirmación; pruebas negativas sin diseño, sin prenda o sin stock.
 
@@ -58,6 +58,8 @@ Responsable propuesto: **Andrés Valencia**. Depende de HU-18.
 
 Tareas: consulta filtrada por propietario, orden descendente, estado vacío y enlace al detalle.
 
+> **Parcial (2026-11-21).** La consulta puntual por número de pedido ya funciona en `/cuenta`; falta la lista completa con fecha y orden descendente.
+
 ## HU-20 — Consultar estado del pedido · 3 puntos · Must Have
 
 Responsable propuesto: **Kevin Burgos**. Depende de HU-18.
@@ -67,6 +69,8 @@ Responsable propuesto: **Kevin Burgos**. Depende de HU-18.
 - [ ] Cuando el administrador cambia el estado, el cliente lo ve actualizado al consultar.
 
 Tareas: estado visible en historial/detalle; revalidación al consultar; no prometer tiempo real.
+
+> **Parcial (2026-11-21).** La consulta por número muestra el estado actual y refleja los cambios del administrador. Falta la vista de todos los pedidos del cliente.
 
 ## HU-21 — Actualizar estado del pedido · 3 puntos · Must Have
 
@@ -124,7 +128,7 @@ Tareas: edición de producto; revalidación del catálogo; los pedidos usan la t
 
 ## Decisiones confirmadas
 
-Ver [DECISIONS.md](DECISIONS.md): D-01 a D-20. La base de pedidos e inventario está implementada; la migración y la semilla de stock están pendientes.
+Ver [DECISIONS.md](DECISIONS.md): D-01 a D-20. La base de pedidos e inventario está implementada; las migraciones y la semilla de stock están aplicadas, y la consulta por número está operativa.
 
 ## Checklist de cierre por historia
 

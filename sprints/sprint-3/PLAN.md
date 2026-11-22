@@ -12,7 +12,7 @@ El flujo completo que se busca es:
 
 No incluye pagos, checkout, carrito, envíos ni WhatsApp. Las historias de pedidos usan el diseño aprobado en HU-17.
 
-Las decisiones confirmadas y la base protegida están en [DECISIONS.md](DECISIONS.md). La base de pedidos e inventario está implementada, la migración aplicada y el stock sembrado; HU-18 está validada. Faltan HU-19/HU-20, HU-22/HU-23, HU-24 y la prueba del formulario de admin.
+Las decisiones confirmadas y la base protegida están en [DECISIONS.md](DECISIONS.md). La base de pedidos e inventario está implementada, las migraciones aplicadas y el stock sembrado; HU-18 y la consulta por número están validadas. Faltan la lista/historial completo (HU-19/20), HU-22/HU-23 y HU-24.
 
 ## 2. Base técnica concreta
 
@@ -22,6 +22,7 @@ La base está en `branch/SPRINT-3-orders-core` (commit `62d0365`). Los pedidos d
 
 - `customer` — relación con `customers`, obligatoria, indexada.
 - `design` — relación con `approved-designs`, obligatoria; debe pertenecer al cliente.
+- `orderNumber` — número aleatorio de seis cifras, único, generado en servidor (D-14).
 - `quantity` — entero de 1 a 10; descuenta stock.
 - `garmentBase`, `garmentLabel`, `category`, `colorLabel`, `size` — instantánea de la prenda del diseño.
 - `unitPrice` — precio fijo por prenda base: camiseta $60.000 / hoodie $120.000 (D-07, D-20).
@@ -50,19 +51,19 @@ Solo un administrador cambia el estado. Cada cambio deja una fila en `statusHist
 
 ### 2.3 Acceso y seguridad
 
-- **Crear:** cliente con sesión o administrador. El hook fija el cliente cuando es cliente, valida el cliente elegido cuando es admin, y fija diseño, instantáneas, precio, total, estado inicial y stock.
+- **Crear:** cliente con sesión o administrador. El hook fija el cliente cuando es cliente, valida el cliente elegido cuando es admin, y fija diseño, instantáneas, precio, total, estado inicial, número y stock. El cliente usa `/api/orders/create`; el panel usa el REST de Payload en `/api/orders`.
 - **Leer:** el cliente solo ve sus pedidos; el administrador ve todos. Se aplica control de acceso de Payload y, cuando corresponda, RLS en PostgreSQL.
 - **Actualizar:** solo administradores. El cliente no puede cambiar estado, precio, prenda ni diseño.
 - **Eliminar:** solo administradores; el stock se devuelve si el pedido no estaba cancelado.
 - **Validaciones de servidor:** el diseño debe existir, pertenecer al cliente y estar aprobado; la prenda debe tener precio fijo; la cantidad debe ser 1–10; el stock debe alcanzar. El precio se toma de la tabla del servidor, no del navegador.
-- **Migración:** aplicada el 21 de noviembre de 2026, con privilegios de Data API revocados y RLS activo.
+- **Migración:** aplicadas el 21 de noviembre de 2026 (`orders_core` y `order_number`), con privilegios de Data API revocados y RLS activo.
 - **Auditoría:** `statusHistory` cubre HU-21; el historial está oculto para el cliente.
 
 ### 2.4 Panel administrativo (D-11)
 
 Se propone usar el panel de Payload, no un panel paralelo:
 
-- **Pedidos:** grupo «Pedidos», columnas cliente, estado, cantidad, total y fecha; filtro por estado; detalle con ítems e historial.
+- **Pedidos:** grupo «Pedidos», columnas número, cliente, estado, cantidad, total y fecha; filtro por estado; detalle con ítems e historial.
 - **Inventario:** colección `garment-stock` por prenda base y talla; el administrador ajusta cantidades.
 - **Clientes:** la colección `customers` ya existe; se revisan columnas y detalle.
 - **Prendas y diseños:** las colecciones existentes de catálogo y medios; HU-22/HU-23 agregan categorías y diseños.
@@ -77,7 +78,7 @@ Las dos se implementan como colecciones nuevas, con migración y cambio de catá
 
 ### 2.6 Núcleo Jhancarlos
 
-No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/*`, tipos/estados/precios/stock en `src/lib/orders/*`, migraciones de pedidos e inventario, acceso/RLS, registro en `payload.config.ts` y `src/collections/index.ts`, `payload-types.ts`, hook de borrado de `Customers`, semilla de stock, `package.json` e import map. El equipo importa los contratos y no edita esos archivos sin revisión. El detalle está en [DECISIONS.md](DECISIONS.md).
+No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/*`, tipos/estados/precios/stock/número en `src/lib/orders/*`, migraciones de pedidos e inventario, acceso/RLS, registro en `payload.config.ts` y `src/collections/index.ts`, `payload-types.ts`, hook de borrado de `Customers`, semilla de stock, `package.json` e import map. El equipo importa los contratos y no edita esos archivos sin revisión. El detalle está en [DECISIONS.md](DECISIONS.md).
 
 ## 3. Tareas técnicas
 
@@ -86,8 +87,8 @@ No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/
 | S3-T00 | Decisiones confirmadas y alcance congelado | Transversal | Jhancarlos + Emanuel | Hecho |
 | S3-T01 | Modelo `orders`, inventario, estados, acceso, RLS y migración | HU-18/21/24 | Jhancarlos | Implementado y migrado |
 | S3-T02 | Servicio de creación, stock, validaciones e instantáneas de precio | HU-18 | Jhancarlos | Implementado |
-| S3-T03 | UI de creación y confirmación del pedido | HU-18 | Jhancarlos + Kevin | Implementado y validado |
-| S3-T04 | Historial y estado del pedido para el cliente | HU-19/20 | Kevin + Andrés | S3-T03 |
+| S3-T03 | UI de creación, confirmación y consulta por número del pedido | HU-18/20 | Jhancarlos + Kevin | Implementado y validado |
+| S3-T04 | Historial y estado del pedido para el cliente | HU-19/20 | Kevin + Andrés | Parcial: consulta por número; falta lista |
 | S3-T05 | Cambio de estado con historial y auditoría | HU-21 | Daniel | S3-T01, D-05 |
 | S3-T06 | Lista/detalle/filtro de clientes y pedidos en el admin | HU-24 | Daniel + Emanuel | S3-T01, S3-T05 |
 | S3-T07 | Colección `categories`, relación con productos, migración y admin | HU-22 | Emanuel | D-09; revisión de Jhancarlos |
@@ -100,7 +101,7 @@ No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/
 
 | Fecha | Foco | Entregable |
 | --- | --- | --- |
-| 21–22 nov | Decisiones y base | Decisiones confirmadas, `orders`/`garment-stock` implementados, migración aplicada y stock sembrado |
+| 21-22 nov | Decisiones y base | Decisiones confirmadas, `orders`/`garment-stock` implementados, migraciones aplicadas y stock sembrado |
 | 23–25 nov | Pedido inicial y catálogo | HU-18 validada de punta a punta; S3-T07/T08/T09 en paralelo |
 | 25–28 nov | Estado e historial | S3-T04 (HU-19/20), S3-T05 (HU-21), cierre de HU-22/23/25 |
 | 28 nov–1 dic | Administración y QA | S3-T06 (HU-24), E2E, seguridad/RLS, responsive, evidencias, demo y Notion |
@@ -131,7 +132,9 @@ HU-18 está validada y habilita HU-19, HU-20, HU-21 y HU-24.
 - **D-09/D-10:** las colecciones `categories` y `designs` amplían el alcance con dos migraciones y cambios en el catálogo; deben coordinarse con Jhancarlos.
 - **D-05:** la máquina de estados ya está implementada; cualquier cambio de nombres/transiciones afecta la UI y los datos.
 - **Stock:** la comprobación y el descuento no son atómicos; dos pedidos simultáneos podrían competir por la última unidad. Está marcado con `ponytail:` y se corrige con transacción/row lock cuando haga falta.
-- **Formulario de admin:** la creación por API/hooks está validada; falta probar el formulario de Payload con una sesión de administrador.
+- **Formulario de admin:** validado con una sesión real; los campos calculados no se marcan `required` en el panel porque el hook los completa antes de validar.
+- **Número de pedido:** la generación comprueba duplicados y el índice único es la garantía final; dos creaciones simultáneas podrían requerir reintento.
+- **Consulta por número:** requiere sesión y solo muestra pedidos de la cuenta; no es una consulta pública ni el historial completo.
 - **Capacidad:** 28 puntos en dos semanas con 5 personas; el trabajo independiente de catálogo debe empezar ya.
 - **Pagos:** no se habilitan; el pedido es una solicitud de producción, no una compra pagada.
 - **Tiempo real:** el estado se actualiza al consultar; no se promete notificación en vivo.

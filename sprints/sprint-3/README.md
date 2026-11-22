@@ -41,7 +41,7 @@ Las asignaciones de Notion están en «Por definir». Esta es una propuesta de r
 | Emanuel Giraldo | PO, Frontend | HU-22 + HU-25 | 7 | Administración de productos/categorías, precios y apoyo en el panel |
 | Andrés Valencia | Frontend | HU-23 + HU-19 | 5 | Diseños disponibles, historial del cliente y apoyo de UI/QA |
 
-**Primero, en Jhancarlos:** la base de pedidos e inventario está implementada, la migración aplicada, el stock sembrado y HU-18 validada de punta a punta. Sigue la UI de HU-19/HU-20 y la coordinación de los cambios de HU-22/HU-23.
+**Primero, en Jhancarlos:** la base de pedidos e inventario está implementada, las migraciones aplicadas, el stock sembrado y HU-18 validada de punta a punta; la consulta por número ya funciona. Sigue la UI de HU-19/HU-20 y la coordinación de los cambios de HU-22/HU-23.
 
 ## Qué puede empezar ya, sin depender de pedidos
 
@@ -69,6 +69,7 @@ La lista completa está en [DECISIONS.md](DECISIONS.md). Decisiones confirmadas:
 - **Diseños:** crear la colección `designs` con imagen, relación a prendas y `active` (D-10).
 - **Estados:** `pendiente`, `en_produccion`, `lista`, `entregada`, `cancelada` (D-05).
 - **Pedido:** uno por diseño aprobado, cantidad 1–10 con stock (D-02, D-19).
+- **Número:** aleatorio de seis cifras, único, guardado y consultable por el cliente autenticado en `/cuenta` (D-14).
 - **Precio:** fijo por prenda base: camiseta $60.000 y hoodie $120.000, sin envío ni impuestos (D-07, D-20).
 - **Quién crea:** cliente y administrador (D-03).
 - **Panel:** usar el admin de Payload (D-11).
@@ -79,4 +80,4 @@ La lista completa está en [DECISIONS.md](DECISIONS.md). Decisiones confirmadas:
 
 ## Estado del documento
 
-Decisiones confirmadas el 21 de noviembre de 2026. La base de pedidos e inventario está implementada, la migración aplicada, el stock sembrado y HU-18 validada. Quedan HU-19/HU-20, HU-22/HU-23, HU-24 y la prueba del formulario de admin. Notion conserva la fuente de verdad del estado de las historias.
+Decisiones confirmadas el 21 de noviembre de 2026. La base de pedidos e inventario está implementada, las migraciones aplicadas, el stock sembrado y HU-18 validada; la consulta por número está operativa y el formulario de admin fue probado. Quedan la lista/historial completo (HU-19/20), HU-22/HU-23 y HU-24. Notion conserva la fuente de verdad del estado de las historias.
