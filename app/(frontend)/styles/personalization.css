@@ -1459,6 +1459,72 @@
   line-height: 1.6;
 }
 
+/* Pedido (HU-18) */
+
+.order-panel {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.order-panel h3 {
+  margin: 0;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.order-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.order-panel-row {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.order-panel-field {
+  display: grid;
+  gap: 6px;
+  width: 110px;
+}
+
+.order-panel-field label {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.order-panel-field input {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+
+.order-panel .order-panel-total {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.order-panel .button {
+  justify-self: start;
+}
+
 .approval-dialog {
   width: min(100%, 460px);
   max-height: calc(100dvh - 40px);
