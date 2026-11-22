@@ -1,7 +1,7 @@
-# Evidencia — Revisión de seguridad y mejora de la consulta de pedidos
+# Evidencia — Revisión de seguridad y endurecimiento
 
-Fecha: 21 de noviembre de 2026.
-Rama: `branch/SPRINT-3-orders-core`, commits `fe3de8e` y `964efe6`.
+Fecha: 22 de noviembre de 2026.
+Rama: `branch/SPRINT-3-orders-core`, commits `fe3de8e`, `964efe6` y `7b6848f`.
 Base revisada: `e009cfe`; cambios de pedidos hasta `bf9d1f9`.
 
 ## Alcance
@@ -19,7 +19,7 @@ La revisión con el agente de seguridad cubrió:
 ## Hallazgos corregidos
 
 1. **Doble devolución de stock en cancelaciones concurrentes.**
-   - La cancelación ahora reclama `stock_restored` y actualiza el inventario en una sola sentencia SQL dentro de la transacción de Payload.
+   - La cancelación reclama `stock_restored` y actualiza el inventario en una sola sentencia SQL dentro de la transacción de Payload.
    - Prueba con dos cancelaciones simultáneas: stock 18 → 20 (no 22), una sola entrada de historial.
 
 2. **Cambio de rol de un cliente con pedidos activos.**
@@ -37,14 +37,31 @@ La revisión con el agente de seguridad cubrió:
 5. **Oráculo de existencia de diseños ajenos.**
    - El error es el mismo para un diseño inexistente y uno de otro cliente.
 
-## Hallazgos que requieren decisión
+6. **Tope y rate limit de pedidos.**
+   - Máximo 3 pedidos activos por cliente y 5 creaciones por hora en producción.
+   - El cuarto pedido activo devuelve 409; el límite horario se omite en desarrollo local.
 
-- **Borrado por administrador:** un administrador todavía puede eliminar una cuenta con pedidos activos para resolver el caso manual. Es una decisión de producto (D-21).
-- **Rate limit / tope de pedidos activos:** no hay límite específico en la creación; un cliente podría retener stock con pedidos pendientes.
-- **Correo de contacto:** `valdra.administracion@gmail.com` es también una cuenta de administrador; se recomienda un alias dedicado y MFA.
-- **Re-autenticación:** eliminar la cuenta no pide la contraseña actual.
-- **Carrera conteo/borrado:** el conteo previo y el borrado no comparten un bloqueo de fila; el hook vuelve a comprobar, pero queda una ventana.
-- **Backfill del número:** la migración usa `100000 + id`; a partir de `id ≥ 900000` el número tendría 7 cifras. No es alcanzable con el volumen del prototipo; documentado.
+7. **Correo de contacto separado.**
+   - El correo público es `contacto@valdra.store`, configurable con `NEXT_PUBLIC_CONTACT_EMAIL`.
+   - La cuenta de administrador ya no se muestra en la UI.
+
+8. **Re-autenticación antes de eliminar la cuenta.**
+   - La acción exige la contraseña actual y usa la verificación y el bloqueo por intentos de Payload.
+   - Contraseña incorrecta: no elimina y muestra el error. Contraseña correcta: elimina.
+
+9. **Carrera entre conteo y borrado de cuenta.**
+   - El hook bloquea la fila del cliente con `SELECT … FOR UPDATE` antes de contar pedidos.
+   - La eliminación normal y el bloqueo por pedido activo siguen funcionando.
+
+10. **Backfill y check de 6 cifras.**
+    - La migración `20261122_120000_order_number_check` repara números inválidos y añade la restricción `orders_order_number_check`.
+    - Aplicada el 22 de noviembre de 2026 y verificada con `pg_constraint`.
+
+## Decisiones confirmadas
+
+- **Borrado por administrador:** se mantiene el override manual para cuentas con pedidos activos como excepción de Valdra. No es un camino de cliente.
+- **MFA:** falta activarla en la cuenta de administrador; es una operación en Google, no un cambio de código.
+- **Sesiones:** cliente y admin comparten `payload-token`; se alternan sesiones. Separarlo requeriría un cambio de autenticación.
 
 ## Verificación
 
@@ -53,14 +70,13 @@ La revisión con el agente de seguridad cubrió:
 - `pnpm test` ✅ **249 pruebas**
 - `pnpm build` ✅
 - Cancelación concurrente: stock restaurado una sola vez.
-- Flujo de UI probado con el pedido **#182826**:
-  - Pendiente: badge, avance y detalle.
-  - Administrador: cambio a **En producción** desde el panel.
-  - Cliente: aviso de producción y botón de cancelación.
-  - Cancelación: estado **Cancelada**, stock 20 y cuenta eliminada después.
+- Cuarto pedido activo: **409** y stock sin cambios.
+- Eliminación con contraseña incorrecta: bloqueada; con la correcta: completada.
+- Correo mostrado en la UI: `contacto@valdra.store`.
+- Migración aplicada; constraint presente.
 - Datos de prueba limpiados: 0 pedidos, 0 diseños, stock 20.
 
 ## Notas
 
 - El agente de seguridad trabajó en modo lectura y tuvo el shell denegado; los fixes se verificaron con pruebas y con el navegador interno.
-- Las decisiones pendientes no bloquean la demo, pero sí deben resolverse antes de un uso público o de un PR de producción.
+- Quedan MFA y la separación de cookies como pendientes operativos/opcionales; no bloquean la demo.

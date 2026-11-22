@@ -26,12 +26,13 @@ Decisiones cerradas con el usuario el 21 de noviembre de 2026. Sustituyen las re
 | D-18 | Datos de prueba sintéticos y limpieza al terminar | Pruebas de integración, UI y formulario de admin realizadas; datos de prueba limpiados |
 | D-19 | Stock por prenda base + talla en `garment-stock`; 1–10 unidades; se descuenta al crear y se devuelve al cancelar/eliminar | Implementada |
 | D-20 | Precios base: camiseta $60.000 y hoodie $120.000 | Implementada |
-| D-21 | Un cliente con pedidos en curso no puede eliminar su cuenta: debe cancelarlos desde `/pedidos` o escribir a `valdra.administracion@gmail.com`. Un administrador puede resolver el caso manual | Implementada |
-| D-22 | Endurecimiento de seguridad: redirects internos, error de diseño no enumerable, cancelación de stock atómica, historial/stock no reescribibles y cambio de rol bloqueado con pedidos activos | Implementada; quedan decisiones de producto |
+| D-21 | Un cliente con pedidos en curso no puede eliminar su cuenta: debe cancelarlos desde `/pedidos` o escribir a `contacto@valdra.store`. Un administrador puede resolver el caso manual | Implementada |
+| D-22 | Endurecimiento de seguridad: redirects internos, error de diseño no enumerable, cancelación de stock atómica, historial/stock no reescribibles y cambio de rol bloqueado con pedidos activos | Implementada |
+| D-23 | Límites y cuenta: 3 pedidos activos, 5 creaciones por hora, contraseña actual para borrar la cuenta, bloqueo `FOR UPDATE` y check de 6 cifras; el administrador mantiene el override manual | Implementada; MFA pendiente de operación |
 
 ## 2. Base implementada y protegida
 
-Rama `branch/SPRINT-3-orders-core`, commits `62d0365`, `b53b9e6`, `07cfc17`, `9b3a2e1`, `64d37e1`, `5acab13`, `6352a48`, `bf9d1f9`, `fe3de8e` y `964efe6`.
+Rama `branch/SPRINT-3-orders-core`, commits `62d0365`, `b53b9e6`, `07cfc17`, `9b3a2e1`, `64d37e1`, `5acab13`, `6352a48`, `bf9d1f9`, `fe3de8e`, `964efe6` y `7b6848f`.
 
 | Área | Archivos | Regla |
 | --- | --- | --- |
@@ -47,7 +48,8 @@ Rama `branch/SPRINT-3-orders-core`, commits `62d0365`, `b53b9e6`, `07cfc17`, `9b
 | API y UI de HU-18 | `app/api/orders/create/route.ts`, `app/(frontend)/personalizar/order-panel.tsx` | Solo Jhancarlos |
 | Número y consulta | `src/lib/orders/order-number.ts`, `src/services/orders/order-number.ts`, `app/(frontend)/pedidos/page.tsx` y los enlaces de navegación de `site-header.tsx`/`bottom-nav.tsx` | Número y página: Jhancarlos; revisión de estado: Kevin |
 | UI de pedidos | `app/(frontend)/pedidos/order-status.tsx`, `loading.tsx`, `cancel-order-button.tsx` y estilos de pedidos | Jhancarlos + Kevin |
-| Endurecimiento | `src/lib/safe-next.ts`, `src/services/roles/change-role.ts`, `src/services/orders/order-hooks.ts` | Solo Jhancarlos |
+| Endurecimiento | `src/lib/safe-next.ts`, `src/lib/orders/limits.ts`, `src/lib/rate-limit.ts`, `src/services/roles/change-role.ts`, `src/services/orders/order-hooks.ts` | Solo Jhancarlos |
+| Migración de check | `src/migrations/20261122_120000_order_number_check.ts` | Solo Jhancarlos |
 | Cuenta con pedidos | `src/services/orders/customer-account.ts`, hook de `Customers.ts`, `app/(frontend)/cuenta/actions.ts`, `app/(frontend)/pedidos/actions.ts`, `src/lib/contact.ts` | Solo Jhancarlos |
 | Dependencias | `package.json`, `pnpm-lock.yaml` | Solo Jhancarlos |
 
@@ -89,28 +91,33 @@ Las colecciones `categories` y `designs` pertenecen a HU-22/HU-23. Sus responsab
 - [x] Bloquear la eliminación de la cuenta con pedidos en curso y ofrecer cancelación o correo a Valdra (D-21).
 - [x] Mostrar el aviso de producción: el equipo contactará por correo y avisará cuando la prenda esté lista.
 - [x] Aplicar el endurecimiento de seguridad de D-22 y mejorar la UI de consulta de pedidos.
-- [ ] Decidir el tope/rate limit de pedidos activos por cliente.
-- [ ] Evaluar un correo de contacto dedicado y MFA para la cuenta de administrador.
-- [ ] Evaluar re-autenticación antes de eliminar la cuenta.
-- [ ] Endurecer la carrera entre el conteo y el borrado de la cuenta.
-- [ ] Decidir si un administrador puede forzar el borrado de una cuenta con pedidos en curso.
+- [x] Aplicar el límite de 3 pedidos activos y 5 creaciones por hora (D-23).
+- [x] Configurar `contacto@valdra.store` como correo público (`NEXT_PUBLIC_CONTACT_EMAIL`).
+- [x] Exigir la contraseña actual para eliminar la cuenta.
+- [x] Bloquear la fila del cliente con `FOR UPDATE` entre el conteo y el borrado.
+- [x] Aplicar la migración que repara números inválidos y añade el check de 6 cifras.
+- [x] Mantener el override manual del administrador para cuentas con pedidos en curso.
+- [ ] Activar MFA en la cuenta de administrador (operación, no código).
+- [ ] Evaluar la separación de cookies de cliente/admin para sesiones simultáneas.
 - [ ] Implementar HU-22 (colección `categories`) y HU-23 (colección `designs`).
 - [ ] Probar el flujo completo en móvil, con datos sintéticos.
-- [ ] Actualizar Notion y registrar evidencias.
+- [x] Actualizar Notion y registrar evidencias.
 
 ## 5. Riesgos y límites conocidos
 
 - **Stock no atómico en creación:** la comprobación y el descuento iniciales siguen sin transacción; dos pedidos simultáneos podrían competir por la última unidad. La cancelación ya reclama la devolución en una sola sentencia atómica y no duplica el stock.
 - **Número de pedido:** se genera aleatoriamente y se comprueba antes de insertar; el índice único evita duplicados. Dos creaciones simultáneas podrían chocar y requerir reintento.
 - **Consulta por número:** la página `/pedidos` requiere sesión de cliente y solo muestra pedidos de esa cuenta. No es una consulta pública por número; muestra el estado actual, no el historial de cambios.
-- **Cuenta con pedidos en curso:** la eliminación se bloquea. El cliente puede cancelar pedidos `pendiente` o `en_produccion`; si el pedido está `lista`, debe escribir a `valdra.administracion@gmail.com`. Un administrador puede resolver el caso manual; el cambio de rol también se bloquea con pedidos activos.
-- **Correo de contacto:** `valdra.administracion@gmail.com` es también una cuenta de administrador. Se recomienda un alias dedicado y MFA antes de una demo pública.
-- **Carrera de borrado de cuenta:** el conteo previo y el borrado son operaciones separadas; el hook vuelve a comprobar, pero no hay bloqueo de fila. Un pedido creado en esa ventana podría perderse.
-- **Creación de pedidos:** no hay tope de pedidos activos ni rate limit específico; un cliente podría retener stock con pedidos `pendiente`.
+- **Cuenta con pedidos en curso:** la eliminación se bloquea. El cliente puede cancelar pedidos `pendiente` o `en_produccion`; si el pedido está `lista`, debe escribir a `contacto@valdra.store`. Un administrador puede resolver el caso manual; el cambio de rol también se bloquea con pedidos activos.
+- **Correo de contacto:** el correo público es `contacto@valdra.store` y se configura con `NEXT_PUBLIC_CONTACT_EMAIL`; hay que crear/reenviar el buzón. La cuenta de administrador sigue separada, pero falta activar MFA en Google (operación, no código).
+- **Borrado forzado:** un administrador todavía puede eliminar una cuenta con pedidos activos como excepción manual; es una decisión confirmada, no un bypass de cliente.
+- **Carrera de borrado de cuenta:** el hook bloquea la fila del cliente con `FOR UPDATE` antes de contar pedidos, así que un pedido nuevo no puede colarse entre el conteo y el borrado.
+- **Creación de pedidos:** el cliente tiene un máximo de 3 pedidos activos y 5 creaciones por hora en producción; el límite horario se omite en desarrollo local para no bloquear pruebas.
+- **Sesiones:** el navegador comparte `payload-token` entre cliente y admin; se alternan sesiones. Separarlo requeriría un cambio de autenticación.
 - **Stock al borrar:** no se devuelve para pedidos entregados; solo para pedidos no entregados y no devueltos por una cancelación.
 - **Categorías y diseños:** las colecciones nuevas de HU-22/HU-23 amplían el alcance con dos migraciones y cambios en el catálogo.
 - **Sin avisos:** no hay correo ni WhatsApp automáticos. En producción, el detalle informa que el equipo contactará por correo; el envío es manual y no se promete una fecha exacta.
 
 ## 6. Estado del documento
 
-Decisiones confirmadas. Notion sigue siendo la fuente de verdad para el estado de las historias. Las migraciones están aplicadas, el stock sembrado y HU-18, HU-19 y HU-20 validadas; la UI de pedidos está mejorada, el aviso de producción está visible, la cuenta con pedidos en curso queda protegida y se aplicó el endurecimiento de seguridad de D-22. Quedan decisiones de producto y las HU-22/HU-23/HU-24. No se ha creado ningún PR.
+Decisiones confirmadas. Notion sigue siendo la fuente de verdad para el estado de las historias. Las migraciones están aplicadas, el stock sembrado y HU-18, HU-19 y HU-20 validadas; la UI de pedidos está mejorada, el aviso de producción está visible, la cuenta con pedidos en curso queda protegida y se aplicaron D-22 y D-23. Queda activar MFA, las HU-22/HU-23/HU-24 y la prueba móvil. No se ha creado ningún PR.

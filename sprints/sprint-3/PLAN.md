@@ -12,7 +12,7 @@ El flujo completo que se busca es:
 
 No incluye pagos, checkout, carrito, envíos ni WhatsApp. Las historias de pedidos usan el diseño aprobado en HU-17.
 
-Las decisiones confirmadas y la base protegida están en [DECISIONS.md](DECISIONS.md). La base de pedidos e inventario está implementada, las migraciones aplicadas y el stock sembrado; HU-18, HU-19 y HU-20 están validadas, la UI de `/pedidos` está mejorada, la cuenta con pedidos en curso queda protegida (D-21) y se aplicó el endurecimiento de seguridad D-22. Faltan HU-22/HU-23 y HU-24.
+Las decisiones confirmadas y la base protegida están en [DECISIONS.md](DECISIONS.md). La base de pedidos e inventario está implementada, las migraciones aplicadas y el stock sembrado; HU-18, HU-19 y HU-20 están validadas, la UI de `/pedidos` está mejorada, la cuenta con pedidos en curso queda protegida (D-21) y se aplicaron los endurecimientos D-22 y D-23. Faltan HU-22/HU-23 y HU-24.
 
 ## 2. Base técnica concreta
 
@@ -54,13 +54,14 @@ Solo un administrador cambia el estado. Cada cambio deja una fila en `statusHist
 - **Crear:** cliente con sesión o administrador. El hook fija el cliente cuando es cliente, valida el cliente elegido cuando es admin, y fija diseño, instantáneas, precio, total, estado inicial, número y stock. El cliente usa `/api/orders/create`; el panel usa el REST de Payload en `/api/orders`.
 - **Leer:** el cliente solo ve sus pedidos; el administrador ve todos. Se aplica control de acceso de Payload y, cuando corresponda, RLS en PostgreSQL.
 - **Pedidos del cliente:** `/pedidos` muestra la lista con número, prenda/talla, fecha, estado y total, y permite consultar por número. La página exige sesión y filtra por propietario; el detalle no expone el historial de cambios.
-- **Cuenta con pedidos en curso:** el cliente no puede eliminar su cuenta si tiene pedidos `pendiente`, `en_produccion` o `lista`. Puede cancelar los dos primeros desde `/pedidos`; si el pedido está `lista`, se le muestra `valdra.administracion@gmail.com`. El servidor bloquea la eliminación y un administrador puede resolver el caso manual.
+- **Cuenta con pedidos en curso:** el cliente no puede eliminar su cuenta si tiene pedidos `pendiente`, `en_produccion` o `lista`. Puede cancelar los dos primeros desde `/pedidos`; si el pedido está `lista`, se le muestra `contacto@valdra.store`. El servidor bloquea la eliminación con `FOR UPDATE` y un administrador puede resolver el caso manual.
+- **Límites de creación:** máximo 3 pedidos activos y 5 creaciones por hora en producción; el límite horario se omite en desarrollo local.
 - **Actualizar:** solo administradores. El cliente no puede cambiar estado, precio, prenda ni diseño.
 - **Eliminar:** solo administradores; el stock se devuelve si el pedido no estaba cancelado.
 - **Validaciones de servidor:** el diseño debe existir, pertenecer al cliente y estar aprobado; la prenda debe tener precio fijo; la cantidad debe ser 1–10; el stock debe alcanzar. El precio se toma de la tabla del servidor, no del navegador.
 - **Migración:** aplicadas el 21 de noviembre de 2026 (`orders_core` y `order_number`), con privilegios de Data API revocados y RLS activo.
 - **Auditoría:** `statusHistory` cubre HU-21; el historial está oculto para el cliente.
-- **Endurecimiento (D-22):** `safeNextPath` rechaza redirecciones externas; el error de diseño es genérico; la cancelación reclama y devuelve stock en una sentencia atómica; el formulario no puede reescribir `stockRestored`/`statusHistory`; el cambio de rol se bloquea con pedidos activos.
+- **Endurecimiento (D-22/D-23):** `safeNextPath` rechaza redirecciones externas; el error de diseño es genérico; la cancelación reclama y devuelve stock en una sentencia atómica; el formulario no puede reescribir `stockRestored`/`statusHistory`; el cambio de rol se bloquea con pedidos activos; el borrado exige contraseña y bloquea la fila del cliente; el check de 6 cifras protege la base.
 
 ### 2.4 Panel administrativo (D-11)
 
@@ -100,7 +101,7 @@ No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/
 | S3-T10 | Integración, E2E, seguridad/RLS, responsive, evidencias y Notion | Transversal | Jhancarlos + equipo | Todas |
 | S3-T11 | Semilla de inventario y pruebas de stock | HU-18/19 | Jhancarlos | Hecho: 40 filas |
 | S3-T12 | Bloqueo de eliminación de cuenta con pedidos en curso y cancelación del cliente | HU-04/19/20 | Jhancarlos | Implementado y validado |
-| S3-T13 | Endurecimiento de seguridad de pedidos y cuentas | HU-04/19/20 | Jhancarlos | Implementado; quedan decisiones de producto |
+| S3-T13 | Endurecimiento de seguridad de pedidos y cuentas | HU-04/19/20 | Jhancarlos | Implementado; MFA operativo pendiente |
 
 ## 4. Fases y calendario propuesto
 
@@ -140,10 +141,11 @@ HU-18 y HU-19 están validadas; HU-20 y HU-21 están funcionales y habilitan HU-
 - **Formulario de admin:** validado con una sesión real; los campos calculados no se marcan `required` en el panel porque el hook los completa antes de validar.
 - **Número de pedido:** la generación comprueba duplicados y el índice único es la garantía final; dos creaciones simultáneas podrían requerir reintento.
 - **Consulta por número:** la página `/pedidos` requiere sesión y solo muestra pedidos de la cuenta; no es una consulta pública ni muestra el historial de cambios.
-- **Cuenta con pedidos en curso:** la eliminación se bloquea; el cliente puede cancelar `pendiente`/`en_produccion` o escribir a `valdra.administracion@gmail.com`. Los administradores pueden resolver el caso manual; el cambio de rol se bloquea con pedidos activos.
-- **Correo de contacto:** `valdra.administracion@gmail.com` es también una cuenta de administrador; se recomienda alias dedicado y MFA antes de una demo pública.
-- **Carrera de borrado:** el conteo y el borrado de la cuenta no comparten bloqueo; el hook vuelve a comprobar, pero un pedido creado en la ventana podría perderse.
-- **Creación de pedidos:** sin tope de pedidos activos ni rate limit específico; un cliente podría retener stock con pedidos pendientes.
+- **Cuenta con pedidos en curso:** la eliminación se bloquea; el cliente puede cancelar `pendiente`/`en_produccion` o escribir a `contacto@valdra.store`. Los administradores pueden resolver el caso manual; el cambio de rol se bloquea con pedidos activos.
+- **Correo de contacto:** el correo público es `contacto@valdra.store` y se configura con `NEXT_PUBLIC_CONTACT_EMAIL`; hay que crear/reenviar el buzón. La cuenta de administrador está separada, pero falta activar MFA.
+- **Borrado forzado:** un administrador todavía puede eliminar una cuenta con pedidos activos como excepción manual; decisión confirmada.
+- **Carrera de borrado:** el hook bloquea la fila del cliente con `FOR UPDATE` antes de contar; un pedido nuevo no puede colarse en la ventana.
+- **Creación de pedidos:** máximo 3 activos y 5 creaciones por hora en producción; el límite horario se omite en desarrollo local.
 - **Stock al borrar:** no se devuelve para pedidos entregados; solo para pedidos no entregados y no devueltos por una cancelación.
 - **Capacidad:** 28 puntos en dos semanas con 5 personas; el trabajo independiente de catálogo debe empezar ya.
 - **Pagos:** no se habilitan; el pedido es una solicitud de producción, no una compra pagada.

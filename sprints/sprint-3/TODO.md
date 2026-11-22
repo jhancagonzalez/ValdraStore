@@ -131,7 +131,7 @@ Tareas: edición de producto; revalidación del catálogo; los pedidos usan la t
 
 - [x] El cliente no puede eliminar su cuenta si tiene pedidos `pendiente`, `en_produccion` o `lista`.
 - [x] Puede cancelar desde `/pedidos` los pedidos `pendiente` o `en_produccion`; el stock se devuelve.
-- [x] Si el pedido está `lista`, la cuenta muestra el correo `valdra.administracion@gmail.com` para explicar la situación.
+- [x] Si el pedido está `lista`, la cuenta muestra el correo `contacto@valdra.store` para explicar la situación.
 - [x] El servidor bloquea la eliminación aunque se intente por otra vía; un administrador puede resolver el caso manual.
 - [x] Al borrar la cuenta, el stock no se devuelve para pedidos entregados.
 
@@ -144,17 +144,20 @@ Tareas: edición de producto; revalidación del catálogo; los pedidos usan la t
 - [x] Reclamar la devolución de stock de una cancelación en una sola sentencia atómica; dos cancelaciones concurrentes no duplican stock.
 - [x] Evitar que el formulario reescriba `stockRestored` o `statusHistory`.
 - [x] Bloquear el cambio de rol de un cliente con pedidos activos.
-- [ ] Decidir tope/rate limit de pedidos activos por cliente.
-- [ ] Evaluar correo de contacto dedicado y MFA para el administrador.
-- [ ] Evaluar re-autenticación antes de eliminar la cuenta.
-- [ ] Endurecer la carrera entre conteo y borrado de la cuenta.
-- [ ] Decidir si un administrador puede forzar el borrado con pedidos en curso.
+- [x] Aplicar el tope de 3 pedidos activos y 5 creaciones por hora.
+- [x] Configurar `contacto@valdra.store` como correo público y separarlo de la cuenta de administrador.
+- [x] Exigir la contraseña actual para eliminar la cuenta.
+- [x] Bloquear la fila del cliente con `FOR UPDATE` entre el conteo y el borrado.
+- [x] Mantener el override manual del administrador con pedidos en curso (decisión confirmada).
+- [x] Aplicar la migración que repara números inválidos y añade el check de 6 cifras.
+- [ ] Activar MFA en la cuenta de administrador (operación en Google, no código).
+- [ ] Evaluar la separación de cookies de cliente/admin para sesiones simultáneas.
 
-> **Validación (2026-11-21).** La doble cancelación concurrente devolvió el stock una sola vez (18 → 20) y el panel guardó el cambio de estado. La UI de consulta se mejoró y se probó con un pedido real. Evidencia en [evidence/security-review.md](evidence/security-review.md).
+> **Validación (2026-11-22).** La doble cancelación concurrente devolvió el stock una sola vez; el cuarto pedido activo se bloqueó con 409; la eliminación con contraseña incorrecta no borró la cuenta y con la correcta sí; el correo público quedó en `contacto@valdra.store`; la migración del check de 6 cifras se aplicó. Evidencia en [evidence/security-review.md](evidence/security-review.md).
 
 ## Decisiones confirmadas
 
-Ver [DECISIONS.md](DECISIONS.md): D-01 a D-22. La base de pedidos e inventario está implementada; las migraciones y la semilla de stock están aplicadas, la lista, el detalle y la consulta por número están operativos en `/pedidos`, la cuenta con pedidos en curso queda protegida por D-21 y el endurecimiento de seguridad por D-22.
+Ver [DECISIONS.md](DECISIONS.md): D-01 a D-23. La base de pedidos e inventario está implementada; las migraciones y la semilla de stock están aplicadas, la lista, el detalle y la consulta por número están operativos en `/pedidos`, la cuenta con pedidos en curso queda protegida por D-21 y el endurecimiento por D-22/D-23.
 
 ## Checklist de cierre por historia
 

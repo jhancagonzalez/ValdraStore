@@ -71,16 +71,17 @@ La lista completa está en [DECISIONS.md](DECISIONS.md). Decisiones confirmadas:
 - **Pedido:** uno por diseño aprobado, cantidad 1–10 con stock (D-02, D-19).
 - **Número:** aleatorio de seis cifras, único, guardado y consultable por el cliente autenticado en `/pedidos` (D-14).
 - **Pedidos del cliente:** menú «Pedidos» con lista, detalle, estado, avance, aviso de producción y consulta por número (D-12, D-14).
-- **Seguridad:** redirects internos, error de diseño genérico, cancelación atómica de stock, historial/stock no reescribibles y cambio de rol bloqueado con pedidos activos (D-22).
+- **Seguridad:** redirects internos, error de diseño genérico, cancelación atómica de stock, historial/stock no reescribibles, cambio de rol bloqueado con pedidos activos, borrado con contraseña y bloqueo `FOR UPDATE` (D-22, D-23).
+- **Límites:** máximo 3 pedidos activos y 5 creaciones por hora en producción (D-23).
 - **Precio:** fijo por prenda base: camiseta $60.000 y hoodie $120.000, sin envío ni impuestos (D-07, D-20).
 - **Quién crea:** cliente y administrador (D-03).
 - **Panel:** usar el admin de Payload (D-11).
 - **Cuenta eliminada:** se borran también sus pedidos y diseños (D-13); el stock se devuelve solo para pedidos no entregados.
-- **Cuenta con pedidos en curso:** no se puede eliminar; el cliente cancela desde `/pedidos` o escribe a `valdra.administracion@gmail.com` (D-21).
+- **Cuenta con pedidos en curso:** no se puede eliminar; el cliente cancela desde `/pedidos` o escribe a `contacto@valdra.store` (D-21).
 - **Avisos:** no hay correo ni WhatsApp automáticos en este sprint; el estado se ve al consultar. En producción, el detalle avisa que el equipo contactará por correo (D-15).
 
 **Base que no se delega:** Jhancarlos conserva `orders`, `garment-stock`, migraciones, acceso/RLS, servicios, precios/estados, registro en Payload y artefactos generados. El equipo consume los contratos y no edita esos archivos sin revisión. Las colecciones de categorías y diseños pertenecen a HU-22/HU-23 y requieren revisión de Jhancarlos por el cambio de esquema.
 
 ## Estado del documento
 
-Decisiones confirmadas el 21 de noviembre de 2026. La base de pedidos e inventario está implementada, las migraciones están aplicadas, el stock está sembrado y HU-18, HU-19 y HU-20 están validadas; el formulario de admin fue probado, la UI de `/pedidos` está mejorada, el aviso de producción está visible, la cuenta con pedidos en curso queda protegida y se aplicó el endurecimiento de seguridad D-22. Quedan decisiones de producto pendientes y las HU-22/HU-23/HU-24. Notion conserva la fuente de verdad del estado de las historias.
+Decisiones confirmadas el 21 de noviembre de 2026. La base de pedidos e inventario está implementada, las migraciones están aplicadas, el stock está sembrado y HU-18, HU-19 y HU-20 están validadas; el formulario de admin fue probado, la UI de `/pedidos` está mejorada, el aviso de producción está visible, la cuenta con pedidos en curso queda protegida y se aplicaron los endurecimientos D-22/D-23. Queda activar MFA, las HU-22/HU-23/HU-24 y la prueba móvil. Notion conserva la fuente de verdad del estado de las historias.

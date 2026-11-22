@@ -11,7 +11,7 @@ Entorno: local, Supabase con las migraciones de pedidos aplicadas y el stock sem
 - `src/collections/Customers.ts`: el borrado de una cuenta con pedidos en curso se rechaza en servidor para clientes. Un administrador puede resolver el caso manual.
 - `app/(frontend)/cuenta/actions.ts`: comprobación previa y mensaje con enlaces a Mis pedidos y al correo.
 - `app/(frontend)/pedidos/actions.ts` y `cancel-order-button.tsx`: el cliente puede cancelar pedidos `pendiente` o `en_produccion`, con confirmación y devolución de stock.
-- `src/lib/contact.ts`: correo público `valdra.administracion@gmail.com`.
+- `src/lib/contact.ts`: correo público `contacto@valdra.store` (configurable con `NEXT_PUBLIC_CONTACT_EMAIL`).
 - `src/lib/orders/stock.ts`: el stock no se devuelve al borrar pedidos entregados.
 
 ## Pruebas ejecutadas
@@ -20,7 +20,7 @@ Entorno: local, Supabase con las migraciones de pedidos aplicadas y el stock sem
 
 - Cliente con pedido #189926 en `pendiente` y stock 18.
 - `payload.delete` de la cuenta con sesión del cliente devolvió **409**:
-  «La cuenta tiene un pedido en curso. Cancélalo antes de eliminarla o escribe a valdra.administracion@gmail.com explicando la situación.»
+  «La cuenta tiene un pedido en curso. Cancélalo antes de eliminarla o escribe a contacto@valdra.store explicando la situación.»
 - La cuenta, el pedido y el diseño siguieron existiendo y el stock no cambió.
 
 ### Bloqueo en la interfaz
@@ -29,7 +29,7 @@ Entorno: local, Supabase con las migraciones de pedidos aplicadas y el stock sem
 - Al confirmar la eliminación, apareció el mensaje de bloqueo.
 - Se mostraron los enlaces:
   - `Ir a Mis pedidos` → `/pedidos`.
-  - `valdra.administracion@gmail.com` → `mailto:` con asunto «Pedido en curso — Valdra Store».
+  - `contacto@valdra.store` → `mailto:` con asunto «Pedido en curso — Valdra Store».
 
 ### Cancelación y eliminación
 
