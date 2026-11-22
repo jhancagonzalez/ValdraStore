@@ -8,6 +8,7 @@ const customerSession = { collection: "customers", email: "ana@valdra.test", id:
 type Accounts = {
   admins: Record<string, unknown>[];
   customers: Record<string, unknown>[];
+  orders: Record<string, unknown>[];
 };
 
 /** In-memory stand-in for the Payload calls the service makes. */
@@ -17,6 +18,17 @@ const createFakePayload = (accounts: Accounts) => {
 
   const payload = {
     count: vi.fn(async ({ collection, where }) => {
+      if (collection === "orders") {
+        const customerId = where?.customer?.equals;
+        const statuses = where?.status?.in ?? [];
+        const docs = accounts.orders.filter(
+          (doc) =>
+            (!customerId || doc.customer === customerId) &&
+            (!statuses.length || statuses.includes(doc.status)),
+        );
+        return { totalDocs: docs.length };
+      }
+
       const email = where?.email?.equals;
       const docs = list(collection).filter((doc) => !email || doc.email === email);
       return { totalDocs: docs.length };
@@ -65,6 +77,7 @@ const seed = (): Accounts => ({
       salt: "ana-salt",
     },
   ],
+  orders: [],
 });
 
 describe("HU-05 criterio 3 — el administrador cambia el rol de un usuario", () => {
@@ -181,6 +194,18 @@ describe("HU-05 criterio 3 — el administrador cambia el rol de un usuario", ()
       changeAccountRole({ collection: "customers", id: 7, payload, req: requestAs(adminSession) }),
     ).rejects.toMatchObject({ status: 409 });
     expect(accounts.customers).toHaveLength(1);
+  });
+
+  it("bloquea el cambio de rol de un cliente con pedido en curso", async () => {
+    const accounts = seed();
+    accounts.orders.push({ customer: 7, id: 1, status: "pendiente" });
+    const payload = createFakePayload(accounts);
+
+    await expect(
+      changeAccountRole({ collection: "customers", id: 7, payload, req: requestAs(adminSession) }),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(accounts.customers).toHaveLength(1);
+    expect(payload.create).not.toHaveBeenCalled();
   });
 
   it("responde 404 si la cuenta no existe", async () => {

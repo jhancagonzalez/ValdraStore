@@ -1,3 +1,4 @@
+import { type PostgresAdapter, sql } from "@payloadcms/db-postgres";
 import type {
   CollectionAfterChangeHook,
   CollectionAfterDeleteHook,
@@ -133,6 +134,59 @@ const adjustStock = async (req: PayloadRequest, key: string, delta: number): Pro
   });
 };
 
+type ClaimResult = { claimed: number; stocked: number };
+
+/**
+ * Reclama la devolución de stock de una cancelación y la aplica en una sola
+ * sentencia dentro de la transacción de Payload. `ponytail:` la creación sigue
+ * usando el ajuste no atómico; esta transición evita la doble devolución
+ * concurrente, que sí podía inflar el inventario.
+ */
+const claimCancellationStock = async (
+  req: PayloadRequest,
+  orderId: number,
+  stockKey: string,
+): Promise<boolean> => {
+  const adapter = req.payload.db as unknown as PostgresAdapter;
+  const transactionID = req.transactionID != null ? await req.transactionID : undefined;
+  const transaction =
+    transactionID !== undefined ? adapter.sessions[String(transactionID)]?.db : undefined;
+  const db = transaction ?? adapter.drizzle;
+
+  const result = (await db.execute(sql`
+    WITH claimed AS (
+      UPDATE "orders"
+      SET "stock_restored" = true
+      WHERE "id" = ${orderId}
+        AND "status" = 'cancelada'
+        AND "stock_restored" = false
+      RETURNING "quantity"
+    ),
+    stocked AS (
+      UPDATE "garment_stock"
+      SET "quantity" = "quantity" + (SELECT "quantity" FROM claimed)
+      WHERE "key" = ${stockKey}
+        AND EXISTS (SELECT 1 FROM claimed)
+      RETURNING "id"
+    )
+    SELECT
+      (SELECT count(*) FROM claimed)::int AS claimed,
+      (SELECT count(*) FROM stocked)::int AS stocked
+  `)) as unknown as { rows?: ClaimResult[] };
+
+  const row = result.rows?.[0];
+
+  if (!row || Number(row.claimed) === 0) {
+    return false;
+  }
+
+  if (Number(row.stocked) === 0) {
+    throw new APIError(`No existe inventario para ${stockKey}.`, 409);
+  }
+
+  return true;
+};
+
 /**
  * Completa el pedido en servidor: cliente, diseño, instantáneas, precio y
  * estado inicial. Un cliente no puede fijar el cliente ni el precio; un
@@ -159,8 +213,9 @@ export const setOrderData: CollectionBeforeValidateHook = async ({ data, operati
 
   const design = await req.payload.findByID({
     collection: "approved-designs",
-    id: designId,
     depth: 0,
+    disableErrors: true,
+    id: designId,
     overrideAccess: true,
     req,
   });
@@ -171,8 +226,8 @@ export const setOrderData: CollectionBeforeValidateHook = async ({ data, operati
     throw new APIError("Selecciona el cliente del pedido.", 400);
   }
 
-  if (relationID(design.customer) !== customerId) {
-    throw new APIError("El diseño seleccionado no pertenece al cliente.", 400);
+  if (!design || relationID(design.customer) !== customerId) {
+    throw new APIError("Selecciona un diseño aprobado que pertenezca al cliente.", 400);
   }
 
   const size = design.size;
@@ -240,6 +295,11 @@ export const updateOrderStatus: CollectionBeforeChangeHook = async ({
   const input = data as Row;
   const previous = originalDoc as Row;
   const isCustomerCancellation = req.context?.customerCancellation === true;
+  const safeInput = { ...input };
+  // El stock_restored lo fija la transición atómica de cancelación, no el
+  // formulario ni el hook; si se reescribiera aquí, una segunda petición
+  // concurrente podría volver a habilitar la devolución de stock.
+  delete safeInput.stockRestored;
 
   for (const key of IMMUTABLE_FIELDS) {
     if (changedValue(key, input[key], previous[key])) {
@@ -247,26 +307,29 @@ export const updateOrderStatus: CollectionBeforeChangeHook = async ({
     }
   }
 
-  if (input.status === undefined || input.status === previous.status) {
-    return input;
+  if (safeInput.status === undefined || safeInput.status === previous.status) {
+    return {
+      ...safeInput,
+      statusHistory: Array.isArray(previous.statusHistory) ? previous.statusHistory : [],
+    };
   }
 
-  if (isCustomerCancellation && input.status !== "cancelada") {
+  if (isCustomerCancellation && safeInput.status !== "cancelada") {
     throw new APIError("El cliente solo puede cancelar su pedido.", 403);
   }
 
-  if (!isOrderStatus(input.status) || !isOrderStatus(previous.status)) {
+  if (!isOrderStatus(safeInput.status) || !isOrderStatus(previous.status)) {
     throw new APIError("El estado del pedido no es válido.", 400);
   }
 
-  if (!canTransitionOrderStatus(previous.status, input.status)) {
-    throw new APIError(`No se puede pasar de ${previous.status} a ${input.status}.`, 400);
+  if (!canTransitionOrderStatus(previous.status, safeInput.status)) {
+    throw new APIError(`No se puede pasar de ${previous.status} a ${safeInput.status}.`, 400);
   }
 
   const history = Array.isArray(previous.statusHistory) ? previous.statusHistory : [];
 
   return {
-    ...input,
+    ...safeInput,
     statusHistory: [
       ...history,
       {
@@ -274,10 +337,9 @@ export const updateOrderStatus: CollectionBeforeChangeHook = async ({
         changedBy: isCustomerCancellation ? null : relationID(req.user),
         fromStatus: previous.status,
         note: isCustomerCancellation ? "Cancelado por el cliente" : undefined,
-        toStatus: input.status,
+        toStatus: safeInput.status,
       },
     ],
-    stockRestored: input.status === "cancelada" ? true : Boolean(previous.stockRestored),
   };
 };
 
@@ -302,13 +364,12 @@ export const applyStockChange: CollectionAfterChangeHook = async ({
 
   const previousStatus = (previousDoc as Row | undefined)?.status;
 
-  if (
-    operation === "update" &&
-    previousStatus !== "cancelada" &&
-    order.status === "cancelada" &&
-    order.stockRestored === true
-  ) {
-    await adjustStock(req, stockKeyFromDoc(order), Number(order.quantity ?? 0));
+  if (operation === "update" && previousStatus !== "cancelada" && order.status === "cancelada") {
+    const restored = await claimCancellationStock(req, Number(order.id), stockKeyFromDoc(order));
+
+    if (restored) {
+      order.stockRestored = true;
+    }
   }
 
   return doc;

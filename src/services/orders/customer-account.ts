@@ -1,5 +1,5 @@
 import type { Payload, PayloadRequest } from "payload";
-import { ORDER_ACTIVE_STATUSES } from "@/lib/orders/status";
+import { ORDER_ACTIVE_STATUSES } from "../../lib/orders/status";
 
 /** Pedidos que impiden eliminar la cuenta del cliente. */
 export const countActiveOrdersForCustomer = async (
