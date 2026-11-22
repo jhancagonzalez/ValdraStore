@@ -93,7 +93,7 @@ export const OrderPanel = ({ approvedDesignId, baseId }: OrderPanelProps) => {
         <p>
           Estado: {statusLabel}. Cantidad: {confirmation.quantity}. Total:{" "}
           {formatCop(confirmation.total)}. Guarda este número y consulta el estado en{" "}
-          <a href={`/cuenta?pedido=${confirmation.orderNumber}`}>Mi cuenta</a>.
+          <a href={`/pedidos?pedido=${confirmation.orderNumber}`}>Mis pedidos</a>.
         </p>
       </div>
     );

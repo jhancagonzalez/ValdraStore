@@ -541,6 +541,75 @@
   font-weight: 600;
 }
 
+/* Pedidos */
+
+.orders-card {
+  display: grid;
+  gap: 18px;
+  padding-top: 22px;
+  border-top: 1px solid var(--ink);
+}
+
+.orders-card + .orders-card {
+  margin-top: clamp(32px, 4vw, 48px);
+}
+
+.orders-card h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+  font-weight: 600;
+}
+
+.orders-card form {
+  max-width: 560px;
+  margin-top: 0;
+}
+
+.orders-card .button {
+  justify-self: start;
+}
+
+.orders-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--paper-soft);
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color var(--dur-fast) ease;
+}
+
+.order-card:hover {
+  border-color: var(--ink);
+}
+
+.order-card-number {
+  font-weight: 600;
+}
+
+.order-card-meta {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.order-card-total {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+  font-weight: 600;
+}
+
 .account-side {
   display: grid;
   gap: 22px;
@@ -831,7 +900,8 @@
 
   .bottom-nav ul {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     margin: 0;
     padding: 0;
     list-style: none;

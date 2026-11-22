@@ -68,6 +68,7 @@ export const SiteHeader = ({ isAdmin, isCustomer }: SiteHeaderProps) => {
     { href: "/", label: "Inicio" },
     { href: "/catalogo", label: "Catálogo" },
     { href: "/personalizar", label: "Personalizador" },
+    ...(isCustomer ? [{ href: "/pedidos", label: "Pedidos" }] : []),
   ];
 
   const isActive = (href: string) => {
