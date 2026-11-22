@@ -12,32 +12,31 @@ El flujo completo que se busca es:
 
 No incluye pagos, checkout, carrito, envíos ni WhatsApp. Las historias de pedidos usan el diseño aprobado en HU-17.
 
-Las decisiones de alcance y la base protegida están en [DECISIONS.md](DECISIONS.md). Este plan asume las recomendaciones D-02, D-05, D-07, D-08, D-09, D-10, D-13 y D-15; si el cliente las cambia, se replanifica antes de delegar.
+Las decisiones confirmadas y la base protegida están en [DECISIONS.md](DECISIONS.md). La base de pedidos e inventario ya está implementada en `branch/SPRINT-3-orders-core` (commit `62d0365`); falta revisar/aplicar la migración, sembrar stock y construir la UI.
 
 ## 2. Base técnica concreta
 
-### 2.1 Colección `orders` (propuesta)
+### 2.1 Colección `orders` (implementada)
 
-Los pedidos del plugin están desactivados y el flujo no tiene pagos ni carrito. Se propone una colección propia, más simple y alineada con las historias:
+La base está en `branch/SPRINT-3-orders-core` (commit `62d0365`). Los pedidos del plugin siguen desactivados.
 
 - `customer` — relación con `customers`, obligatoria, indexada.
-- `items` — arreglo con al menos una fila:
-  - `product` — relación con `products`, obligatoria.
-  - `variant` — relación con `variants`, obligatoria.
-  - `garmentLabel`, `size`, `colorLabel` — instantánea de la prenda al crear el pedido.
-  - `unitPrice` — precio de la variante en COP al crear el pedido.
-  - `quantity` — entero, por ahora **1** (D-02).
-  - `approvedDesign` — relación con `approved-designs`, obligatoria.
-- `status` — `pendiente` por defecto; valores en D-05.
-- `total` — suma calculada en servidor, COP.
-- `statusHistory` — arreglo de cambios: `from`, `to`, `changedAt`, `changedBy` (relación con `admins`) y `note` opcional.
+- `design` — relación con `approved-designs`, obligatoria; debe pertenecer al cliente.
+- `quantity` — entero de 1 a 10; descuenta stock.
+- `garmentBase`, `garmentLabel`, `category`, `colorLabel`, `size` — instantánea de la prenda del diseño.
+- `unitPrice` — precio fijo por prenda base: camiseta $60.000 / hoodie $120.000 (D-07, D-20).
+- `total` — `unitPrice × quantity`, calculado en servidor.
+- `status` — `pendiente` por defecto; estados en D-05.
+- `source` — `customer` o `admin`; `createdBy` — administrador que lo creó.
+- `statusHistory` — cambios con fecha, administrador y estados anterior/nuevo.
+- `stockRestored` — control interno para no devolver stock dos veces.
 - `createdAt` — automático de Payload.
 
-El precio, el estado inicial, el cliente y el total se fijan en el servidor. El cliente no puede enviar ni cambiar esos valores.
+El cliente, el diseño, las instantáneas, el precio y el estado inicial se fijan en servidor. El cliente no puede enviar ni cambiar esos valores. El stock se valida contra `garment-stock` por `garmentBase|size`.
 
 ### 2.2 Estados y transiciones (D-05)
 
-Propuesta para confirmar con el cliente:
+Confirmados con el cliente (D-05):
 
 | Estado | Significado | Transiciones permitidas |
 | --- | --- | --- |
@@ -51,56 +50,58 @@ Solo un administrador cambia el estado. Cada cambio deja una fila en `statusHist
 
 ### 2.3 Acceso y seguridad
 
-- **Crear:** solo un cliente con sesión. El hook fija `customer`, `status = pendiente` y `total`; ignora cualquier precio o estado enviado por el cliente.
+- **Crear:** cliente con sesión o administrador. El hook fija el cliente cuando es cliente, valida el cliente elegido cuando es admin, y fija diseño, instantáneas, precio, total, estado inicial y stock.
 - **Leer:** el cliente solo ve sus pedidos; el administrador ve todos. Se aplica control de acceso de Payload y, cuando corresponda, RLS en PostgreSQL.
 - **Actualizar:** solo administradores. El cliente no puede cambiar estado, precio, prenda ni diseño.
-- **Eliminar:** solo administradores.
-- **Validaciones de servidor:** el diseño debe existir, pertenecer al cliente y estar aprobado; la variante debe pertenecer al producto; el precio se toma de la base, no del navegador.
-- **Migración:** se revisa antes de aplicarla, conserva privilegios de Data API revocados y RLS activo.
-- **Auditoría:** `statusHistory` cubre HU-21; no se confía en el historial del cliente.
+- **Eliminar:** solo administradores; el stock se devuelve si el pedido no estaba cancelado.
+- **Validaciones de servidor:** el diseño debe existir, pertenecer al cliente y estar aprobado; la prenda debe tener precio fijo; la cantidad debe ser 1–10; el stock debe alcanzar. El precio se toma de la tabla del servidor, no del navegador.
+- **Migración:** se revisa antes de aplicarla, conserva privilegios de Data API revocados y RLS activo. **Aún no está aplicada.**
+- **Auditoría:** `statusHistory` cubre HU-21; el historial está oculto para el cliente.
 
 ### 2.4 Panel administrativo (D-11)
 
 Se propone usar el panel de Payload, no un panel paralelo:
 
-- **Pedidos:** grupo «Pedidos», columnas cliente, estado, total y fecha; filtro por estado; detalle con ítems e historial.
+- **Pedidos:** grupo «Pedidos», columnas cliente, estado, cantidad, total y fecha; filtro por estado; detalle con ítems e historial.
+- **Inventario:** colección `garment-stock` por prenda base y talla; el administrador ajusta cantidades.
 - **Clientes:** la colección `customers` ya existe; se revisan columnas y detalle.
-- **Prendas y diseños:** las colecciones existentes de catálogo y medios.
+- **Prendas y diseños:** las colecciones existentes de catálogo y medios; HU-22/HU-23 agregan categorías y diseños.
 
 ### 2.5 Categorías y diseños disponibles (D-09 y D-10)
 
-La recomendación para no ampliar el alcance es mantener el modelo actual:
+Las dos se implementan como colecciones nuevas, con migración y cambio de catálogo:
 
-- `products.category` sigue siendo un `select`; HU-22 cubre crear/editar/deshabilitar productos y elegir una categoría existente.
-- `products.designs` sigue siendo una carga de `media` por prenda; HU-23 cubre subir, reemplazar, asociar y quitar medios; «deshabilitar» significa quitar la asociación o dejar la prenda en borrador.
-- Si el cliente exige categorías dinámicas o diseños con estado `active`, se crea una colección nueva con su migración y se replanifica el sprint. Ningún integrante lo implementa por iniciativa propia.
+- **`categories`:** nombre y activo; `products.category` pasa de `select` a relación. HU-22 incluye CRUD, deshabilitado, validaciones y revalidación del catálogo.
+- **`designs`:** imagen, relación a prendas y `active`; `products.designs` pasa de carga de medios a relación. HU-23 incluye CRUD, asociación, deshabilitado y lectura pública solo de activos.
+- Ambas pertenecen a HU-22/HU-23. Sus responsables coordinan con Jhancarlos el cambio en `src/plugins/ecommerce.ts`, la migración y la lectura del catálogo. **No forman parte del núcleo de pedidos.**
 
 ### 2.6 Núcleo Jhancarlos
 
-No se delega: `Orders.ts`, servicios en `src/services/orders/*`, tipos y estados en `src/lib/orders/*`, migraciones de pedidos, acceso/RLS, registro en `payload.config.ts` y `src/collections/index.ts`, `payload-types.ts` e import map. El equipo importa los contratos y no edita esos archivos sin revisión. El detalle está en [DECISIONS.md](DECISIONS.md).
+No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/*`, tipos/estados/precios/stock en `src/lib/orders/*`, migraciones de pedidos e inventario, acceso/RLS, registro en `payload.config.ts` y `src/collections/index.ts`, `payload-types.ts`, hook de borrado de `Customers`, semilla de stock, `package.json` e import map. El equipo importa los contratos y no edita esos archivos sin revisión. El detalle está en [DECISIONS.md](DECISIONS.md).
 
 ## 3. Tareas técnicas
 
 | ID | Tarea | HU | Responsable propuesto | Depende de |
 | --- | --- | --- | --- | --- |
-| S3-T00 | Cerrar D-02 a D-15 y congelar el alcance | Transversal | Jhancarlos + Emanuel | — |
-| S3-T01 | Modelo `orders`, estados, acceso, RLS y migración | HU-18/21/24 | Jhancarlos | S3-T00, D-05 |
-| S3-T02 | Servicio de creación, validaciones e instantáneas de precio | HU-18 | Jhancarlos | S3-T01 |
+| S3-T00 | Decisiones confirmadas y alcance congelado | Transversal | Jhancarlos + Emanuel | Hecho |
+| S3-T01 | Modelo `orders`, inventario, estados, acceso, RLS y migración | HU-18/21/24 | Jhancarlos | Implementado; migración sin aplicar |
+| S3-T02 | Servicio de creación, stock, validaciones e instantáneas de precio | HU-18 | Jhancarlos | Implementado |
 | S3-T03 | UI de creación y confirmación del pedido | HU-18 | Jhancarlos + Kevin | S3-T02 |
 | S3-T04 | Historial y estado del pedido para el cliente | HU-19/20 | Kevin + Andrés | S3-T03 |
 | S3-T05 | Cambio de estado con historial y auditoría | HU-21 | Daniel | S3-T01, D-05 |
 | S3-T06 | Lista/detalle/filtro de clientes y pedidos en el admin | HU-24 | Daniel + Emanuel | S3-T01, S3-T05 |
-| S3-T07 | Administración de productos y categorías | HU-22 | Emanuel | D-09 |
-| S3-T08 | Administración de diseños disponibles | HU-23 | Andrés | D-10 |
-| S3-T09 | Edición de precio/información y prueba de instantánea | HU-25 | Emanuel | S3-T01, D-07 |
+| S3-T07 | Colección `categories`, relación con productos, migración y admin | HU-22 | Emanuel | D-09; revisión de Jhancarlos |
+| S3-T08 | Colección `designs`, relación con prendas, migración y admin | HU-23 | Andrés | D-10; revisión de Jhancarlos |
+| S3-T09 | Edición de precio/información y prueba de instantánea fija | HU-25 | Emanuel | S3-T01, D-07 |
 | S3-T10 | Integración, E2E, seguridad/RLS, responsive, evidencias y Notion | Transversal | Jhancarlos + Andrés | Todas |
+| S3-T11 | Semilla de inventario y pruebas de stock | HU-18/19 | Jhancarlos | S3-T01 |
 
 ## 4. Fases y calendario propuesto
 
 | Fecha | Foco | Entregable |
 | --- | --- | --- |
-| 21–22 nov | Decisiones y base | D-02 a D-15, modelo `orders`, borrador de migración, inventario de admin |
-| 23–25 nov | Pedido inicial y catálogo | S3-T01/T02/T03 (HU-18); S3-T07/T08/T09 en paralelo |
+| 21–22 nov | Decisiones y base | Decisiones confirmadas, `orders`/`garment-stock` implementados, migración escrita; sin aplicar |
+| 23–25 nov | Pedido inicial y catálogo | Revisar/aplicar migración, sembrar stock, UI de HU-18; S3-T07/T08/T09 en paralelo |
 | 25–28 nov | Estado e historial | S3-T04 (HU-19/20), S3-T05 (HU-21), cierre de HU-22/23/25 |
 | 28 nov–1 dic | Administración y QA | S3-T06 (HU-24), E2E, seguridad/RLS, responsive, evidencias, demo y Notion |
 
@@ -110,26 +111,27 @@ El calendario es una propuesta: el sprint ya está en curso y el equipo debe aju
 
 **Jhancarlos, en este orden:**
 
-1. Cerrar las decisiones D-02 a D-15 con el PO/cliente.
-2. Congelar `orders`, estados, acceso y migración (S3-T01).
-3. Implementar la creación del pedido y su UI (S3-T02/T03, HU-18).
-4. Integrar, probar el recorrido completo y mantener la documentación.
+1. Revisar y aplicar la migración `20261121_120000_orders_core`; ejecutar `pnpm seed:order-stock`.
+2. Implementar la UI de creación y confirmación del pedido (S3-T03, HU-18).
+3. Integrar, probar el recorrido completo y mantener la documentación.
+4. Revisar los cambios de esquema de HU-22/HU-23 antes de que se mezclen.
 
 HU-18 es la ruta crítica: sin ella no se pueden probar HU-19, HU-20, HU-21 ni HU-24.
 
 ## 6. Qué no depende de nadie
 
-- **HU-22** (productos/categorías) y **HU-23** (diseños): se pueden inventariar y avanzar con el modelo actual mientras se confirman D-09/D-10.
-- **HU-25** (precio e información): la edición del producto es independiente; la prueba de la instantánea llega con `orders`.
+- **HU-22** (categorías) y **HU-23** (diseños): deben crear sus colecciones y migraciones; Emanuel y Andrés pueden empezar ya con el relevamiento y el esquema, coordinando con Jhancarlos.
+- **HU-25** (precio e información): la edición del producto es independiente; los pedidos usan la tabla fija de precios por prenda base.
 - Textos, estados vacíos y revisión responsive de historial/estado.
 - Checklist de acceso, RLS y auditoría para pedidos.
 - Documentación, trazabilidad y preparación de la demo.
 
 ## 7. Riesgos y bloqueos
 
-- **D-09/D-10:** si se eligen colecciones nuevas, HU-22/HU-23 crecen y requieren migración; si se mantiene el modelo actual, el alcance es menor pero limitado.
-- **D-05:** sin estados y transiciones definidos, HU-21 no puede cerrarse.
-- **Ruta crítica:** el modelo de pedidos bloquea cuatro historias. Debe salir primero.
+- **D-09/D-10:** las colecciones `categories` y `designs` amplían el alcance con dos migraciones y cambios en el catálogo; deben coordinarse con Jhancarlos.
+- **D-05:** la máquina de estados ya está implementada; cualquier cambio de nombres/transiciones afecta la UI y los datos.
+- **Ruta crítica:** la migración y la semilla de stock deben aplicarse antes de probar pedidos.
+- **Stock:** la comprobación y el descuento no son atómicos; dos pedidos simultáneos podrían competir por la última unidad. Está marcado con `ponytail:` y se corrige con transacción/row lock cuando haga falta.
 - **Capacidad:** 28 puntos en dos semanas con 5 personas; el trabajo independiente de catálogo debe empezar ya.
 - **Pagos:** no se habilitan; el pedido es una solicitud de producción, no una compra pagada.
 - **Tiempo real:** el estado se actualiza al consultar; no se promete notificación en vivo.

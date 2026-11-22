@@ -41,12 +41,12 @@ Las asignaciones de Notion están en «Por definir». Esta es una propuesta de r
 | Emanuel Giraldo | PO, Frontend | HU-22 + HU-25 | 7 | Administración de productos/categorías, precios y apoyo en el panel |
 | Andrés Valencia | Frontend | HU-23 + HU-19 | 5 | Diseños disponibles, historial del cliente y apoyo de UI/QA |
 
-**Primero, en Jhancarlos:** cerrar las decisiones D-02 a D-15, congelar el modelo de `orders`, escribir la migración con acceso/RLS y sacar HU-18. Es la ruta crítica que desbloquea HU-19, HU-20, HU-21 y HU-24.
+**Primero, en Jhancarlos:** la base de pedidos e inventario ya está implementada en `branch/SPRINT-3-orders-core` (commit `62d0365`). Falta revisar y aplicar la migración, sembrar el stock y construir la UI de HU-18; después vienen HU-19, HU-20, HU-21 y HU-24.
 
 ## Qué puede empezar ya, sin depender de pedidos
 
-- **HU-22 (Emanuel):** inventario del admin actual de prendas, validaciones de nombre/categoría/precio y edición dentro del `select` actual (D-09). Si el cliente exige una colección de categorías, se replanifica.
-- **HU-23 (Andrés):** inventario del campo `designs` de cada prenda y de la gestión de medios; se mantiene la carga por prenda (D-10).
+- **HU-22 (Emanuel):** crear la colección `categories`, cambiar `products.category` a relación y preparar su migración/admin (D-09). Es la parte de catálogo con más alcance.
+- **HU-23 (Andrés):** crear la colección `designs` con imagen, relación a prendas y `active`, más su migración/admin (D-10).
 - **HU-25 (Emanuel):** edición de precio e información de producto. La prueba de que un pedido conserva el precio anterior requiere que exista `orders`.
 - **Andrés:** textos, estados vacíos y revisión responsive de historial/estado; se conectan cuando exista el backend.
 - **Daniel:** checklist de acceso, RLS y auditoría para `orders`, usando el modelo propuesto.
@@ -58,23 +58,25 @@ Las asignaciones de Notion están en «Por definir». Esta es una propuesta de r
 - **HU-19 y HU-20** dependen de HU-18.
 - **HU-21** depende de `orders` y del catálogo de estados aprobado (D-05).
 - **HU-24** depende de `orders` y de HU-21 para el filtro por estado.
-- **HU-22, HU-23 y HU-25** no dependen de pedidos, pero D-09/D-10 pueden ampliar su alcance.
+- **HU-22 y HU-23** no dependen de pedidos, pero sus colecciones nuevas (`categories` y `designs`) amplían el alcance con dos migraciones y cambios en el catálogo. **HU-25** no depende de pedidos.
 - No hay pagos, checkout, carrito ni envíos en este sprint. WhatsApp (HU-26 a HU-28) y otros módulos quedan fuera.
 
 ## Decisiones y base protegida
 
-La lista completa está en [DECISIONS.md](DECISIONS.md). Recomendaciones para no frenar el sprint:
+La lista completa está en [DECISIONS.md](DECISIONS.md). Decisiones confirmadas:
 
-- **Categorías:** mantener el `select` actual; no crear una colección dinámica (D-09).
-- **Diseños:** mantener la carga de medios por prenda; «deshabilitar» = quitar la asociación o dejar la prenda en borrador (D-10).
+- **Categorías:** crear la colección `categories` y cambiar `products.category` a relación (D-09).
+- **Diseños:** crear la colección `designs` con imagen, relación a prendas y `active` (D-10).
 - **Estados:** `pendiente`, `en_produccion`, `lista`, `entregada`, `cancelada` (D-05).
-- **Pedido:** uno por diseño aprobado, cantidad 1, COP sin envío ni impuestos (D-02, D-07).
+- **Pedido:** uno por diseño aprobado, cantidad 1–10 con stock (D-02, D-19).
+- **Precio:** fijo por prenda base: camiseta $60.000 y hoodie $120.000, sin envío ni impuestos (D-07, D-20).
+- **Quién crea:** cliente y administrador (D-03).
 - **Panel:** usar el admin de Payload (D-11).
-- **Cuenta eliminada:** se borran también sus pedidos en el prototipo (D-13).
+- **Cuenta eliminada:** se borran también sus pedidos y se devuelve el stock (D-13).
 - **Avisos:** ninguno en este sprint; el estado se ve al consultar (D-15).
 
-**Base que no se delega:** Jhancarlos conserva el modelo `orders`, migraciones, acceso/RLS, servicios, tipos/estados, registro en Payload y artefactos generados. El equipo consume los contratos y no edita esos archivos sin revisión.
+**Base que no se delega:** Jhancarlos conserva `orders`, `garment-stock`, migraciones, acceso/RLS, servicios, precios/estados, registro en Payload y artefactos generados. El equipo consume los contratos y no edita esos archivos sin revisión. Las colecciones de categorías y diseños pertenecen a HU-22/HU-23 y requieren revisión de Jhancarlos por el cambio de esquema.
 
 ## Estado del documento
 
-Propuesta de trabajo para revisión del equipo. No modifica Notion, no asigna responsables oficiales y no marca historias como terminadas. Notion conserva la fuente de verdad.
+Decisiones confirmadas el 21 de noviembre de 2026. La base de pedidos e inventario está implementada en `branch/SPRINT-3-orders-core` (commit `62d0365`); la migración no se ha aplicado y la UI sigue pendiente. Notion conserva la fuente de verdad del estado de las historias.

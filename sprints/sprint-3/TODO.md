@@ -2,7 +2,7 @@
 
 Criterios transcritos del [Product Backlog de Notion](https://app.notion.com/p/4ea53e76abd442718800c1c4aeba29e1) el 21 de noviembre de 2026. Las 8 historias figuran en **Backlog** y sin responsable asignado. Este documento no agrega criterios nuevos.
 
-La base y los límites están en [DECISIONS.md](DECISIONS.md). **Núcleo Jhancarlos:** `orders`, migraciones, acceso/RLS, servicios, tipos/estados y artefactos generados no se editan sin su revisión.
+La base y los límites están en [DECISIONS.md](DECISIONS.md). **Núcleo Jhancarlos:** `orders`, `garment-stock`, migraciones, acceso/RLS, servicios, tipos/estados/precios y artefactos generados no se editan sin su revisión. La base de pedidos e inventario está implementada en `branch/SPRINT-3-orders-core` (commit `62d0365`); la migración aún no se aplica.
 
 ## Resumen y reparto propuesto
 
@@ -20,18 +20,18 @@ La base y los límites están en [DECISIONS.md](DECISIONS.md). **Núcleo Jhancar
 
 ## Primero (Jhancarlos)
 
-1. Cerrar D-02 a D-15 con el PO/cliente y congelar el alcance.
-2. Modelo `orders`, estados, acceso, RLS y migración (S3-T01).
-3. Creación del pedido y UI de confirmación (HU-18).
-4. Integración, E2E, evidencias y actualización de Notion.
+1. Revisar y aplicar la migración `20261121_120000_orders_core`; ejecutar `pnpm seed:order-stock`.
+2. UI de creación y confirmación del pedido (HU-18).
+3. Integración, E2E, evidencias y actualización de Notion.
+4. Revisar los cambios de esquema de HU-22/HU-23.
 
 HU-18 bloquea HU-19, HU-20, HU-21 y HU-24. No debe empezar por la UI.
 
 ## Puede empezar ya (sin depender de pedidos)
 
-- **Emanuel — HU-22:** inventario del admin de prendas, validaciones de nombre/categoría/precio y edición dentro del `select` actual (D-09).
-- **Andrés — HU-23:** inventario de `designs` y medios; se mantiene la carga por prenda (D-10).
-- **Emanuel — HU-25:** edición de precio e información; la prueba de instantánea se hace cuando exista `orders`.
+- **Emanuel — HU-22:** crear la colección `categories`, cambiar `products.category` a relación y preparar su migración/admin (D-09).
+- **Andrés — HU-23:** crear la colección `designs` con imagen, relación a prendas y `active`, más su migración/admin (D-10).
+- **Emanuel — HU-25:** edición de precio e información del catálogo; los pedidos usan la tabla fija de precios por prenda base.
 - **Andrés:** textos, estados vacíos y revisión responsive de historial/estado.
 - **Daniel:** checklist de acceso/RLS/auditoría para `orders`.
 - **Jhancarlos:** transcripción, decisiones y documentación.
@@ -44,7 +44,7 @@ Responsable propuesto: **Jhancarlos Gonzalez**. Depende de S3-T01.
 - [ ] El pedido se guarda con fecha, cliente, productos y estado inicial.
 - [ ] El sistema confirma al cliente que el pedido fue creado y no permite crear un pedido sin diseño o prenda.
 
-Tareas: modelo de `orders`; servicio que fija cliente, estado inicial, precio y total; validación de propiedad del diseño; UI de creación y confirmación; pruebas negativas sin diseño o sin prenda.
+Tareas: modelo de `orders` con diseño, cantidad 1–10, stock e instantáneas; precio fijo de la prenda base; creación por cliente o administrador; UI de creación y confirmación; pruebas negativas sin diseño, sin prenda o sin stock.
 
 ## HU-19 — Consultar historial de pedidos · 2 puntos · Could Have
 
@@ -84,9 +84,9 @@ Responsable propuesto: **Emanuel Giraldo**. Depende de D-09.
 - [ ] No se puede guardar un producto sin nombre, categoría y precio.
 - [ ] Los cambios se reflejan en el catálogo que ve el cliente.
 
-> **Aclaración D-09:** con el `select` actual se pueden crear/editar/deshabilitar productos y elegir una categoría, pero no crear ni deshabilitar categorías. Si el cliente exige esa parte literal, se necesita una colección `categories` y una migración; no se implementa por iniciativa de un integrante.
+**Decisión confirmada (D-09):** se crea la colección `categories` y `products.category` pasa de `select` a relación. Incluye migración, CRUD/desactivado de categorías y actualización de filtros del catálogo.
 
-Tareas: validaciones del producto; categorías dentro del `select` actual (D-09); deshabilitar producto (borrador/estado); revalidación del catálogo.
+Tareas: colección `categories`; relación con productos; migración revisada; validaciones del producto; deshabilitar producto/categoría; revalidación del catálogo. Coordinar con Jhancarlos por el cambio en `src/plugins/ecommerce.ts`.
 
 ## HU-23 — Gestionar diseños disponibles · 3 puntos · Should Have
 
@@ -96,9 +96,9 @@ Responsable propuesto: **Andrés Valencia**. Depende de D-10.
 - [ ] Los diseños se pueden asociar a las prendas con su imagen.
 - [ ] Los diseños deshabilitados dejan de mostrarse a los clientes.
 
-> **Aclaración D-10:** con la carga de medios por prenda se pueden subir, reemplazar, asociar y quitar diseños; «deshabilitar» significa quitar la asociación o dejar la prenda en borrador. Un estado `active` independiente requiere una colección `designs` y migración.
+**Decisión confirmada (D-10):** se crea la colección `designs` con imagen, relación a prendas y `active`; `products.designs` pasa de carga de medios a relación. Incluye migración y lectura pública solo de activos.
 
-Tareas: carga/reemplazo de imágenes de diseño; asociación a prendas; «deshabilitar» = quitar la asociación o dejar la prenda en borrador (D-10); lectura pública solo de lo publicado.
+Tareas: colección `designs`; carga de imagen; relación con prendas; `active`; migración revisada; CRUD y lectura pública de activos. Coordinar con Jhancarlos por el cambio en `src/plugins/ecommerce.ts`.
 
 ## HU-24 — Gestionar clientes y pedidos · 5 puntos · Must Have
 
@@ -118,11 +118,11 @@ Responsable propuesto: **Emanuel Giraldo**. Depende de HU-22; la instantánea de
 - [ ] El nuevo precio se muestra en el catálogo después de guardar.
 - [ ] Los pedidos ya creados conservan el precio con el que fueron realizados.
 
-Tareas: edición de producto; revalidación del catálogo; instantánea `unitPrice`/`total` en el pedido; prueba de que un pedido antiguo no cambia al editar el precio.
+Tareas: edición de producto; revalidación del catálogo; los pedidos usan la tabla fija por prenda base, así que un cambio de precio de producto no altera pedidos; probar que un pedido antiguo conserva su `unitPrice` y `total`.
 
-## Decisiones pendientes
+## Decisiones confirmadas
 
-Ver [DECISIONS.md](DECISIONS.md): D-02 a D-15.
+Ver [DECISIONS.md](DECISIONS.md): D-01 a D-20. La base de pedidos e inventario está implementada; la migración y la semilla de stock están pendientes.
 
 ## Checklist de cierre por historia
 
