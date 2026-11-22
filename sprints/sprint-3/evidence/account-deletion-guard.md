@@ -45,13 +45,13 @@ Entorno: local, Supabase con las migraciones de pedidos aplicadas y el stock sem
 
 - `isOrderInProgress` reconoce `pendiente`, `en_produccion` y `lista`, y rechaza `entregada`, `cancelada` y valores desconocidos.
 - `shouldRestoreStockOnDelete` devuelve stock para pedidos no entregados y no devueltos, y no lo hace para `entregada` o cancelados ya devueltos.
-- `pnpm test`: **245 pruebas** ✅
+- `pnpm test`: **249 pruebas** ✅
 
 ### Chequeos
 
 - `pnpm typecheck` ✅
 - `pnpm lint` ✅
-- `pnpm test` ✅ 245 pruebas
+- `pnpm test` ✅ 249 pruebas
 - `pnpm build` ✅
 
 ## Limpieza

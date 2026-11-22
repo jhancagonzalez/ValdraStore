@@ -12,7 +12,7 @@ El flujo completo que se busca es:
 
 No incluye pagos, checkout, carrito, envíos ni WhatsApp. Las historias de pedidos usan el diseño aprobado en HU-17.
 
-Las decisiones confirmadas y la base protegida están en [DECISIONS.md](DECISIONS.md). La base de pedidos e inventario está implementada, las migraciones aplicadas y el stock sembrado; HU-18, HU-19 y HU-20 están validadas, los pedidos se consultan en `/pedidos` y la cuenta con pedidos en curso queda protegida (D-21). Faltan HU-22/HU-23 y HU-24.
+Las decisiones confirmadas y la base protegida están en [DECISIONS.md](DECISIONS.md). La base de pedidos e inventario está implementada, las migraciones aplicadas y el stock sembrado; HU-18, HU-19 y HU-20 están validadas, la UI de `/pedidos` está mejorada, la cuenta con pedidos en curso queda protegida (D-21) y se aplicó el endurecimiento de seguridad D-22. Faltan HU-22/HU-23 y HU-24.
 
 ## 2. Base técnica concreta
 
@@ -60,6 +60,7 @@ Solo un administrador cambia el estado. Cada cambio deja una fila en `statusHist
 - **Validaciones de servidor:** el diseño debe existir, pertenecer al cliente y estar aprobado; la prenda debe tener precio fijo; la cantidad debe ser 1–10; el stock debe alcanzar. El precio se toma de la tabla del servidor, no del navegador.
 - **Migración:** aplicadas el 21 de noviembre de 2026 (`orders_core` y `order_number`), con privilegios de Data API revocados y RLS activo.
 - **Auditoría:** `statusHistory` cubre HU-21; el historial está oculto para el cliente.
+- **Endurecimiento (D-22):** `safeNextPath` rechaza redirecciones externas; el error de diseño es genérico; la cancelación reclama y devuelve stock en una sentencia atómica; el formulario no puede reescribir `stockRestored`/`statusHistory`; el cambio de rol se bloquea con pedidos activos.
 
 ### 2.4 Panel administrativo (D-11)
 
@@ -80,7 +81,7 @@ Las dos se implementan como colecciones nuevas, con migración y cambio de catá
 
 ### 2.6 Núcleo Jhancarlos
 
-No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/*`, tipos/estados/precios/stock/número en `src/lib/orders/*`, migraciones de pedidos e inventario, acceso/RLS, registro en `payload.config.ts` y `src/collections/index.ts`, `payload-types.ts`, hook de borrado de `Customers`, semilla de stock, `app/(frontend)/pedidos/page.tsx`, navegación de pedidos, `src/lib/contact.ts`, `package.json` e import map. El equipo importa los contratos y no edita esos archivos sin revisión. El detalle está en [DECISIONS.md](DECISIONS.md).
+No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/*`, tipos/estados/precios/stock/número en `src/lib/orders/*`, migraciones de pedidos e inventario, acceso/RLS, registro en `payload.config.ts` y `src/collections/index.ts`, `payload-types.ts`, hook de borrado de `Customers`, semilla de stock, `app/(frontend)/pedidos/page.tsx` y componentes de estado/carga, navegación de pedidos, `src/lib/safe-next.ts`, `src/services/roles/change-role.ts`, `src/lib/contact.ts`, `package.json` e import map. El equipo importa los contratos y no edita esos archivos sin revisión. El detalle está en [DECISIONS.md](DECISIONS.md).
 
 ## 3. Tareas técnicas
 
@@ -90,7 +91,7 @@ No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/
 | S3-T01 | Modelo `orders`, inventario, estados, acceso, RLS y migración | HU-18/21/24 | Jhancarlos | Implementado y migrado |
 | S3-T02 | Servicio de creación, stock, validaciones e instantáneas de precio | HU-18 | Jhancarlos | Implementado |
 | S3-T03 | UI de creación, confirmación y consulta por número del pedido | HU-18/20 | Jhancarlos + Kevin | Implementado y validado |
-| S3-T04 | Lista, detalle, estado y aviso de producción para el cliente (`/pedidos`) | HU-19/20 | Kevin + Andrés | Implementado y validado; revisión de UI |
+| S3-T04 | Lista, detalle, estado, aviso de producción y UI accesible para el cliente (`/pedidos`) | HU-19/20 | Kevin + Andrés | Implementado, validado y mejorado; revisión de UI |
 | S3-T05 | Cambio de estado con historial y auditoría | HU-21 | Daniel | S3-T01, D-05 |
 | S3-T06 | Lista/detalle/filtro de clientes y pedidos en el admin | HU-24 | Daniel + Emanuel | S3-T01, S3-T05 |
 | S3-T07 | Colección `categories`, relación con productos, migración y admin | HU-22 | Emanuel | D-09; revisión de Jhancarlos |
@@ -99,6 +100,7 @@ No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/
 | S3-T10 | Integración, E2E, seguridad/RLS, responsive, evidencias y Notion | Transversal | Jhancarlos + Andrés | Todas |
 | S3-T11 | Semilla de inventario y pruebas de stock | HU-18/19 | Jhancarlos | Hecho: 40 filas |
 | S3-T12 | Bloqueo de eliminación de cuenta con pedidos en curso y cancelación del cliente | HU-04/19/20 | Jhancarlos | Implementado y validado |
+| S3-T13 | Endurecimiento de seguridad de pedidos y cuentas | HU-04/19/20 | Jhancarlos | Implementado; quedan decisiones de producto |
 
 ## 4. Fases y calendario propuesto
 
@@ -134,11 +136,14 @@ HU-18, HU-19 y HU-20 están validadas y habilitan HU-21 y HU-24.
 
 - **D-09/D-10:** las colecciones `categories` y `designs` amplían el alcance con dos migraciones y cambios en el catálogo; deben coordinarse con Jhancarlos.
 - **D-05:** la máquina de estados ya está implementada; cualquier cambio de nombres/transiciones afecta la UI y los datos.
-- **Stock:** la comprobación y el descuento no son atómicos; dos pedidos simultáneos podrían competir por la última unidad. Está marcado con `ponytail:` y se corrige con transacción/row lock cuando haga falta.
+- **Stock:** la creación sigue con comprobación/descuento no atómicos y marcada con `ponytail:`; la cancelación ya reclama y devuelve stock en una sola sentencia atómica, por lo que dos cancelaciones concurrentes no duplican inventario.
 - **Formulario de admin:** validado con una sesión real; los campos calculados no se marcan `required` en el panel porque el hook los completa antes de validar.
 - **Número de pedido:** la generación comprueba duplicados y el índice único es la garantía final; dos creaciones simultáneas podrían requerir reintento.
 - **Consulta por número:** la página `/pedidos` requiere sesión y solo muestra pedidos de la cuenta; no es una consulta pública ni muestra el historial de cambios.
-- **Cuenta con pedidos en curso:** la eliminación se bloquea; el cliente puede cancelar `pendiente`/`en_produccion` o escribir a `valdra.administracion@gmail.com`. Los administradores pueden resolver el caso manual.
+- **Cuenta con pedidos en curso:** la eliminación se bloquea; el cliente puede cancelar `pendiente`/`en_produccion` o escribir a `valdra.administracion@gmail.com`. Los administradores pueden resolver el caso manual; el cambio de rol se bloquea con pedidos activos.
+- **Correo de contacto:** `valdra.administracion@gmail.com` es también una cuenta de administrador; se recomienda alias dedicado y MFA antes de una demo pública.
+- **Carrera de borrado:** el conteo y el borrado de la cuenta no comparten bloqueo; el hook vuelve a comprobar, pero un pedido creado en la ventana podría perderse.
+- **Creación de pedidos:** sin tope de pedidos activos ni rate limit específico; un cliente podría retener stock con pedidos pendientes.
 - **Stock al borrar:** no se devuelve para pedidos entregados; solo para pedidos no entregados y no devueltos por una cancelación.
 - **Capacidad:** 28 puntos en dos semanas con 5 personas; el trabajo independiente de catálogo debe empezar ya.
 - **Pagos:** no se habilitan; el pedido es una solicitud de producción, no una compra pagada.

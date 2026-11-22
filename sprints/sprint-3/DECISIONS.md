@@ -27,10 +27,11 @@ Decisiones cerradas con el usuario el 21 de noviembre de 2026. Sustituyen las re
 | D-19 | Stock por prenda base + talla en `garment-stock`; 1–10 unidades; se descuenta al crear y se devuelve al cancelar/eliminar | Implementada |
 | D-20 | Precios base: camiseta $60.000 y hoodie $120.000 | Implementada |
 | D-21 | Un cliente con pedidos en curso no puede eliminar su cuenta: debe cancelarlos desde `/pedidos` o escribir a `valdra.administracion@gmail.com`. Un administrador puede resolver el caso manual | Implementada |
+| D-22 | Endurecimiento de seguridad: redirects internos, error de diseño no enumerable, cancelación de stock atómica, historial/stock no reescribibles y cambio de rol bloqueado con pedidos activos | Implementada; quedan decisiones de producto |
 
 ## 2. Base implementada y protegida
 
-Rama `branch/SPRINT-3-orders-core`, commits `62d0365`, `b53b9e6`, `07cfc17`, `9b3a2e1`, `64d37e1`, `5acab13`, `6352a48` y `bf9d1f9`.
+Rama `branch/SPRINT-3-orders-core`, commits `62d0365`, `b53b9e6`, `07cfc17`, `9b3a2e1`, `64d37e1`, `5acab13`, `6352a48`, `bf9d1f9`, `fe3de8e` y `964efe6`.
 
 | Área | Archivos | Regla |
 | --- | --- | --- |
@@ -45,6 +46,8 @@ Rama `branch/SPRINT-3-orders-core`, commits `62d0365`, `b53b9e6`, `07cfc17`, `9b
 | Semilla de stock | `scripts/seed-order-stock.ts` | Solo Jhancarlos |
 | API y UI de HU-18 | `app/api/orders/create/route.ts`, `app/(frontend)/personalizar/order-panel.tsx` | Solo Jhancarlos |
 | Número y consulta | `src/lib/orders/order-number.ts`, `src/services/orders/order-number.ts`, `app/(frontend)/pedidos/page.tsx` y los enlaces de navegación de `site-header.tsx`/`bottom-nav.tsx` | Número y página: Jhancarlos; revisión de UI de HU-19/20: Andrés y Kevin |
+| UI de pedidos | `app/(frontend)/pedidos/order-status.tsx`, `loading.tsx`, `cancel-order-button.tsx` y estilos de pedidos | Jhancarlos; revisión de Andrés/Kevin |
+| Endurecimiento | `src/lib/safe-next.ts`, `src/services/roles/change-role.ts`, `src/services/orders/order-hooks.ts` | Solo Jhancarlos |
 | Cuenta con pedidos | `src/services/orders/customer-account.ts`, hook de `Customers.ts`, `app/(frontend)/cuenta/actions.ts`, `app/(frontend)/pedidos/actions.ts`, `src/lib/contact.ts` | Solo Jhancarlos |
 | Dependencias | `package.json`, `pnpm-lock.yaml` | Solo Jhancarlos |
 
@@ -55,6 +58,7 @@ Rama `branch/SPRINT-3-orders-core`, commits `62d0365`, `b53b9e6`, `07cfc17`, `9b
 - `getStockKey`, `parseStockKey` y `hasEnoughStock`.
 - `isOrderNumber` y el patrón de seis cifras para validar el número de pedido.
 - `isOrderInProgress` y `ORDER_ACTIVE_STATUSES` para saber si un pedido bloquea la eliminación de la cuenta.
+- `safeNextPath` para validar destinos internos de login/registro.
 - Los tipos generados `Order` y `GarmentStock` de `payload-types.ts`.
 
 Las UI no deben duplicar etiquetas de estado ni calcular precios; el servidor es la fuente de verdad.
@@ -82,21 +86,29 @@ Las colecciones `categories` y `designs` pertenecen a HU-22/HU-23. Sus responsab
 - [x] Implementar la lista, el detalle y el menú «Pedidos» del cliente (HU-19/20).
 - [x] Bloquear la eliminación de la cuenta con pedidos en curso y ofrecer cancelación o correo a Valdra (D-21).
 - [x] Mostrar el aviso de producción: el equipo contactará por correo y avisará cuando la prenda esté lista.
+- [x] Aplicar el endurecimiento de seguridad de D-22 y mejorar la UI de consulta de pedidos.
+- [ ] Decidir el tope/rate limit de pedidos activos por cliente.
+- [ ] Evaluar un correo de contacto dedicado y MFA para la cuenta de administrador.
+- [ ] Evaluar re-autenticación antes de eliminar la cuenta.
+- [ ] Endurecer la carrera entre el conteo y el borrado de la cuenta.
+- [ ] Decidir si un administrador puede forzar el borrado de una cuenta con pedidos en curso.
 - [ ] Implementar HU-22 (colección `categories`) y HU-23 (colección `designs`).
 - [ ] Probar el flujo completo en móvil, con datos sintéticos.
 - [ ] Actualizar Notion y registrar evidencias.
 
 ## 5. Riesgos y límites conocidos
 
-- **Stock no atómico:** la comprobación y el descuento no comparten transacción; dos pedidos simultáneos podrían competir por la última unidad. Está marcado con `ponytail:` en `order-hooks.ts`; se resuelve con transacción/row lock cuando haga falta.
+- **Stock no atómico en creación:** la comprobación y el descuento iniciales siguen sin transacción; dos pedidos simultáneos podrían competir por la última unidad. La cancelación ya reclama la devolución en una sola sentencia atómica y no duplica el stock.
 - **Número de pedido:** se genera aleatoriamente y se comprueba antes de insertar; el índice único evita duplicados. Dos creaciones simultáneas podrían chocar y requerir reintento.
 - **Consulta por número:** la página `/pedidos` requiere sesión de cliente y solo muestra pedidos de esa cuenta. No es una consulta pública por número; muestra el estado actual, no el historial de cambios.
-- **Cuenta con pedidos en curso:** la eliminación se bloquea. El cliente puede cancelar pedidos `pendiente` o `en_produccion`; si el pedido está `lista`, debe escribir a `valdra.administracion@gmail.com`. Un administrador puede resolver el caso manual.
+- **Cuenta con pedidos en curso:** la eliminación se bloquea. El cliente puede cancelar pedidos `pendiente` o `en_produccion`; si el pedido está `lista`, debe escribir a `valdra.administracion@gmail.com`. Un administrador puede resolver el caso manual; el cambio de rol también se bloquea con pedidos activos.
+- **Correo de contacto:** `valdra.administracion@gmail.com` es también una cuenta de administrador. Se recomienda un alias dedicado y MFA antes de una demo pública.
+- **Carrera de borrado de cuenta:** el conteo previo y el borrado son operaciones separadas; el hook vuelve a comprobar, pero no hay bloqueo de fila. Un pedido creado en esa ventana podría perderse.
+- **Creación de pedidos:** no hay tope de pedidos activos ni rate limit específico; un cliente podría retener stock con pedidos `pendiente`.
 - **Stock al borrar:** no se devuelve para pedidos entregados; solo para pedidos no entregados y no devueltos por una cancelación.
 - **Categorías y diseños:** las colecciones nuevas de HU-22/HU-23 amplían el alcance con dos migraciones y cambios en el catálogo.
-- **UI pendiente:** HU-18, HU-19 y HU-20 están implementadas; faltan los ajustes de administración (HU-24).
 - **Sin avisos:** no hay correo ni WhatsApp automáticos. En producción, el detalle informa que el equipo contactará por correo; el envío es manual y no se promete una fecha exacta.
 
 ## 6. Estado del documento
 
-Decisiones confirmadas. Notion sigue siendo la fuente de verdad para el estado de las historias. Las migraciones están aplicadas, el stock sembrado y HU-18, HU-19 y HU-20 validadas; los pedidos se consultan en `/pedidos`, el aviso de producción está visible y la cuenta con pedidos en curso queda protegida (D-21). Siguen HU-22/HU-23 y HU-24. No se ha creado ningún PR.
+Decisiones confirmadas. Notion sigue siendo la fuente de verdad para el estado de las historias. Las migraciones están aplicadas, el stock sembrado y HU-18, HU-19 y HU-20 validadas; la UI de pedidos está mejorada, el aviso de producción está visible, la cuenta con pedidos en curso queda protegida y se aplicó el endurecimiento de seguridad de D-22. Quedan decisiones de producto y las HU-22/HU-23/HU-24. No se ha creado ningún PR.

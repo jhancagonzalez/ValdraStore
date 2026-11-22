@@ -2,7 +2,7 @@
 
 Criterios transcritos del [Product Backlog de Notion](https://app.notion.com/p/4ea53e76abd442718800c1c4aeba29e1) el 21 de noviembre de 2026. Las 8 historias figuran en **Backlog** y sin responsable asignado. Este documento no agrega criterios nuevos.
 
-La base y los límites están en [DECISIONS.md](DECISIONS.md). **Núcleo Jhancarlos:** `orders`, `garment-stock`, migraciones, acceso/RLS, servicios, tipos/estados/precios, la página `/pedidos`, la regla de cuenta con pedidos en curso y artefactos generados no se editan sin su revisión. La base está implementada, las migraciones aplicadas, el stock sembrado y HU-18, HU-19 y HU-20 validadas; la evidencia está en [evidence/HU-18.md](evidence/HU-18.md), [evidence/HU-19-HU-20.md](evidence/HU-19-HU-20.md) y [evidence/account-deletion-guard.md](evidence/account-deletion-guard.md).
+La base y los límites están en [DECISIONS.md](DECISIONS.md). **Núcleo Jhancarlos:** `orders`, `garment-stock`, migraciones, acceso/RLS, servicios, tipos/estados/precios, la página `/pedidos`, la regla de cuenta con pedidos en curso, el endurecimiento de seguridad y artefactos generados no se editan sin su revisión. La base está implementada, las migraciones aplicadas, el stock sembrado y HU-18, HU-19 y HU-20 validadas; la evidencia está en [evidence/HU-18.md](evidence/HU-18.md), [evidence/HU-19-HU-20.md](evidence/HU-19-HU-20.md), [evidence/account-deletion-guard.md](evidence/account-deletion-guard.md), [evidence/full-order-flow.md](evidence/full-order-flow.md) y [evidence/security-review.md](evidence/security-review.md).
 
 ## Resumen y reparto propuesto
 
@@ -23,7 +23,7 @@ La base y los límites están en [DECISIONS.md](DECISIONS.md). **Núcleo Jhancar
 1. Apoyar HU-24 sobre los contratos ya implementados.
 2. Revisar los cambios de esquema de HU-22/HU-23.
 3. Integración, E2E, evidencias y actualización de Notion.
-4. Revisar con Kevin/Andrés la UI de `/pedidos` y la lista de HU-19/20.
+4. Revisar con Kevin/Andrés la UI mejorada de `/pedidos` y las decisiones de seguridad pendientes.
 
 HU-18, HU-19 y HU-20 ya están implementadas y validadas; HU-24 puede empezar sobre la base.
 
@@ -58,7 +58,7 @@ Responsable propuesto: **Andrés Valencia**. Depende de HU-18. Implementado por 
 
 Tareas: consulta filtrada por propietario, orden descendente, estado vacío y enlace al detalle.
 
-> **Validación (2026-11-21).** `/pedidos` muestra la lista del cliente con número, prenda/talla, fecha, estado y total, ordenada de más reciente a más antiguo. Un segundo cliente no pudo ver el pedido ajeno. Evidencia en [evidence/HU-19-HU-20.md](evidence/HU-19-HU-20.md).
+> **Validación (2026-11-21).** `/pedidos` muestra la lista del cliente con número, prenda/talla, fecha, estado y total, ordenada de más reciente a más antiguo. La UI incluye badge de estado, avance estático, tarjetas accesibles y esqueleto de carga. Un segundo cliente no pudo ver el pedido ajeno. Evidencia en [evidence/HU-19-HU-20.md](evidence/HU-19-HU-20.md).
 
 ## HU-20 — Consultar estado del pedido · 3 puntos · Must Have
 
@@ -70,7 +70,7 @@ Responsable propuesto: **Kevin Burgos**. Depende de HU-18. Implementado por Jhan
 
 Tareas: estado visible en historial/detalle; revalidación al consultar; no prometer tiempo real.
 
-> **Validación (2026-11-21).** La lista y el detalle de `/pedidos` reflejan el estado actual. Tras cambiar el pedido a `en_produccion`, la lista y el detalle mostraron «En producción» y el aviso de que el equipo contactará por correo para informar cuándo la prenda esté lista. Evidencia en [evidence/HU-19-HU-20.md](evidence/HU-19-HU-20.md) y [evidence/full-order-flow.md](evidence/full-order-flow.md).
+> **Validación (2026-11-21).** La lista y el detalle de `/pedidos` reflejan el estado actual. Tras cambiar el pedido a `en_produccion`, la lista y el detalle mostraron «En producción» y el aviso de que el equipo contactará por correo para informar cuándo la prenda esté lista. La UI muestra badge, avance y confirmación de cancelación. Evidencia en [evidence/HU-19-HU-20.md](evidence/HU-19-HU-20.md) y [evidence/full-order-flow.md](evidence/full-order-flow.md).
 
 ## HU-21 — Actualizar estado del pedido · 3 puntos · Must Have
 
@@ -136,9 +136,24 @@ Tareas: edición de producto; revalidación del catálogo; los pedidos usan la t
 
 > **Validación (2026-11-21).** Con un pedido `pendiente`, la eliminación de la cuenta devolvió el mensaje de bloqueo y los enlaces a Mis pedidos y al correo. Tras cancelar desde `/pedidos`, el pedido quedó `cancelada`, el stock volvió a 20 y la cuenta se eliminó. Evidencia en [evidence/account-deletion-guard.md](evidence/account-deletion-guard.md).
 
+## Endurecimiento de seguridad (D-22)
+
+- [x] Rechazar redirecciones externas con caracteres de control en login/registro.
+- [x] Unificar el error de diseño inexistente o ajeno para no enumerar diseños.
+- [x] Reclamar la devolución de stock de una cancelación en una sola sentencia atómica; dos cancelaciones concurrentes no duplican stock.
+- [x] Evitar que el formulario reescriba `stockRestored` o `statusHistory`.
+- [x] Bloquear el cambio de rol de un cliente con pedidos activos.
+- [ ] Decidir tope/rate limit de pedidos activos por cliente.
+- [ ] Evaluar correo de contacto dedicado y MFA para el administrador.
+- [ ] Evaluar re-autenticación antes de eliminar la cuenta.
+- [ ] Endurecer la carrera entre conteo y borrado de la cuenta.
+- [ ] Decidir si un administrador puede forzar el borrado con pedidos en curso.
+
+> **Validación (2026-11-21).** La doble cancelación concurrente devolvió el stock una sola vez (18 → 20) y el panel guardó el cambio de estado. La UI de consulta se mejoró y se probó con un pedido real. Evidencia en [evidence/security-review.md](evidence/security-review.md).
+
 ## Decisiones confirmadas
 
-Ver [DECISIONS.md](DECISIONS.md): D-01 a D-21. La base de pedidos e inventario está implementada; las migraciones y la semilla de stock están aplicadas, y la lista, el detalle y la consulta por número están operativos en `/pedidos`. La cuenta con pedidos en curso queda protegida por D-21.
+Ver [DECISIONS.md](DECISIONS.md): D-01 a D-22. La base de pedidos e inventario está implementada; las migraciones y la semilla de stock están aplicadas, la lista, el detalle y la consulta por número están operativos en `/pedidos`, la cuenta con pedidos en curso queda protegida por D-21 y el endurecimiento de seguridad por D-22.
 
 ## Checklist de cierre por historia
 

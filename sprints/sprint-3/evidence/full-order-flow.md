@@ -38,7 +38,7 @@ Entorno: local, Supabase con las migraciones de pedidos aplicadas y el stock sem
 
 - `pnpm typecheck` ✅
 - `pnpm lint` ✅
-- `pnpm test` ✅ 245 pruebas
+- `pnpm test` ✅ 249 pruebas
 - `pnpm build` ✅
 
 ## Notas

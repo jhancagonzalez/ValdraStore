@@ -70,7 +70,8 @@ La lista completa está en [DECISIONS.md](DECISIONS.md). Decisiones confirmadas:
 - **Estados:** `pendiente`, `en_produccion`, `lista`, `entregada`, `cancelada` (D-05).
 - **Pedido:** uno por diseño aprobado, cantidad 1–10 con stock (D-02, D-19).
 - **Número:** aleatorio de seis cifras, único, guardado y consultable por el cliente autenticado en `/pedidos` (D-14).
-- **Pedidos del cliente:** menú «Pedidos» con lista, detalle, estado y consulta por número (D-12, D-14).
+- **Pedidos del cliente:** menú «Pedidos» con lista, detalle, estado, avance, aviso de producción y consulta por número (D-12, D-14).
+- **Seguridad:** redirects internos, error de diseño genérico, cancelación atómica de stock, historial/stock no reescribibles y cambio de rol bloqueado con pedidos activos (D-22).
 - **Precio:** fijo por prenda base: camiseta $60.000 y hoodie $120.000, sin envío ni impuestos (D-07, D-20).
 - **Quién crea:** cliente y administrador (D-03).
 - **Panel:** usar el admin de Payload (D-11).
@@ -82,4 +83,4 @@ La lista completa está en [DECISIONS.md](DECISIONS.md). Decisiones confirmadas:
 
 ## Estado del documento
 
-Decisiones confirmadas el 21 de noviembre de 2026. La base de pedidos e inventario está implementada, las migraciones están aplicadas, el stock está sembrado y HU-18, HU-19 y HU-20 están validadas; el formulario de admin fue probado, los pedidos se consultan en `/pedidos`, el aviso de producción está visible y la cuenta con pedidos en curso queda protegida. Quedan HU-22/HU-23 y HU-24. Notion conserva la fuente de verdad del estado de las historias.
+Decisiones confirmadas el 21 de noviembre de 2026. La base de pedidos e inventario está implementada, las migraciones están aplicadas, el stock está sembrado y HU-18, HU-19 y HU-20 están validadas; el formulario de admin fue probado, la UI de `/pedidos` está mejorada, el aviso de producción está visible, la cuenta con pedidos en curso queda protegida y se aplicó el endurecimiento de seguridad D-22. Quedan decisiones de producto pendientes y las HU-22/HU-23/HU-24. Notion conserva la fuente de verdad del estado de las historias.
