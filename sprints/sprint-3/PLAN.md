@@ -12,7 +12,7 @@ El flujo completo que se busca es:
 
 No incluye pagos, checkout, carrito, envíos ni WhatsApp. Las historias de pedidos usan el diseño aprobado en HU-17.
 
-Las decisiones confirmadas y la base protegida están en [DECISIONS.md](DECISIONS.md). La base de pedidos e inventario está implementada, las migraciones aplicadas y el stock sembrado; HU-18, HU-19 y HU-20 están validadas y los pedidos se consultan en `/pedidos`. Faltan HU-22/HU-23 y HU-24.
+Las decisiones confirmadas y la base protegida están en [DECISIONS.md](DECISIONS.md). La base de pedidos e inventario está implementada, las migraciones aplicadas y el stock sembrado; HU-18, HU-19 y HU-20 están validadas, los pedidos se consultan en `/pedidos` y la cuenta con pedidos en curso queda protegida (D-21). Faltan HU-22/HU-23 y HU-24.
 
 ## 2. Base técnica concreta
 
@@ -54,6 +54,7 @@ Solo un administrador cambia el estado. Cada cambio deja una fila en `statusHist
 - **Crear:** cliente con sesión o administrador. El hook fija el cliente cuando es cliente, valida el cliente elegido cuando es admin, y fija diseño, instantáneas, precio, total, estado inicial, número y stock. El cliente usa `/api/orders/create`; el panel usa el REST de Payload en `/api/orders`.
 - **Leer:** el cliente solo ve sus pedidos; el administrador ve todos. Se aplica control de acceso de Payload y, cuando corresponda, RLS en PostgreSQL.
 - **Pedidos del cliente:** `/pedidos` muestra la lista con número, prenda/talla, fecha, estado y total, y permite consultar por número. La página exige sesión y filtra por propietario; el detalle no expone el historial de cambios.
+- **Cuenta con pedidos en curso:** el cliente no puede eliminar su cuenta si tiene pedidos `pendiente`, `en_produccion` o `lista`. Puede cancelar los dos primeros desde `/pedidos`; si el pedido está `lista`, se le muestra `valdra.administracion@gmail.com`. El servidor bloquea la eliminación y un administrador puede resolver el caso manual.
 - **Actualizar:** solo administradores. El cliente no puede cambiar estado, precio, prenda ni diseño.
 - **Eliminar:** solo administradores; el stock se devuelve si el pedido no estaba cancelado.
 - **Validaciones de servidor:** el diseño debe existir, pertenecer al cliente y estar aprobado; la prenda debe tener precio fijo; la cantidad debe ser 1–10; el stock debe alcanzar. El precio se toma de la tabla del servidor, no del navegador.
@@ -79,7 +80,7 @@ Las dos se implementan como colecciones nuevas, con migración y cambio de catá
 
 ### 2.6 Núcleo Jhancarlos
 
-No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/*`, tipos/estados/precios/stock/número en `src/lib/orders/*`, migraciones de pedidos e inventario, acceso/RLS, registro en `payload.config.ts` y `src/collections/index.ts`, `payload-types.ts`, hook de borrado de `Customers`, semilla de stock, `app/(frontend)/pedidos/page.tsx`, navegación de pedidos, `package.json` e import map. El equipo importa los contratos y no edita esos archivos sin revisión. El detalle está en [DECISIONS.md](DECISIONS.md).
+No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/*`, tipos/estados/precios/stock/número en `src/lib/orders/*`, migraciones de pedidos e inventario, acceso/RLS, registro en `payload.config.ts` y `src/collections/index.ts`, `payload-types.ts`, hook de borrado de `Customers`, semilla de stock, `app/(frontend)/pedidos/page.tsx`, navegación de pedidos, `src/lib/contact.ts`, `package.json` e import map. El equipo importa los contratos y no edita esos archivos sin revisión. El detalle está en [DECISIONS.md](DECISIONS.md).
 
 ## 3. Tareas técnicas
 
@@ -97,6 +98,7 @@ No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/
 | S3-T09 | Edición de precio/información y prueba de instantánea fija | HU-25 | Emanuel | S3-T01, D-07 |
 | S3-T10 | Integración, E2E, seguridad/RLS, responsive, evidencias y Notion | Transversal | Jhancarlos + Andrés | Todas |
 | S3-T11 | Semilla de inventario y pruebas de stock | HU-18/19 | Jhancarlos | Hecho: 40 filas |
+| S3-T12 | Bloqueo de eliminación de cuenta con pedidos en curso y cancelación del cliente | HU-04/19/20 | Jhancarlos | Implementado y validado |
 
 ## 4. Fases y calendario propuesto
 
@@ -136,6 +138,8 @@ HU-18, HU-19 y HU-20 están validadas y habilitan HU-21 y HU-24.
 - **Formulario de admin:** validado con una sesión real; los campos calculados no se marcan `required` en el panel porque el hook los completa antes de validar.
 - **Número de pedido:** la generación comprueba duplicados y el índice único es la garantía final; dos creaciones simultáneas podrían requerir reintento.
 - **Consulta por número:** la página `/pedidos` requiere sesión y solo muestra pedidos de la cuenta; no es una consulta pública ni muestra el historial de cambios.
+- **Cuenta con pedidos en curso:** la eliminación se bloquea; el cliente puede cancelar `pendiente`/`en_produccion` o escribir a `valdra.administracion@gmail.com`. Los administradores pueden resolver el caso manual.
+- **Stock al borrar:** no se devuelve para pedidos entregados; solo para pedidos no entregados y no devueltos por una cancelación.
 - **Capacidad:** 28 puntos en dos semanas con 5 personas; el trabajo independiente de catálogo debe empezar ya.
 - **Pagos:** no se habilitan; el pedido es una solicitud de producción, no una compra pagada.
 - **Tiempo real:** el estado se actualiza al consultar; no se promete notificación en vivo.

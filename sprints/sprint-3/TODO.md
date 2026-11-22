@@ -2,7 +2,7 @@
 
 Criterios transcritos del [Product Backlog de Notion](https://app.notion.com/p/4ea53e76abd442718800c1c4aeba29e1) el 21 de noviembre de 2026. Las 8 historias figuran en **Backlog** y sin responsable asignado. Este documento no agrega criterios nuevos.
 
-La base y los límites están en [DECISIONS.md](DECISIONS.md). **Núcleo Jhancarlos:** `orders`, `garment-stock`, migraciones, acceso/RLS, servicios, tipos/estados/precios, la página `/pedidos` y artefactos generados no se editan sin su revisión. La base está implementada, las migraciones aplicadas, el stock sembrado y HU-18, HU-19 y HU-20 validadas; la evidencia está en [evidence/HU-18.md](evidence/HU-18.md) y [evidence/HU-19-HU-20.md](evidence/HU-19-HU-20.md).
+La base y los límites están en [DECISIONS.md](DECISIONS.md). **Núcleo Jhancarlos:** `orders`, `garment-stock`, migraciones, acceso/RLS, servicios, tipos/estados/precios, la página `/pedidos`, la regla de cuenta con pedidos en curso y artefactos generados no se editan sin su revisión. La base está implementada, las migraciones aplicadas, el stock sembrado y HU-18, HU-19 y HU-20 validadas; la evidencia está en [evidence/HU-18.md](evidence/HU-18.md), [evidence/HU-19-HU-20.md](evidence/HU-19-HU-20.md) y [evidence/account-deletion-guard.md](evidence/account-deletion-guard.md).
 
 ## Resumen y reparto propuesto
 
@@ -126,9 +126,19 @@ Responsable propuesto: **Emanuel Giraldo**. Depende de HU-22; la instantánea de
 
 Tareas: edición de producto; revalidación del catálogo; los pedidos usan la tabla fija por prenda base, así que un cambio de precio de producto no altera pedidos; probar que un pedido antiguo conserva su `unitPrice` y `total`.
 
+## Regla transversal — Cuenta con pedidos en curso
+
+- [x] El cliente no puede eliminar su cuenta si tiene pedidos `pendiente`, `en_produccion` o `lista`.
+- [x] Puede cancelar desde `/pedidos` los pedidos `pendiente` o `en_produccion`; el stock se devuelve.
+- [x] Si el pedido está `lista`, la cuenta muestra el correo `valdra.administracion@gmail.com` para explicar la situación.
+- [x] El servidor bloquea la eliminación aunque se intente por otra vía; un administrador puede resolver el caso manual.
+- [x] Al borrar la cuenta, el stock no se devuelve para pedidos entregados.
+
+> **Validación (2026-11-21).** Con un pedido `pendiente`, la eliminación de la cuenta devolvió el mensaje de bloqueo y los enlaces a Mis pedidos y al correo. Tras cancelar desde `/pedidos`, el pedido quedó `cancelada`, el stock volvió a 20 y la cuenta se eliminó. Evidencia en [evidence/account-deletion-guard.md](evidence/account-deletion-guard.md).
+
 ## Decisiones confirmadas
 
-Ver [DECISIONS.md](DECISIONS.md): D-01 a D-20. La base de pedidos e inventario está implementada; las migraciones y la semilla de stock están aplicadas, y la lista, el detalle y la consulta por número están operativos en `/pedidos`.
+Ver [DECISIONS.md](DECISIONS.md): D-01 a D-21. La base de pedidos e inventario está implementada; las migraciones y la semilla de stock están aplicadas, y la lista, el detalle y la consulta por número están operativos en `/pedidos`. La cuenta con pedidos en curso queda protegida por D-21.
 
 ## Checklist de cierre por historia
 
