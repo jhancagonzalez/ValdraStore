@@ -9,32 +9,33 @@ La base y los límites están en [DECISIONS.md](DECISIONS.md). **Núcleo Jhancar
 | HU | Historia | Puntos | Prioridad | Responsable propuesto | Depende de |
 | --- | --- | ---: | --- | --- | --- |
 | HU-18 | Crear un pedido | 5 | Must Have | Jhancarlos Gonzalez | S3-T01 |
-| HU-19 | Consultar historial de pedidos | 2 | Could Have | Andrés Valencia | HU-18 |
+| HU-19 | Consultar historial de pedidos | 2 | Could Have | Jhancarlos Gonzalez | HU-18 |
 | HU-20 | Consultar estado del pedido | 3 | Must Have | Kevin Burgos | HU-18 |
-| HU-21 | Actualizar estado del pedido | 3 | Must Have | Daniel Cárdenas | S3-T01, D-05 |
-| HU-22 | Gestionar productos y categorías | 5 | Must Have | Emanuel Giraldo | D-09 |
-| HU-23 | Gestionar diseños disponibles | 3 | Should Have | Andrés Valencia | D-10 |
-| HU-24 | Gestionar clientes y pedidos | 5 | Must Have | Daniel Cárdenas | S3-T01, HU-21 |
+| HU-21 | Actualizar estado del pedido | 3 | Must Have | Emanuel Giraldo | S3-T01, D-05 |
+| HU-22 | Gestionar productos y categorías | 5 | Must Have | Andrés Valencia | D-09 |
+| HU-23 | Gestionar diseños disponibles | 3 | Should Have | Daniel Cárdenas | D-10 |
+| HU-24 | Gestionar clientes y pedidos | 5 | Must Have | Kevin Burgos | S3-T01, HU-21 |
 | HU-25 | Actualizar precios e información | 2 | Should Have | Emanuel Giraldo | HU-22 |
 | **Total** | | **28** | **5 Must · 2 Should · 1 Could** | | |
 
 ## Primero (Jhancarlos)
 
-1. Apoyar HU-24 sobre los contratos ya implementados.
-2. Revisar los cambios de esquema de HU-22/HU-23.
+1. Apoyar HU-24 (Kevin) y HU-25 (Emanuel) sobre los contratos ya implementados.
+2. Revisar los cambios de esquema de HU-22 (Andrés) y HU-23 (Daniel).
 3. Integración, E2E, evidencias y actualización de Notion.
-4. Revisar con Kevin/Andrés la UI mejorada de `/pedidos` y las decisiones de seguridad pendientes.
+4. Revisar con Kevin/Emanuel el cierre de HU-20/HU-21 y las decisiones de seguridad pendientes.
 
-HU-18, HU-19 y HU-20 ya están implementadas y validadas; HU-24 puede empezar sobre la base.
+HU-18 y HU-19 están implementadas y validadas; HU-20 y HU-21 están funcionales y sus responsables las revisan/cierran. HU-24 y HU-25 se asignaron para balancear la carga.
 
 ## Puede empezar ya (sin depender de pedidos)
 
-- **Emanuel — HU-22:** crear la colección `categories`, cambiar `products.category` a relación y preparar su migración/admin (D-09).
-- **Andrés — HU-23:** crear la colección `designs` con imagen, relación a prendas y `active`, más su migración/admin (D-10).
-- **Emanuel — HU-25:** edición de precio e información del catálogo; los pedidos usan la tabla fija de precios por prenda base.
-- **Andrés:** textos, estados vacíos y revisión responsive de historial/estado.
-- **Daniel:** checklist de acceso/RLS/auditoría para `orders`.
-- **Jhancarlos:** transcripción, decisiones y documentación.
+- **Andrés — HU-22:** crear la colección `categories`, cambiar `products.category` a relación y preparar su migración/admin (D-09).
+- **Daniel — HU-23:** crear la colección `designs` con imagen, relación a prendas y `active`, más su migración/admin (D-10).
+- **Emanuel — HU-25:** edición de precio e información del catálogo; depende de HU-22. Los pedidos usan la tabla fija de precios por prenda base.
+- **Kevin:** revisar y cerrar HU-20; después iniciar HU-24 con lista/detalle/filtros del panel.
+- **Emanuel:** revisar y cerrar HU-21; después HU-25 cuando HU-22 esté listo.
+- **Daniel:** checklist de acceso, RLS y auditoría para `orders`, además de HU-23.
+- **Jhancarlos:** integración, revisión de esquemas, decisiones y documentación del sprint.
 
 ## HU-18 — Crear un pedido · 5 puntos · Must Have
 
@@ -50,7 +51,7 @@ Tareas: modelo de `orders` con diseño, cantidad 1–10, stock e instantáneas; 
 
 ## HU-19 — Consultar historial de pedidos · 2 puntos · Could Have
 
-Responsable propuesto: **Andrés Valencia**. Depende de HU-18. Implementado por Jhancarlos para desbloquear la demo; revisión de Andrés.
+Responsable propuesto: **Jhancarlos Gonzalez**. Depende de HU-18. Implementado y validado.
 
 - [x] El cliente ve la lista de sus pedidos con fecha, producto y estado.
 - [x] Solo se muestran los pedidos del cliente autenticado.
@@ -62,7 +63,7 @@ Tareas: consulta filtrada por propietario, orden descendente, estado vacío y en
 
 ## HU-20 — Consultar estado del pedido · 3 puntos · Must Have
 
-Responsable propuesto: **Kevin Burgos**. Depende de HU-18. Implementado por Jhancarlos para desbloquear la demo; revisión de Kevin.
+Responsable propuesto: **Kevin Burgos**. Depende de HU-18. Implementado por Jhancarlos; Kevin revisa y cierra.
 
 - [x] El cliente ve el estado actual de cada uno de sus pedidos.
 - [x] Los estados mostrados corresponden a las etapas de producción definidas por Valdra Store.
@@ -74,7 +75,7 @@ Tareas: estado visible en historial/detalle; revalidación al consultar; no prom
 
 ## HU-21 — Actualizar estado del pedido · 3 puntos · Must Have
 
-Responsable propuesto: **Daniel Cárdenas**. Depende de S3-T01 y D-05.
+Responsable propuesto: **Emanuel Giraldo**. Depende de S3-T01 y D-05. Núcleo y panel implementados por Jhancarlos; Emanuel revisa, prueba y cierra.
 
 - [ ] El administrador puede cambiar el estado de un pedido entre las etapas de producción definidas.
 - [ ] Cada cambio de estado queda registrado con fecha y usuario que lo realizó.
@@ -84,7 +85,7 @@ Tareas: transiciones permitidas; `statusHistory` con fecha y administrador; endp
 
 ## HU-22 — Gestionar productos y categorías · 5 puntos · Must Have
 
-Responsable propuesto: **Emanuel Giraldo**. Depende de D-09.
+Responsable propuesto: **Andrés Valencia**. Depende de D-09.
 
 - [ ] El administrador puede crear, editar y deshabilitar productos y categorías.
 - [ ] No se puede guardar un producto sin nombre, categoría y precio.
@@ -96,7 +97,7 @@ Tareas: colección `categories`; relación con productos; migración revisada; v
 
 ## HU-23 — Gestionar diseños disponibles · 3 puntos · Should Have
 
-Responsable propuesto: **Andrés Valencia**. Depende de D-10.
+Responsable propuesto: **Daniel Cárdenas**. Depende de D-10.
 
 - [ ] El administrador puede crear, editar y eliminar los diseños disponibles.
 - [ ] Los diseños se pueden asociar a las prendas con su imagen.
@@ -108,7 +109,7 @@ Tareas: colección `designs`; carga de imagen; relación con prendas; `active`; 
 
 ## HU-24 — Gestionar clientes y pedidos · 5 puntos · Must Have
 
-Responsable propuesto: **Daniel Cárdenas**, con apoyo de **Emanuel Giraldo** en el panel. Depende de S3-T01 y HU-21.
+Responsable propuesto: **Kevin Burgos**, con apoyo de **Emanuel Giraldo** en el panel. Depende de S3-T01 y HU-21.
 
 - [ ] El panel muestra la lista de clientes y de pedidos con sus datos principales.
 - [ ] El administrador puede abrir el detalle de un pedido y de un cliente.

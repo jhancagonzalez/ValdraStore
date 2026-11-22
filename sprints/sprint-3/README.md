@@ -17,17 +17,17 @@ El cliente crea un pedido desde un diseño aprobado, lo ve en su historial con s
 
 ## Historias y reparto propuesto
 
-Las asignaciones de Notion están en «Por definir». Esta es una propuesta de reparto basada en las dependencias técnicas y en la capacidad del equipo; no reemplaza la asignación oficial.
+Asignaciones actualizadas el 22 de noviembre de 2026. El reparto busca balancear el trabajo: HU-20 y HU-21 ya están funcionales y sus responsables cierran revisión y pruebas; HU-22 y HU-23 son el trabajo nuevo de catálogo.
 
 | HU | Historia | Puntos | Prioridad | Responsable propuesto | Depende de |
 | --- | --- | ---: | --- | --- | --- |
 | HU-18 | Crear un pedido | 5 | Must Have | Jhancarlos Gonzalez | Modelo de pedidos (S3-T01) |
-| HU-19 | Consultar historial de pedidos | 2 | Could Have | Andrés Valencia | HU-18 |
+| HU-19 | Consultar historial de pedidos | 2 | Could Have | Jhancarlos Gonzalez | HU-18 |
 | HU-20 | Consultar estado del pedido | 3 | Must Have | Kevin Burgos | HU-18 |
-| HU-21 | Actualizar estado del pedido | 3 | Must Have | Daniel Cárdenas | S3-T01 y D-05 |
-| HU-22 | Gestionar productos y categorías | 5 | Must Have | Emanuel Giraldo | D-09; no depende de pedidos |
-| HU-23 | Gestionar diseños disponibles | 3 | Should Have | Andrés Valencia | D-10; no depende de pedidos |
-| HU-24 | Gestionar clientes y pedidos | 5 | Must Have | Daniel Cárdenas | S3-T01 y HU-21 |
+| HU-21 | Actualizar estado del pedido | 3 | Must Have | Emanuel Giraldo | S3-T01 y D-05 |
+| HU-22 | Gestionar productos y categorías | 5 | Must Have | Andrés Valencia | D-09; no depende de pedidos |
+| HU-23 | Gestionar diseños disponibles | 3 | Should Have | Daniel Cárdenas | D-10; no depende de pedidos |
+| HU-24 | Gestionar clientes y pedidos | 5 | Must Have | Kevin Burgos | S3-T01 y HU-21 |
 | HU-25 | Actualizar precios e información | 2 | Should Have | Emanuel Giraldo | HU-22; instantánea de precio depende de pedidos |
 | **Total** | | **28** | **5 Must · 2 Should · 1 Could** | | |
 
@@ -35,30 +35,30 @@ Las asignaciones de Notion están en «Por definir». Esta es una propuesta de r
 
 | Persona | Rol | Historias | Puntos | Enfoque |
 | --- | --- | --- | ---: | --- |
-| Jhancarlos Gonzalez | Scrum Master, Backend | HU-18 + base transversal | 5 | Modelo de pedidos, migración, acceso/RLS, creación de pedido, integración y documentación |
-| Kevin Burgos | Full Stack | HU-20 + apoyo HU-18 | 3 | Estado del pedido para el cliente y apoyo en la creación |
-| Daniel Cárdenas | Backend | HU-21 + HU-24 | 8 | Cambio de estado con historial, administración de clientes y pedidos, revisión de seguridad |
-| Emanuel Giraldo | PO, Frontend | HU-22 + HU-25 | 7 | Administración de productos/categorías, precios y apoyo en el panel |
-| Andrés Valencia | Frontend | HU-23 + HU-19 | 5 | Diseños disponibles, historial del cliente y apoyo de UI/QA |
+| Jhancarlos Gonzalez | Scrum Master, Backend | HU-18 + HU-19 + base transversal | 7 | Modelo de pedidos, migración, acceso/RLS, creación, historial, integración y documentación |
+| Kevin Burgos | Full Stack | HU-20 + HU-24 | 8 | Estado del cliente, revisión de `/pedidos` y administración de clientes/pedidos |
+| Emanuel Giraldo | PO, Frontend | HU-21 + HU-25 | 5 | Revisión del cambio de estado, panel y edición de precios/información |
+| Andrés Valencia | Frontend | HU-22 | 5 | Categorías, relación con productos, migración y catálogo |
+| Daniel Cárdenas | Backend | HU-23 | 3 | Diseños, imágenes, relación con prendas y `active` |
 
-**Primero, en Jhancarlos:** la base de pedidos e inventario está implementada, las migraciones aplicadas, el stock sembrado y HU-18, HU-19 y HU-20 validadas de punta a punta. Sigue HU-24 y la coordinación de los cambios de HU-22/HU-23.
+**Primero, en Jhancarlos:** HU-18 y HU-19 están implementadas y validadas; la base de pedidos e inventario, las migraciones, el stock y la seguridad están cerrados. Sigue apoyando HU-24 (Kevin), HU-25 (Emanuel) y revisando los cambios de catálogo de HU-22/HU-23.
 
 ## Qué puede empezar ya, sin depender de pedidos
 
-- **HU-22 (Emanuel):** crear la colección `categories`, cambiar `products.category` a relación y preparar su migración/admin (D-09). Es la parte de catálogo con más alcance.
-- **HU-23 (Andrés):** crear la colección `designs` con imagen, relación a prendas y `active`, más su migración/admin (D-10).
-- **HU-25 (Emanuel):** edición de precio e información de producto. La prueba de que un pedido conserva el precio anterior requiere que exista `orders`.
-- **Andrés:** textos, estados vacíos y revisión responsive de historial/estado; se conectan cuando exista el backend.
-- **Daniel:** checklist de acceso, RLS y auditoría para `orders`, usando el modelo propuesto.
-- **Jhancarlos:** transcripción del backlog, decisiones y documentación del sprint.
+- **HU-22 (Andrés):** crear la colección `categories`, cambiar `products.category` a relación y preparar su migración/admin (D-09). Es la parte de catálogo con más alcance.
+- **HU-23 (Daniel):** crear la colección `designs` con imagen, relación a prendas y `active`, más su migración/admin (D-10).
+- **HU-25 (Emanuel):** edición de precio e información de producto; depende de HU-22. La prueba de que un pedido conserva el precio anterior requiere que exista `orders`.
+- **Kevin:** revisar y cerrar HU-20; después iniciar HU-24 con la lista/detalle/filtros del panel.
+- **Emanuel:** revisar y cerrar HU-21; después HU-25, cuando HU-22 esté listo.
+- **Jhancarlos:** integración, revisión de esquemas, decisiones y documentación del sprint.
 
 ## Dependencias
 
 - **HU-18** depende del modelo de `orders`, de la relación con `approved-designs` y de que el diseño pertenezca al cliente.
-- **HU-19 y HU-20** dependen de HU-18.
-- **HU-21** depende de `orders` y del catálogo de estados aprobado (D-05).
+- **HU-19 y HU-20** dependen de HU-18. Comparten la página `/pedidos`; coordinar la lista/detalle con el estado.
+- **HU-21** depende de `orders` y del catálogo de estados aprobado (D-05). HU-20 consume sus cambios de estado.
 - **HU-24** depende de `orders` y de HU-21 para el filtro por estado.
-- **HU-22 y HU-23** no dependen de pedidos, pero sus colecciones nuevas (`categories` y `designs`) amplían el alcance con dos migraciones y cambios en el catálogo. **HU-25** no depende de pedidos.
+- **HU-22 y HU-23** no dependen de pedidos, pero sus colecciones nuevas (`categories` y `designs`) amplían el alcance con dos migraciones y cambios en el catálogo; comparten `src/plugins/ecommerce.ts` y deben coordinarse. **HU-25** depende de HU-22.
 - No hay pagos, checkout, carrito ni envíos en este sprint. WhatsApp (HU-26 a HU-28) y otros módulos quedan fuera.
 
 ## Decisiones y base protegida

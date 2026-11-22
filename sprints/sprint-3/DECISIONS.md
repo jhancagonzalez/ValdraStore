@@ -45,8 +45,8 @@ Rama `branch/SPRINT-3-orders-core`, commits `62d0365`, `b53b9e6`, `07cfc17`, `9b
 | Borrado de cuenta | Hook de `src/collections/Customers.ts` | Solo Jhancarlos |
 | Semilla de stock | `scripts/seed-order-stock.ts` | Solo Jhancarlos |
 | API y UI de HU-18 | `app/api/orders/create/route.ts`, `app/(frontend)/personalizar/order-panel.tsx` | Solo Jhancarlos |
-| Número y consulta | `src/lib/orders/order-number.ts`, `src/services/orders/order-number.ts`, `app/(frontend)/pedidos/page.tsx` y los enlaces de navegación de `site-header.tsx`/`bottom-nav.tsx` | Número y página: Jhancarlos; revisión de UI de HU-19/20: Andrés y Kevin |
-| UI de pedidos | `app/(frontend)/pedidos/order-status.tsx`, `loading.tsx`, `cancel-order-button.tsx` y estilos de pedidos | Jhancarlos; revisión de Andrés/Kevin |
+| Número y consulta | `src/lib/orders/order-number.ts`, `src/services/orders/order-number.ts`, `app/(frontend)/pedidos/page.tsx` y los enlaces de navegación de `site-header.tsx`/`bottom-nav.tsx` | Número y página: Jhancarlos; revisión de estado: Kevin |
+| UI de pedidos | `app/(frontend)/pedidos/order-status.tsx`, `loading.tsx`, `cancel-order-button.tsx` y estilos de pedidos | Jhancarlos + Kevin |
 | Endurecimiento | `src/lib/safe-next.ts`, `src/services/roles/change-role.ts`, `src/services/orders/order-hooks.ts` | Solo Jhancarlos |
 | Cuenta con pedidos | `src/services/orders/customer-account.ts`, hook de `Customers.ts`, `app/(frontend)/cuenta/actions.ts`, `app/(frontend)/pedidos/actions.ts`, `src/lib/contact.ts` | Solo Jhancarlos |
 | Dependencias | `package.json`, `pnpm-lock.yaml` | Solo Jhancarlos |
@@ -67,11 +67,13 @@ Las UI no deben duplicar etiquetas de estado ni calcular precios; el servidor es
 
 | Persona | Permitido | No tocar sin revisión |
 | --- | --- | --- |
-| Jhancarlos | Núcleo de pedidos e inventario, migración, HU-18, regla de cuenta con pedidos en curso, integración, docs | — |
-| Kevin | HU-20 y apoyo a la creación del pedido | Esquema, hooks, tipos o migraciones de pedidos |
-| Daniel | HU-21/HU-24 sobre el panel y pruebas; revisión de acceso/RLS | Esquema, máquina de estados o migraciones |
-| Emanuel | HU-22 (categorías) y HU-25; cambios en `src/plugins/ecommerce.ts` con revisión | `orders`, `garment-stock`, precios o estados |
-| Andrés | HU-23 (diseños) y HU-19; UI de historial/estado | `orders`, `garment-stock`, esquema o migraciones |
+| Jhancarlos | Núcleo de pedidos e inventario, migración, HU-18 y HU-19, regla de cuenta con pedidos en curso, seguridad, integración, docs | — |
+| Kevin | HU-20 (estado del cliente) y HU-24 (clientes/pedidos en el panel); revisión de `/pedidos` | Esquema, hooks, tipos o migraciones de pedidos |
+| Emanuel | HU-21 (cambio de estado en el panel y pruebas) y HU-25 (precios/información); revisión de estados | Esquema, hooks, tipos o migraciones de pedidos |
+| Andrés | HU-22 (categorías) y cambios en `src/plugins/ecommerce.ts` con revisión | `orders`, `garment-stock`, precios o estados |
+| Daniel | HU-23 (diseños), cambios en `src/plugins/ecommerce.ts` con revisión y checklist de acceso/RLS | `orders`, `garment-stock`, esquema o migraciones |
+
+Reparto actualizado el 22 de noviembre de 2026. HU-20 y HU-21 ya están funcionales: sus responsables cierran revisión y pruebas. HU-24 y HU-25 se asignaron para balancear la carga; HU-25 depende de HU-22.
 
 Las colecciones `categories` y `designs` pertenecen a HU-22/HU-23. Sus responsables deben coordinar con Jhancarlos cualquier cambio en `src/plugins/ecommerce.ts` y la migración correspondiente; no forman parte del núcleo de pedidos.
 

@@ -91,13 +91,13 @@ No se delega: `Orders.ts`, `GarmentStock.ts`, servicios en `src/services/orders/
 | S3-T01 | Modelo `orders`, inventario, estados, acceso, RLS y migración | HU-18/21/24 | Jhancarlos | Implementado y migrado |
 | S3-T02 | Servicio de creación, stock, validaciones e instantáneas de precio | HU-18 | Jhancarlos | Implementado |
 | S3-T03 | UI de creación, confirmación y consulta por número del pedido | HU-18/20 | Jhancarlos + Kevin | Implementado y validado |
-| S3-T04 | Lista, detalle, estado, aviso de producción y UI accesible para el cliente (`/pedidos`) | HU-19/20 | Kevin + Andrés | Implementado, validado y mejorado; revisión de UI |
-| S3-T05 | Cambio de estado con historial y auditoría | HU-21 | Daniel | S3-T01, D-05 |
-| S3-T06 | Lista/detalle/filtro de clientes y pedidos en el admin | HU-24 | Daniel + Emanuel | S3-T01, S3-T05 |
-| S3-T07 | Colección `categories`, relación con productos, migración y admin | HU-22 | Emanuel | D-09; revisión de Jhancarlos |
-| S3-T08 | Colección `designs`, relación con prendas, migración y admin | HU-23 | Andrés | D-10; revisión de Jhancarlos |
+| S3-T04 | Lista, detalle, estado, aviso de producción y UI accesible para el cliente (`/pedidos`) | HU-19/20 | Jhancarlos + Kevin | Implementado, validado y mejorado; revisión de UI |
+| S3-T05 | Cambio de estado con historial y auditoría | HU-21 | Emanuel | S3-T01, D-05 |
+| S3-T06 | Lista/detalle/filtro de clientes y pedidos en el admin | HU-24 | Kevin + Emanuel | S3-T01, S3-T05 |
+| S3-T07 | Colección `categories`, relación con productos, migración y admin | HU-22 | Andrés | D-09; revisión de Jhancarlos |
+| S3-T08 | Colección `designs`, relación con prendas, migración y admin | HU-23 | Daniel | D-10; revisión de Jhancarlos |
 | S3-T09 | Edición de precio/información y prueba de instantánea fija | HU-25 | Emanuel | S3-T01, D-07 |
-| S3-T10 | Integración, E2E, seguridad/RLS, responsive, evidencias y Notion | Transversal | Jhancarlos + Andrés | Todas |
+| S3-T10 | Integración, E2E, seguridad/RLS, responsive, evidencias y Notion | Transversal | Jhancarlos + equipo | Todas |
 | S3-T11 | Semilla de inventario y pruebas de stock | HU-18/19 | Jhancarlos | Hecho: 40 filas |
 | S3-T12 | Bloqueo de eliminación de cuenta con pedidos en curso y cancelación del cliente | HU-04/19/20 | Jhancarlos | Implementado y validado |
 | S3-T13 | Endurecimiento de seguridad de pedidos y cuentas | HU-04/19/20 | Jhancarlos | Implementado; quedan decisiones de producto |
@@ -117,16 +117,16 @@ El calendario es una propuesta: el sprint ya está en curso y el equipo debe aju
 
 **Jhancarlos, en este orden:**
 
-1. Revisar los cambios de esquema de HU-22/HU-23 antes de que se mezclen.
-2. Apoyar HU-24 y revisar la UI de `/pedidos` con Kevin y Andrés.
+1. Revisar los cambios de esquema de HU-22 (Andrés) y HU-23 (Daniel) antes de que se mezclen.
+2. Apoyar HU-24 (Kevin) y HU-25 (Emanuel); revisar el cierre de HU-20 (Kevin) y HU-21 (Emanuel).
 3. Integrar, probar el recorrido completo y mantener la documentación.
 4. Preparar la evidencia y la demo.
 
-HU-18, HU-19 y HU-20 están validadas y habilitan HU-21 y HU-24.
+HU-18 y HU-19 están validadas; HU-20 y HU-21 están funcionales y habilitan HU-24. HU-25 depende de HU-22.
 
 ## 6. Qué no depende de nadie
 
-- **HU-22** (categorías) y **HU-23** (diseños): deben crear sus colecciones y migraciones; Emanuel y Andrés pueden empezar ya con el relevamiento y el esquema, coordinando con Jhancarlos.
+- **HU-22** (categorías) y **HU-23** (diseños): deben crear sus colecciones y migraciones; Andrés y Daniel pueden empezar ya con el relevamiento y el esquema, coordinando con Jhancarlos.
 - **HU-25** (precio e información): la edición del producto es independiente; los pedidos usan la tabla fija de precios por prenda base.
 - Textos, estados vacíos y revisión responsive de historial/estado.
 - Checklist de acceso, RLS y auditoría para pedidos.
