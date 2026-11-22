@@ -44,7 +44,7 @@ Responsable propuesto: **Jhancarlos Gonzalez**. Depende de S3-T01.
 - [x] El pedido se guarda con fecha, cliente, productos y estado inicial.
 - [x] El sistema confirma al cliente que el pedido fue creado y no permite crear un pedido sin diseño o prenda.
 
-> **Validación (2026-11-21).** Flujo E2E con una cuenta temporal: diseño aprobado, pedido de 2 unidades, confirmación «Pedido #823488 creado», total $120.000 y stock 20 → 18. El enlace «Mis pedidos» abrió `/pedidos?pedido=823488` y mostró el estado; tras el cambio del administrador, «En producción». La eliminación de la cuenta borró pedido y diseño y devolvió el stock a 20. El formulario de creación del administrador también se validó con una sesión real. Evidencia completa en [evidence/HU-18.md](evidence/HU-18.md).
+> **Validación (2026-11-21).** Flujo E2E con una cuenta temporal: diseño aprobado, pedido de 2 unidades, confirmación «Pedido #823488 creado», total $120.000 y stock 20 → 18. La lista y el detalle de `/pedidos` mostraron el estado; tras el cambio del administrador, «En producción». La eliminación de la cuenta borró pedido y diseño y devolvió el stock a 20. El formulario de creación del administrador también se validó con una sesión real. Evidencia completa en [evidence/HU-18.md](evidence/HU-18.md).
 
 Tareas: modelo de `orders` con diseño, cantidad 1–10, stock e instantáneas; precio fijo de la prenda base; creación por cliente o administrador; UI de creación y confirmación; pruebas negativas sin diseño, sin prenda o sin stock.
 
