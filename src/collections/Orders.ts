@@ -178,6 +178,9 @@ export const Orders: CollectionConfig = {
     {
       name: "statusHistory",
       type: "array",
+      access: {
+        read: ({ req }) => hasAdminRole(req.user),
+      },
       admin: {
         initCollapsed: true,
         readOnly: true,
