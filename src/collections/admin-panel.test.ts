@@ -1,6 +1,7 @@
 import type { Field, JoinField } from "payload";
 import { describe, expect, it } from "vitest";
 import { Customers } from "./Customers";
+import { GarmentStock } from "./GarmentStock";
 import { Orders } from "./Orders";
 
 const fieldByName = (fields: Field[], name: string): Field | undefined =>
@@ -71,5 +72,40 @@ describe("panel de clientes y pedidos (HU-24)", () => {
     );
     expect(canRead({ req: { user: { collection: "admins", id: 1, role: "admin" } } })).toBe(true);
     expect(canRead({ req: { user: null } })).toBe(false);
+  });
+
+  it("los campos del pedido tienen etiquetas en español", () => {
+    const expected = [
+      "orderNumber",
+      "customer",
+      "design",
+      "quantity",
+      "garmentBase",
+      "garmentLabel",
+      "category",
+      "colorLabel",
+      "size",
+      "unitPrice",
+      "total",
+      "status",
+      "source",
+      "createdBy",
+    ];
+
+    for (const name of expected) {
+      const field = fieldByName(Orders.fields, name);
+
+      expect(field, name).toBeDefined();
+      expect(field && "label" in field ? field.label : undefined, name).toBeTruthy();
+    }
+  });
+
+  it("el inventario muestra sus columnas con etiquetas en español", () => {
+    for (const name of ["baseId", "size", "quantity", "active"]) {
+      const field = fieldByName(GarmentStock.fields, name);
+
+      expect(field, name).toBeDefined();
+      expect(field && "label" in field ? field.label : undefined, name).toBeTruthy();
+    }
   });
 });
