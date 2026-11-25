@@ -54,9 +54,12 @@ export const Orders: CollectionConfig = {
   admin: {
     defaultColumns: ["orderNumber", "customer", "status", "quantity", "total", "createdAt"],
     description:
-      "Pedidos de prendas personalizadas. El cliente, el precio y las instantáneas se fijan en servidor.",
+      "Pedidos de prendas personalizadas. Busca por número, prenda, talla o color y filtra por estado desde «Filtros». El cliente, el precio y las instantáneas se fijan en servidor.",
     group: "Pedidos",
+    listSearchableFields: ["orderNumber", "garmentLabel", "garmentBase", "colorLabel", "size"],
+    useAsTitle: "orderNumber",
   },
+  defaultSort: "-createdAt",
   fields: [
     {
       name: "orderNumber",

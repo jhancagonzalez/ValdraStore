@@ -85,6 +85,9 @@ export interface Config {
     'payload-migrations': PayloadMigration;
   };
   collectionsJoins: {
+    customers: {
+      orders: 'orders';
+    };
     variantTypes: {
       options: 'variantOptions';
     };
@@ -202,6 +205,8 @@ export interface Admin {
   collection: 'admins';
 }
 /**
+ * Cuentas de cliente. Busca por nombre, apellido, correo o teléfono y abre una cuenta para ver sus pedidos.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "customers".
  */
@@ -214,6 +219,14 @@ export interface Customer {
    */
   phone?: string | null;
   role?: 'customer' | null;
+  /**
+   * Pedidos creados por este cliente, del más reciente al más antiguo.
+   */
+  orders?: {
+    docs?: (number | Order)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -235,70 +248,7 @@ export interface Customer {
   collection: 'customers';
 }
 /**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
- */
-export interface Media {
-  id: number;
-  alt: string;
-  _objectKey?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "private-spike-media".
- */
-export interface PrivateSpikeMedia {
-  id: number;
-  _objectKey?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "approved-designs".
- */
-export interface ApprovedDesign {
-  id: number;
-  customer: number | Customer;
-  garment: string;
-  garmentLabel: string;
-  colorLabel: string;
-  size: string;
-  idea: string;
-  /**
-   * Imagen final en data URL. Solo la ven el cliente propietario y los administradores.
-   */
-  image: string;
-  approvedAt: string;
-  /**
-   * Punto de extensión para el pedido del Sprint 3. Sin historias de pedidos no se completa.
-   */
-  orderReference?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Pedidos de prendas personalizadas. El cliente, el precio y las instantáneas se fijan en servidor.
+ * Pedidos de prendas personalizadas. Busca por número, prenda, talla o color y filtra por estado desde «Filtros». El cliente, el precio y las instantáneas se fijan en servidor.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "orders".
@@ -347,6 +297,69 @@ export interface Order {
     | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "approved-designs".
+ */
+export interface ApprovedDesign {
+  id: number;
+  customer: number | Customer;
+  garment: string;
+  garmentLabel: string;
+  colorLabel: string;
+  size: string;
+  idea: string;
+  /**
+   * Imagen final en data URL. Solo la ven el cliente propietario y los administradores.
+   */
+  image: string;
+  approvedAt: string;
+  /**
+   * Punto de extensión para el pedido del Sprint 3. Sin historias de pedidos no se completa.
+   */
+  orderReference?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: number;
+  alt: string;
+  _objectKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "private-spike-media".
+ */
+export interface PrivateSpikeMedia {
+  id: number;
+  _objectKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
 }
 /**
  * Stock disponible por prenda base y talla. Se descuenta al crear un pedido y se devuelve al cancelarlo.
@@ -612,6 +625,7 @@ export interface CustomersSelect<T extends boolean = true> {
   lastName?: T;
   phone?: T;
   role?: T;
+  orders?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
