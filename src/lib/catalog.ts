@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import type { Where } from "payload";
 import { getPayloadClient } from "@/lib/payload";
 import type { Product, Variant, VariantOption } from "../../payload-types";
+import { hasVisibleDesigns } from "./design-visibility";
 
 export const CATALOG_PAGE_SIZE = 12;
 
@@ -162,9 +163,14 @@ const loadCatalogRows = unstable_cache(
     const [productResult, variantResult] = await Promise.all([
       payload.find({
         collection: "products",
-        depth: 1,
+        // Depth 2 populates the image of each associated design so the card can use
+        // it (HU-23). Joins are not needed by the cards, and designs only bring the
+        // fields the card reads.
+        depth: 2,
+        joins: false,
         overrideAccess: false,
         pagination: false,
+        populate: { designs: { active: true, image: true, name: true } },
         sort: "-createdAt",
       }),
       payload.find({
@@ -181,7 +187,10 @@ const loadCatalogRows = unstable_cache(
 );
 
 export const getPublishedProducts = async (page: number, filters: CatalogFilters) => {
-  const { products, variants } = await loadCatalogRows();
+  const rows = await loadCatalogRows();
+  const { variants } = rows;
+  // A garment whose associated designs are all hidden is not offered (HU-23).
+  const products = rows.products.filter(hasVisibleDesigns);
 
   const attributesByProduct = groupVariantAttributes(variants);
   const attributesOf = (product: Product) =>
@@ -236,9 +245,10 @@ export const getPublishedProducts = async (page: number, filters: CatalogFilters
 const loadProductById = unstable_cache(
   async (id: string) => {
     const payload = await getPayloadClient();
+    // Depth 2 populates each associated design's image (HU-23).
     return payload.findByID({
       collection: "products",
-      depth: 1,
+      depth: 2,
       id,
       overrideAccess: false,
     });
@@ -249,7 +259,9 @@ const loadProductById = unstable_cache(
 
 export const getPublishedProductById = async (id: string) => {
   try {
-    return await loadProductById(id);
+    const product = await loadProductById(id);
+    // Same rule as the list: hidden designs take their garment out of the catalog (HU-23).
+    return hasVisibleDesigns(product) ? product : null;
   } catch {
     return null;
   }
