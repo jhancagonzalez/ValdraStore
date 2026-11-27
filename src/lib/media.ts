@@ -1,4 +1,5 @@
-import type { Media, Product } from "../../payload-types";
+import type { Design, Media, Product } from "../../payload-types";
+import { isVisibleDesign } from "./design-visibility";
 
 /** Shown when a garment has no usable image (HU-08, third criterion). */
 export const DEFAULT_PRODUCT_IMAGE_ALT = "Imagen de prenda no disponible";
@@ -57,6 +58,27 @@ export const toProductImage = (
   return { alt, kind, url: media.url.trim() };
 };
 
+/**
+ * Turns an associated design into a renderable image (HU-23). Disabled designs and
+ * designs whose image was not populated are skipped, even if access control
+ * already filtered them, so a disabled design never reaches a customer.
+ */
+export const toDesignImage = (
+  value: Design | number | null | undefined,
+  fallbackAlt: string,
+): ProductImage | null => {
+  if (!isVisibleDesign(value)) {
+    return null;
+  }
+
+  const image = toProductImage(value.image, value.name || fallbackAlt, "design");
+  if (!image) {
+    return null;
+  }
+
+  return { ...image, alt: value.name ? `Diseño ${value.name}` : image.alt };
+};
+
 type ProductMediaSource = Pick<Product, "title"> &
   Partial<Pick<Product, "image" | "gallery" | "designs">>;
 
@@ -65,7 +87,7 @@ export const collectProductImages = (product: ProductMediaSource): ProductImage[
   const candidates: (ProductImage | null)[] = [
     toProductImage(product.image, product.title, "image"),
     ...(product.gallery ?? []).map((value) => toProductImage(value, product.title, "image")),
-    ...(product.designs ?? []).map((value) => toProductImage(value, product.title, "design")),
+    ...(product.designs ?? []).map((value) => toDesignImage(value, product.title)),
   ];
 
   const seen = new Set<string>();
