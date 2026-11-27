@@ -71,6 +71,7 @@ export interface Config {
     admins: Admin;
     customers: Customer;
     media: Media;
+    designs: Design;
     'private-spike-media': PrivateSpikeMedia;
     'approved-designs': ApprovedDesign;
     orders: Order;
@@ -88,6 +89,9 @@ export interface Config {
     customers: {
       orders: 'orders';
     };
+    designs: {
+      garments: 'products';
+    };
     variantTypes: {
       options: 'variantOptions';
     };
@@ -99,6 +103,7 @@ export interface Config {
     admins: AdminsSelect<false> | AdminsSelect<true>;
     customers: CustomersSelect<false> | CustomersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    designs: DesignsSelect<false> | DesignsSelect<true>;
     'private-spike-media': PrivateSpikeMediaSelect<false> | PrivateSpikeMediaSelect<true>;
     'approved-designs': ApprovedDesignsSelect<false> | ApprovedDesignsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
@@ -343,65 +348,36 @@ export interface Media {
   focalY?: number | null;
 }
 /**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "private-spike-media".
- */
-export interface PrivateSpikeMedia {
-  id: number;
-  _objectKey?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-}
-/**
- * Stock disponible por prenda base y talla. Se descuenta al crear un pedido y se devuelve al cancelarlo.
+ * Diseños que se ofrecen a los clientes. Asócialos a una prenda desde «Diseños asociados» en la prenda. Un diseño oculto deja de mostrarse en el catálogo, y una prenda cuyos diseños estén todos ocultos también.
  *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "garment-stock".
+ * via the `definition` "designs".
  */
-export interface GarmentStock {
+export interface Design {
   id: number;
-  key: string;
+  name: string;
   /**
-   * ID de la prenda base, por ejemplo `camisetas-black` o `hoodies-blue`.
+   * Imagen JPEG, PNG o WebP que verán los clientes en el detalle de la prenda.
    */
-  baseId: string;
-  label: string;
+  image: number | Media;
   /**
-   * S, M, L o XL.
+   * Opcional. Uso interno del equipo.
    */
-  size: string;
-  quantity: number;
+  description?: string | null;
+  /**
+   * Desmárcalo para ocultar el diseño del catálogo sin eliminarlo. Si es el único diseño activo de una prenda, la prenda también deja de mostrarse.
+   */
   active?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "variants".
- */
-export interface Variant {
-  id: number;
   /**
-   * Used for administrative purposes, not shown to customers. This is populated by default.
+   * Para asociar o quitar este diseño, edita la prenda y cambia «Diseños asociados».
    */
-  title?: string | null;
-  product: number | Product;
-  options: (number | VariantOption)[];
-  priceInCOPEnabled?: boolean | null;
-  priceInCOP?: number | null;
+  garments?: {
+    docs?: (number | Product)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
-  deletedAt?: string | null;
-  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -419,9 +395,9 @@ export interface Product {
    */
   gallery?: (number | Media)[] | null;
   /**
-   * Diseños disponibles para esta prenda. Se muestran en el detalle del catálogo (HU-08).
+   * Diseños de la colección «Diseños» que se ofrecen con esta prenda. Solo los activos se muestran a los clientes; si todos están ocultos, la prenda deja de mostrarse en el catálogo (HU-23).
    */
-  designs?: (number | Media)[] | null;
+  designs?: (number | Design)[] | null;
   category: 'camisetas' | 'hoodies' | 'camisa' | 'gorras';
   material: string;
   enableVariants?: boolean | null;
@@ -474,6 +450,67 @@ export interface VariantOption {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "variants".
+ */
+export interface Variant {
+  id: number;
+  /**
+   * Used for administrative purposes, not shown to customers. This is populated by default.
+   */
+  title?: string | null;
+  product: number | Product;
+  options: (number | VariantOption)[];
+  priceInCOPEnabled?: boolean | null;
+  priceInCOP?: number | null;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "private-spike-media".
+ */
+export interface PrivateSpikeMedia {
+  id: number;
+  _objectKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * Stock disponible por prenda base y talla. Se descuenta al crear un pedido y se devuelve al cancelarlo.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "garment-stock".
+ */
+export interface GarmentStock {
+  id: number;
+  key: string;
+  /**
+   * ID de la prenda base, por ejemplo `camisetas-black` o `hoodies-blue`.
+   */
+  baseId: string;
+  label: string;
+  /**
+   * S, M, L o XL.
+   */
+  size: string;
+  quantity: number;
+  active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -507,6 +544,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'designs';
+        value: number | Design;
       } | null)
     | ({
         relationTo: 'private-spike-media';
@@ -662,6 +703,19 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "designs_select".
+ */
+export interface DesignsSelect<T extends boolean = true> {
+  name?: T;
+  image?: T;
+  description?: T;
+  active?: T;
+  garments?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
