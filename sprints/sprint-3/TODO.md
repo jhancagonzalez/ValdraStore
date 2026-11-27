@@ -72,6 +72,8 @@ Responsable propuesto: **Kevin Burgos**. Depende de HU-18. Implementado por Jhan
 Tareas: estado visible en historial/detalle; revalidación al consultar; no prometer tiempo real.
 
 > **Validación (2026-11-21).** La lista y el detalle de `/pedidos` reflejan el estado actual. Tras cambiar el pedido a `en_produccion`, la lista y el detalle mostraron «En producción» y el aviso de que el equipo contactará por correo para informar cuándo la prenda esté lista. La UI muestra badge, avance y confirmación de cancelación. Evidencia en [evidence/HU-19-HU-20.md](evidence/HU-19-HU-20.md) y [evidence/full-order-flow.md](evidence/full-order-flow.md).
+>
+> **Revisión de Kevin (2026-11-24).** Los tres criterios quedan verificados sobre el código integrado: estados de D-05 con etiquetas probadas, estado visible en lista y detalle, y lectura fresca en cada consulta sin caché. Sin sesión, `/pedidos` muestra el inicio de sesión con `next=/pedidos`. Límites vigentes: sin paginación, sin historial para el cliente y sin avisos automáticos. Detalle en [evidence/HU-19-HU-20.md](evidence/HU-19-HU-20.md).
 
 ## HU-21 — Actualizar estado del pedido · 3 puntos · Must Have
 
