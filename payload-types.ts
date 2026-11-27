@@ -71,6 +71,7 @@ export interface Config {
     admins: Admin;
     customers: Customer;
     media: Media;
+    designs: Design;
     'private-spike-media': PrivateSpikeMedia;
     'approved-designs': ApprovedDesign;
     orders: Order;
@@ -85,6 +86,9 @@ export interface Config {
     'payload-migrations': PayloadMigration;
   };
   collectionsJoins: {
+    designs: {
+      garments: 'products';
+    };
     variantTypes: {
       options: 'variantOptions';
     };
@@ -96,6 +100,7 @@ export interface Config {
     admins: AdminsSelect<false> | AdminsSelect<true>;
     customers: CustomersSelect<false> | CustomersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    designs: DesignsSelect<false> | DesignsSelect<true>;
     'private-spike-media': PrivateSpikeMediaSelect<false> | PrivateSpikeMediaSelect<true>;
     'approved-designs': ApprovedDesignsSelect<false> | ApprovedDesignsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
@@ -255,6 +260,126 @@ export interface Media {
   focalY?: number | null;
 }
 /**
+ * Diseños que se ofrecen a los clientes. Asócialos a una prenda desde «Diseños asociados» en la prenda. Un diseño oculto deja de mostrarse en el catálogo, y una prenda cuyos diseños estén todos ocultos también.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "designs".
+ */
+export interface Design {
+  id: number;
+  name: string;
+  /**
+   * Imagen JPEG, PNG o WebP que verán los clientes en el detalle de la prenda.
+   */
+  image: number | Media;
+  /**
+   * Opcional. Uso interno del equipo.
+   */
+  description?: string | null;
+  /**
+   * Desmárcalo para ocultar el diseño del catálogo sin eliminarlo. Si es el único diseño activo de una prenda, la prenda también deja de mostrarse.
+   */
+  active?: boolean | null;
+  /**
+   * Para asociar o quitar este diseño, edita la prenda y cambia «Diseños asociados».
+   */
+  garments?: {
+    docs?: (number | Product)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products".
+ */
+export interface Product {
+  id: number;
+  title: string;
+  /**
+   * Imagen que representa la prenda en el catálogo. Si falta, se muestra la imagen por defecto.
+   */
+  image?: (number | null) | Media;
+  /**
+   * Otras vistas de la prenda que se muestran en el detalle (HU-08).
+   */
+  gallery?: (number | Media)[] | null;
+  /**
+   * Diseños de la colección «Diseños» que se ofrecen con esta prenda. Solo los activos se muestran a los clientes; si todos están ocultos, la prenda deja de mostrarse en el catálogo (HU-23).
+   */
+  designs?: (number | Design)[] | null;
+  category: 'camisetas' | 'hoodies' | 'camisa' | 'gorras';
+  material: string;
+  enableVariants?: boolean | null;
+  variantTypes?: (number | VariantType)[] | null;
+  variants?: {
+    docs?: (number | Variant)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  priceInCOPEnabled?: boolean | null;
+  priceInCOP?: number | null;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "variantTypes".
+ */
+export interface VariantType {
+  id: number;
+  label: string;
+  name: string;
+  options?: {
+    docs?: (number | VariantOption)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "variantOptions".
+ */
+export interface VariantOption {
+  id: number;
+  _variantOptions_options_order?: string | null;
+  variantType: number | VariantType;
+  label: string;
+  /**
+   * should be defaulted or dynamic based on label
+   */
+  value: string;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "variants".
+ */
+export interface Variant {
+  id: number;
+  /**
+   * Used for administrative purposes, not shown to customers. This is populated by default.
+   */
+  title?: string | null;
+  product: number | Product;
+  options: (number | VariantOption)[];
+  priceInCOPEnabled?: boolean | null;
+  priceInCOP?: number | null;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  _status?: ('draft' | 'published') | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "private-spike-media".
  */
@@ -373,94 +498,6 @@ export interface GarmentStock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "variants".
- */
-export interface Variant {
-  id: number;
-  /**
-   * Used for administrative purposes, not shown to customers. This is populated by default.
-   */
-  title?: string | null;
-  product: number | Product;
-  options: (number | VariantOption)[];
-  priceInCOPEnabled?: boolean | null;
-  priceInCOP?: number | null;
-  updatedAt: string;
-  createdAt: string;
-  deletedAt?: string | null;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "products".
- */
-export interface Product {
-  id: number;
-  title: string;
-  /**
-   * Imagen que representa la prenda en el catálogo. Si falta, se muestra la imagen por defecto.
-   */
-  image?: (number | null) | Media;
-  /**
-   * Otras vistas de la prenda que se muestran en el detalle (HU-08).
-   */
-  gallery?: (number | Media)[] | null;
-  /**
-   * Diseños disponibles para esta prenda. Se muestran en el detalle del catálogo (HU-08).
-   */
-  designs?: (number | Media)[] | null;
-  category: 'camisetas' | 'hoodies' | 'camisa' | 'gorras';
-  material: string;
-  enableVariants?: boolean | null;
-  variantTypes?: (number | VariantType)[] | null;
-  variants?: {
-    docs?: (number | Variant)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
-  priceInCOPEnabled?: boolean | null;
-  priceInCOP?: number | null;
-  updatedAt: string;
-  createdAt: string;
-  deletedAt?: string | null;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "variantTypes".
- */
-export interface VariantType {
-  id: number;
-  label: string;
-  name: string;
-  options?: {
-    docs?: (number | VariantOption)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
-  updatedAt: string;
-  createdAt: string;
-  deletedAt?: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "variantOptions".
- */
-export interface VariantOption {
-  id: number;
-  _variantOptions_options_order?: string | null;
-  variantType: number | VariantType;
-  label: string;
-  /**
-   * should be defaulted or dynamic based on label
-   */
-  value: string;
-  updatedAt: string;
-  createdAt: string;
-  deletedAt?: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -494,6 +531,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'designs';
+        value: number | Design;
       } | null)
     | ({
         relationTo: 'private-spike-media';
@@ -648,6 +689,19 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "designs_select".
+ */
+export interface DesignsSelect<T extends boolean = true> {
+  name?: T;
+  image?: T;
+  description?: T;
+  active?: T;
+  garments?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
