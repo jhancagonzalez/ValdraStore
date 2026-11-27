@@ -15,7 +15,7 @@ Decisiones cerradas con el usuario el 21 de noviembre de 2026. Sustituyen las re
 | D-07 | Precio fijo por prenda base en COP: camiseta **$60.000**, hoodie **$120.000**; sin envío, impuestos ni descuentos | Implementada |
 | D-08 | Después de crear el pedido, el administrador solo cambia el estado; ítems, precio, cliente y diseño quedan congelados | Implementada |
 | D-09 | Crear colección `categories` y cambiar `products.category` a relación; permite crear, editar y deshabilitar categorías | Implementada en rama; migración sin aplicar (HU-22) |
-| D-10 | Crear colección `designs` con imagen, relación a prendas y `active`; permite crear, editar, eliminar y deshabilitar diseños | Pendiente (HU-23) |
+| D-10 | Crear colección `designs` con imagen, relación a prendas y `active`; permite crear, editar, eliminar y deshabilitar diseños | Implementada en rama; migración pendiente de revisión (HU-23) |
 | D-11 | Usar el panel de Payload para pedidos, inventario, clientes, prendas y diseños | Implementada para pedidos e inventario |
 | D-12 | Historial del cliente en `/pedidos` con lista y detalle simple; sin tiempo real | Implementada (HU-19/20) |
 | D-13 | Al eliminar la cuenta se eliminan también sus pedidos y diseños; el stock se devuelve solo para pedidos no entregados. Con pedidos en curso, la eliminación se bloquea | Implementada |

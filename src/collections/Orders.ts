@@ -54,9 +54,12 @@ export const Orders: CollectionConfig = {
   admin: {
     defaultColumns: ["orderNumber", "customer", "status", "quantity", "total", "createdAt"],
     description:
-      "Pedidos de prendas personalizadas. El cliente, el precio y las instantáneas se fijan en servidor.",
+      "Pedidos de prendas personalizadas. Busca por número, prenda, talla o color y filtra por estado desde «Filtros». El cliente, el precio y las instantáneas se fijan en servidor.",
     group: "Pedidos",
+    listSearchableFields: ["orderNumber", "garmentLabel", "garmentBase", "colorLabel", "size"],
+    useAsTitle: "orderNumber",
   },
+  defaultSort: "-createdAt",
   fields: [
     {
       name: "orderNumber",
@@ -79,6 +82,7 @@ export const Orders: CollectionConfig = {
         position: "sidebar",
       },
       index: true,
+      label: "Cliente",
       relationTo: "customers",
       required: true,
     },
@@ -89,6 +93,7 @@ export const Orders: CollectionConfig = {
         description: "Diseño aprobado que se va a producir. Debe pertenecer al cliente.",
       },
       index: true,
+      label: "Diseño aprobado",
       relationTo: "approved-designs",
       required: true,
     },
@@ -99,6 +104,7 @@ export const Orders: CollectionConfig = {
         description: `Cantidad de unidades entre ${MIN_ORDER_QUANTITY} y ${MAX_ORDER_QUANTITY}. Descuenta stock.`,
       },
       defaultValue: 1,
+      label: "Cantidad",
       max: MAX_ORDER_QUANTITY,
       min: MIN_ORDER_QUANTITY,
       required: true,
@@ -110,37 +116,44 @@ export const Orders: CollectionConfig = {
       name: "garmentBase",
       type: "text",
       admin: { readOnly: true },
+      label: "Prenda base",
     },
     {
       name: "garmentLabel",
       type: "text",
       admin: { readOnly: true },
+      label: "Prenda",
     },
     {
       name: "category",
       type: "text",
       admin: { readOnly: true },
+      label: "Categoría",
     },
     {
       name: "colorLabel",
       type: "text",
       admin: { readOnly: true },
+      label: "Color",
     },
     {
       name: "size",
       type: "text",
       admin: { readOnly: true },
+      label: "Talla",
     },
     {
       name: "unitPrice",
       type: "number",
       admin: { readOnly: true },
+      label: "Precio unitario",
       min: 0,
     },
     {
       name: "total",
       type: "number",
       admin: { readOnly: true },
+      label: "Total",
       min: 0,
     },
     {
@@ -152,6 +165,7 @@ export const Orders: CollectionConfig = {
       },
       defaultValue: "pendiente",
       index: true,
+      label: "Estado",
       options: statusOptions,
       required: true,
     },
@@ -162,6 +176,7 @@ export const Orders: CollectionConfig = {
         position: "sidebar",
         readOnly: true,
       },
+      label: "Origen",
       options: [
         { label: "Cliente", value: "customer" },
         { label: "Administrador", value: "admin" },
@@ -174,6 +189,7 @@ export const Orders: CollectionConfig = {
         position: "sidebar",
         readOnly: true,
       },
+      label: "Creado por",
       relationTo: "admins",
     },
     {
@@ -181,6 +197,7 @@ export const Orders: CollectionConfig = {
       type: "checkbox",
       admin: { hidden: true },
       defaultValue: false,
+      label: "Stock devuelto",
     },
     {
       name: "statusHistory",
@@ -196,12 +213,14 @@ export const Orders: CollectionConfig = {
         {
           name: "fromStatus",
           type: "select",
+          label: "Estado anterior",
           options: statusOptions,
           required: true,
         },
         {
           name: "toStatus",
           type: "select",
+          label: "Estado nuevo",
           options: statusOptions,
           required: true,
         },
@@ -212,18 +231,21 @@ export const Orders: CollectionConfig = {
             date: { pickerAppearance: "dayAndTime" },
             readOnly: true,
           },
+          label: "Fecha del cambio",
           required: true,
         },
         {
           name: "changedBy",
           type: "relationship",
           admin: { readOnly: true },
+          label: "Cambiado por",
           relationTo: "admins",
         },
         {
           name: "note",
           type: "textarea",
           admin: { readOnly: true },
+          label: "Nota",
         },
       ],
       labels: {

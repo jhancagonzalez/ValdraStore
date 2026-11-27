@@ -6,14 +6,16 @@
 - El plugin está registrado en `payload.config.ts` mediante
   `src/plugins/ecommerce.ts`.
 - Se habilitan las colecciones de productos y variantes para el catálogo inicial.
-  `products` añade `title`, `image` (relación con `media`), `gallery` y `designs`
-  (relaciones múltiples con `media`), `category` y `material` mediante
+  `products` añade `title`, `image` (relación con `media`), `gallery` (relación
+  múltiple con `media`), `designs` (relación múltiple con `designs`), `category`
+  (relación con `categories`) y `material` mediante
   `productsCollectionOverride`; la imagen del catálogo se guarda en el bucket público
   `valdra-catalog-media` y su URL pública se genera en servidor. `image` es opcional:
   cuando falta o su archivo no carga, el catálogo y el detalle muestran la imagen por
   defecto `src/assets/product-placeholder.png` (HU-08). `gallery` reúne vistas
-  adicionales y `designs`, los diseños asociados que se muestran en el detalle; la
-  colección administrable de diseños corresponde a HU-23 (Sprint 3).
+  adicionales y `designs`, los diseños asociados de la colección `designs` (HU-23,
+  D-10), que el administrador crea, edita, deshabilita y elimina en «Catálogo →
+  Diseños».
   `category` es una relación con la colección `categories` (HU-22, D-09): el
   administrador crea, edita y deshabilita categorías en «Catálogo → Categorías», y
   una prenda no se publica sin nombre, categoría y precio.

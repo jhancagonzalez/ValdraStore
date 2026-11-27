@@ -72,6 +72,8 @@ Responsable propuesto: **Kevin Burgos**. Depende de HU-18. Implementado por Jhan
 Tareas: estado visible en historial/detalle; revalidación al consultar; no prometer tiempo real.
 
 > **Validación (2026-11-21).** La lista y el detalle de `/pedidos` reflejan el estado actual. Tras cambiar el pedido a `en_produccion`, la lista y el detalle mostraron «En producción» y el aviso de que el equipo contactará por correo para informar cuándo la prenda esté lista. La UI muestra badge, avance y confirmación de cancelación. Evidencia en [evidence/HU-19-HU-20.md](evidence/HU-19-HU-20.md) y [evidence/full-order-flow.md](evidence/full-order-flow.md).
+>
+> **Revisión de Kevin (2026-11-24).** Los tres criterios quedan verificados sobre el código integrado: estados de D-05 con etiquetas probadas, estado visible en lista y detalle, y lectura fresca en cada consulta sin caché. Sin sesión, `/pedidos` muestra el inicio de sesión con `next=/pedidos`. Límites vigentes: sin paginación, sin historial para el cliente y sin avisos automáticos. Detalle en [evidence/HU-19-HU-20.md](evidence/HU-19-HU-20.md).
 
 ## HU-21 — Actualizar estado del pedido · 3 puntos · Must Have
 
@@ -101,13 +103,15 @@ Tareas: colección `categories`; relación con productos; migración revisada; v
 
 Responsable propuesto: **Daniel Cárdenas**. Depende de D-10.
 
-- [ ] El administrador puede crear, editar y eliminar los diseños disponibles.
-- [ ] Los diseños se pueden asociar a las prendas con su imagen.
-- [ ] Los diseños deshabilitados dejan de mostrarse a los clientes.
+- [x] El administrador puede crear, editar y eliminar los diseños disponibles.
+- [x] Los diseños se pueden asociar a las prendas con su imagen.
+- [x] Los diseños deshabilitados dejan de mostrarse a los clientes.
 
 **Decisión confirmada (D-10):** se crea la colección `designs` con imagen, relación a prendas y `active`; `products.designs` pasa de carga de medios a relación. Incluye migración y lectura pública solo de activos.
 
 Tareas: colección `designs`; carga de imagen; relación con prendas; `active`; migración revisada; CRUD y lectura pública de activos. Coordinar con Jhancarlos por el cambio en `src/plugins/ecommerce.ts`.
+
+**Estado:** implementada en `feat/HU-23-sprint-3-designs` y validada por Daniel el 25 nov 2026 (panel, catálogo y API). Migración `20261126_120000_designs` aplicada en la base de la validación; su revisión (D-17) y el cambio en `src/plugins/ecommerce.ts` quedan para Jhancarlos en el PR. Evidencia: [evidence/HU-23.md](evidence/HU-23.md).
 
 ## HU-24 — Gestionar clientes y pedidos · 5 puntos · Must Have
 
@@ -118,6 +122,8 @@ Responsable propuesto: **Kevin Burgos**, con apoyo de **Emanuel Giraldo** en el 
 - [ ] El administrador puede buscar o filtrar pedidos por estado.
 
 Tareas: la colección y la configuración base de `orders` las crea Jhancarlos; Daniel trabaja sobre el panel, columnas, filtros y pruebas; clientes existentes en «Cuentas».
+
+> **En revisión (2026-11-24).** Kevin implementó la configuración del panel en `feat/HU-24-sprint-3-admin-customers-orders`: columnas principales en pedidos y clientes, búsqueda por número/prenda y por datos del cliente, orden por fecha descendente, filtro por estado del panel y lista de pedidos dentro del detalle del cliente. Las pruebas automatizadas pasan; la validación manual en el panel y la aprobación del PR están pendientes. Evidencia en [evidence/HU-24.md](evidence/HU-24.md).
 
 ## HU-25 — Actualizar precios e información · 2 puntos · Should Have
 

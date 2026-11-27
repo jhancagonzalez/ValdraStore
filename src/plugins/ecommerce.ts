@@ -103,13 +103,13 @@ const ecommerceConfig: EcommercePluginConfig = {
         },
         {
           name: "designs",
-          type: "upload",
+          type: "relationship",
           hasMany: true,
           label: "Diseños asociados",
-          relationTo: "media",
+          relationTo: "designs",
           admin: {
             description:
-              "Diseños disponibles para esta prenda. Se muestran en el detalle del catálogo (HU-08).",
+              "Diseños de la colección «Diseños» que se ofrecen con esta prenda. Solo los activos se muestran a los clientes; si todos están ocultos, la prenda deja de mostrarse en el catálogo (HU-23).",
           },
         },
         {

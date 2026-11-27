@@ -72,6 +72,7 @@ export interface Config {
     customers: Customer;
     media: Media;
     categories: Category;
+    designs: Design;
     'private-spike-media': PrivateSpikeMedia;
     'approved-designs': ApprovedDesign;
     orders: Order;
@@ -86,6 +87,12 @@ export interface Config {
     'payload-migrations': PayloadMigration;
   };
   collectionsJoins: {
+    customers: {
+      orders: 'orders';
+    };
+    designs: {
+      garments: 'products';
+    };
     variantTypes: {
       options: 'variantOptions';
     };
@@ -98,6 +105,7 @@ export interface Config {
     customers: CustomersSelect<false> | CustomersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
+    designs: DesignsSelect<false> | DesignsSelect<true>;
     'private-spike-media': PrivateSpikeMediaSelect<false> | PrivateSpikeMediaSelect<true>;
     'approved-designs': ApprovedDesignsSelect<false> | ApprovedDesignsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
@@ -204,6 +212,8 @@ export interface Admin {
   collection: 'admins';
 }
 /**
+ * Cuentas de cliente. Busca por nombre, apellido, correo o teléfono y abre una cuenta para ver sus pedidos.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "customers".
  */
@@ -216,6 +226,14 @@ export interface Customer {
    */
   phone?: string | null;
   role?: 'customer' | null;
+  /**
+   * Pedidos creados por este cliente, del más reciente al más antiguo.
+   */
+  orders?: {
+    docs?: (number | Order)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -237,90 +255,7 @@ export interface Customer {
   collection: 'customers';
 }
 /**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
- */
-export interface Media {
-  id: number;
-  alt: string;
-  _objectKey?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-}
-/**
- * Categorías de las prendas. Una categoría deshabilitada deja de mostrarse en el catálogo, junto con sus prendas.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "categories".
- */
-export interface Category {
-  id: number;
-  name: string;
-  /**
-   * Se usa en el enlace del catálogo (`/catalogo?category=…`). Si lo dejas vacío se genera a partir del nombre.
-   */
-  slug: string;
-  /**
-   * Desmárcalo para deshabilitar la categoría sin borrarla. Sus prendas dejan de mostrarse en el catálogo.
-   */
-  active?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "private-spike-media".
- */
-export interface PrivateSpikeMedia {
-  id: number;
-  _objectKey?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "approved-designs".
- */
-export interface ApprovedDesign {
-  id: number;
-  customer: number | Customer;
-  garment: string;
-  garmentLabel: string;
-  colorLabel: string;
-  size: string;
-  idea: string;
-  /**
-   * Imagen final en data URL. Solo la ven el cliente propietario y los administradores.
-   */
-  image: string;
-  approvedAt: string;
-  /**
-   * Punto de extensión para el pedido del Sprint 3. Sin historias de pedidos no se completa.
-   */
-  orderReference?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Pedidos de prendas personalizadas. El cliente, el precio y las instantáneas se fijan en servidor.
+ * Pedidos de prendas personalizadas. Busca por número, prenda, talla o color y filtra por estado desde «Filtros». El cliente, el precio y las instantáneas se fijan en servidor.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "orders".
@@ -371,46 +306,100 @@ export interface Order {
   createdAt: string;
 }
 /**
- * Stock disponible por prenda base y talla. Se descuenta al crear un pedido y se devuelve al cancelarlo.
- *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "garment-stock".
+ * via the `definition` "approved-designs".
  */
-export interface GarmentStock {
+export interface ApprovedDesign {
   id: number;
-  key: string;
-  /**
-   * ID de la prenda base, por ejemplo `camisetas-black` o `hoodies-blue`.
-   */
-  baseId: string;
-  label: string;
-  /**
-   * S, M, L o XL.
-   */
+  customer: number | Customer;
+  garment: string;
+  garmentLabel: string;
+  colorLabel: string;
   size: string;
-  quantity: number;
-  active?: boolean | null;
+  idea: string;
+  /**
+   * Imagen final en data URL. Solo la ven el cliente propietario y los administradores.
+   */
+  image: string;
+  approvedAt: string;
+  /**
+   * Punto de extensión para el pedido del Sprint 3. Sin historias de pedidos no se completa.
+   */
+  orderReference?: string | null;
   updatedAt: string;
   createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "variants".
+ * via the `definition` "media".
  */
-export interface Variant {
+export interface Media {
   id: number;
-  /**
-   * Used for administrative purposes, not shown to customers. This is populated by default.
-   */
-  title?: string | null;
-  product: number | Product;
-  options: (number | VariantOption)[];
-  priceInCOPEnabled?: boolean | null;
-  priceInCOP?: number | null;
+  alt: string;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
-  deletedAt?: string | null;
-  _status?: ('draft' | 'published') | null;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * Categorías de las prendas. Una categoría deshabilitada deja de mostrarse en el catálogo, junto con sus prendas.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories".
+ */
+export interface Category {
+  id: number;
+  name: string;
+  /**
+   * Se usa en el enlace del catálogo (`/catalogo?category=…`). Si lo dejas vacío se genera a partir del nombre.
+   */
+  slug: string;
+  /**
+   * Desmárcalo para deshabilitar la categoría sin borrarla. Sus prendas dejan de mostrarse en el catálogo.
+   */
+  active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Diseños que se ofrecen a los clientes. Asócialos a una prenda desde «Diseños asociados» en la prenda. Un diseño oculto deja de mostrarse en el catálogo, y una prenda cuyos diseños estén todos ocultos también.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "designs".
+ */
+export interface Design {
+  id: number;
+  name: string;
+  /**
+   * Imagen JPEG, PNG o WebP que verán los clientes en el detalle de la prenda.
+   */
+  image: number | Media;
+  /**
+   * Opcional. Uso interno del equipo.
+   */
+  description?: string | null;
+  /**
+   * Desmárcalo para ocultar el diseño del catálogo sin eliminarlo. Si es el único diseño activo de una prenda, la prenda también deja de mostrarse.
+   */
+  active?: boolean | null;
+  /**
+   * Para asociar o quitar este diseño, edita la prenda y cambia «Diseños asociados».
+   */
+  garments?: {
+    docs?: (number | Product)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -428,9 +417,9 @@ export interface Product {
    */
   gallery?: (number | Media)[] | null;
   /**
-   * Diseños disponibles para esta prenda. Se muestran en el detalle del catálogo (HU-08).
+   * Diseños de la colección «Diseños» que se ofrecen con esta prenda. Solo los activos se muestran a los clientes; si todos están ocultos, la prenda deja de mostrarse en el catálogo (HU-23).
    */
-  designs?: (number | Media)[] | null;
+  designs?: (number | Design)[] | null;
   /**
    * Se administran en «Categorías». Si la categoría está deshabilitada, la prenda no se muestra en el catálogo (HU-22).
    */
@@ -486,6 +475,67 @@ export interface VariantOption {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "variants".
+ */
+export interface Variant {
+  id: number;
+  /**
+   * Used for administrative purposes, not shown to customers. This is populated by default.
+   */
+  title?: string | null;
+  product: number | Product;
+  options: (number | VariantOption)[];
+  priceInCOPEnabled?: boolean | null;
+  priceInCOP?: number | null;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "private-spike-media".
+ */
+export interface PrivateSpikeMedia {
+  id: number;
+  _objectKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * Stock disponible por prenda base y talla. Se descuenta al crear un pedido y se devuelve al cancelarlo.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "garment-stock".
+ */
+export interface GarmentStock {
+  id: number;
+  key: string;
+  /**
+   * ID de la prenda base, por ejemplo `camisetas-black` o `hoodies-blue`.
+   */
+  baseId: string;
+  label: string;
+  /**
+   * S, M, L o XL.
+   */
+  size: string;
+  quantity: number;
+  active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -523,6 +573,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'categories';
         value: number | Category;
+      } | null)
+    | ({
+        relationTo: 'designs';
+        value: number | Design;
       } | null)
     | ({
         relationTo: 'private-spike-media';
@@ -641,6 +695,7 @@ export interface CustomersSelect<T extends boolean = true> {
   lastName?: T;
   phone?: T;
   role?: T;
+  orders?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -686,6 +741,19 @@ export interface CategoriesSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "designs_select".
+ */
+export interface DesignsSelect<T extends boolean = true> {
+  name?: T;
+  image?: T;
+  description?: T;
+  active?: T;
+  garments?: T;
   updatedAt?: T;
   createdAt?: T;
 }
