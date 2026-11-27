@@ -44,8 +44,11 @@ export const Customers: CollectionConfig = {
     },
   },
   admin: {
+    defaultColumns: ["name", "lastName", "email", "phone", "createdAt"],
+    description:
+      "Cuentas de cliente. Busca por nombre, apellido, correo o teléfono y abre una cuenta para ver sus pedidos.",
     group: "Cuentas",
-    defaultColumns: ["name", "lastName", "email", "createdAt"],
+    listSearchableFields: ["name", "lastName", "email", "phone"],
     useAsTitle: "email",
   },
   access: {
@@ -101,6 +104,23 @@ export const Customers: CollectionConfig = {
       admin: {
         readOnly: true,
       },
+    },
+    // El detalle del cliente en el panel muestra sus pedidos (HU-24). Es un
+    // campo virtual: no crea columna ni migración. Solo el administrador lo lee,
+    // así el cliente sigue sin recibir pedidos ajenos por la API de su cuenta.
+    {
+      name: "orders",
+      type: "join",
+      access: {
+        read: ({ req }) => hasAdminRole(req.user),
+      },
+      admin: {
+        defaultColumns: ["orderNumber", "status", "quantity", "total", "createdAt"],
+        description: "Pedidos creados por este cliente, del más reciente al más antiguo.",
+      },
+      collection: "orders",
+      label: "Pedidos del cliente",
+      on: "customer",
     },
   ],
   hooks: {

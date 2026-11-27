@@ -121,6 +121,8 @@ Responsable propuesto: **Kevin Burgos**, con apoyo de **Emanuel Giraldo** en el 
 
 Tareas: la colección y la configuración base de `orders` las crea Jhancarlos; Daniel trabaja sobre el panel, columnas, filtros y pruebas; clientes existentes en «Cuentas».
 
+> **En revisión (2026-11-24).** Kevin implementó la configuración del panel en `feat/HU-24-sprint-3-admin-customers-orders`: columnas principales en pedidos y clientes, búsqueda por número/prenda y por datos del cliente, orden por fecha descendente, filtro por estado del panel y lista de pedidos dentro del detalle del cliente. Las pruebas automatizadas pasan; la validación manual en el panel y la aprobación del PR están pendientes. Evidencia en [evidence/HU-24.md](evidence/HU-24.md).
+
 ## HU-25 — Actualizar precios e información · 2 puntos · Should Have
 
 Responsable propuesto: **Emanuel Giraldo**. Depende de HU-22; la instantánea de precio depende de `orders`.

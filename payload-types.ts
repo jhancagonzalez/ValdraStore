@@ -86,6 +86,9 @@ export interface Config {
     'payload-migrations': PayloadMigration;
   };
   collectionsJoins: {
+    customers: {
+      orders: 'orders';
+    };
     designs: {
       garments: 'products';
     };
@@ -207,6 +210,8 @@ export interface Admin {
   collection: 'admins';
 }
 /**
+ * Cuentas de cliente. Busca por nombre, apellido, correo o teléfono y abre una cuenta para ver sus pedidos.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "customers".
  */
@@ -219,6 +224,14 @@ export interface Customer {
    */
   phone?: string | null;
   role?: 'customer' | null;
+  /**
+   * Pedidos creados por este cliente, del más reciente al más antiguo.
+   */
+  orders?: {
+    docs?: (number | Order)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -238,6 +251,81 @@ export interface Customer {
     | null;
   password?: string | null;
   collection: 'customers';
+}
+/**
+ * Pedidos de prendas personalizadas. Busca por número, prenda, talla o color y filtra por estado desde «Filtros». El cliente, el precio y las instantáneas se fijan en servidor.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders".
+ */
+export interface Order {
+  id: number;
+  /**
+   * Se genera al crear el pedido. El cliente lo usa para consultar el estado en Mi cuenta.
+   */
+  orderNumber?: string | null;
+  /**
+   * El cliente se toma de la sesión. Un administrador puede seleccionarlo al crear el pedido.
+   */
+  customer: number | Customer;
+  /**
+   * Diseño aprobado que se va a producir. Debe pertenecer al cliente.
+   */
+  design: number | ApprovedDesign;
+  /**
+   * Cantidad de unidades entre 1 y 10. Descuenta stock.
+   */
+  quantity: number;
+  garmentBase?: string | null;
+  garmentLabel?: string | null;
+  category?: string | null;
+  colorLabel?: string | null;
+  size?: string | null;
+  unitPrice?: number | null;
+  total?: number | null;
+  /**
+   * Solo el administrador puede cambiarlo.
+   */
+  status: 'pendiente' | 'en_produccion' | 'lista' | 'entregada' | 'cancelada';
+  source?: ('customer' | 'admin') | null;
+  createdBy?: (number | null) | Admin;
+  stockRestored?: boolean | null;
+  statusHistory?:
+    | {
+        fromStatus: 'pendiente' | 'en_produccion' | 'lista' | 'entregada' | 'cancelada';
+        toStatus: 'pendiente' | 'en_produccion' | 'lista' | 'entregada' | 'cancelada';
+        changedAt: string;
+        changedBy?: (number | null) | Admin;
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "approved-designs".
+ */
+export interface ApprovedDesign {
+  id: number;
+  customer: number | Customer;
+  garment: string;
+  garmentLabel: string;
+  colorLabel: string;
+  size: string;
+  idea: string;
+  /**
+   * Imagen final en data URL. Solo la ven el cliente propietario y los administradores.
+   */
+  image: string;
+  approvedAt: string;
+  /**
+   * Punto de extensión para el pedido del Sprint 3. Sin historias de pedidos no se completa.
+   */
+  orderReference?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -397,81 +485,6 @@ export interface PrivateSpikeMedia {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "approved-designs".
- */
-export interface ApprovedDesign {
-  id: number;
-  customer: number | Customer;
-  garment: string;
-  garmentLabel: string;
-  colorLabel: string;
-  size: string;
-  idea: string;
-  /**
-   * Imagen final en data URL. Solo la ven el cliente propietario y los administradores.
-   */
-  image: string;
-  approvedAt: string;
-  /**
-   * Punto de extensión para el pedido del Sprint 3. Sin historias de pedidos no se completa.
-   */
-  orderReference?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Pedidos de prendas personalizadas. El cliente, el precio y las instantáneas se fijan en servidor.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "orders".
- */
-export interface Order {
-  id: number;
-  /**
-   * Se genera al crear el pedido. El cliente lo usa para consultar el estado en Mi cuenta.
-   */
-  orderNumber?: string | null;
-  /**
-   * El cliente se toma de la sesión. Un administrador puede seleccionarlo al crear el pedido.
-   */
-  customer: number | Customer;
-  /**
-   * Diseño aprobado que se va a producir. Debe pertenecer al cliente.
-   */
-  design: number | ApprovedDesign;
-  /**
-   * Cantidad de unidades entre 1 y 10. Descuenta stock.
-   */
-  quantity: number;
-  garmentBase?: string | null;
-  garmentLabel?: string | null;
-  category?: string | null;
-  colorLabel?: string | null;
-  size?: string | null;
-  unitPrice?: number | null;
-  total?: number | null;
-  /**
-   * Solo el administrador puede cambiarlo.
-   */
-  status: 'pendiente' | 'en_produccion' | 'lista' | 'entregada' | 'cancelada';
-  source?: ('customer' | 'admin') | null;
-  createdBy?: (number | null) | Admin;
-  stockRestored?: boolean | null;
-  statusHistory?:
-    | {
-        fromStatus: 'pendiente' | 'en_produccion' | 'lista' | 'entregada' | 'cancelada';
-        toStatus: 'pendiente' | 'en_produccion' | 'lista' | 'entregada' | 'cancelada';
-        changedAt: string;
-        changedBy?: (number | null) | Admin;
-        note?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * Stock disponible por prenda base y talla. Se descuenta al crear un pedido y se devuelve al cancelarlo.
@@ -653,6 +666,7 @@ export interface CustomersSelect<T extends boolean = true> {
   lastName?: T;
   phone?: T;
   role?: T;
+  orders?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
