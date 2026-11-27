@@ -71,6 +71,7 @@ export interface Config {
     admins: Admin;
     customers: Customer;
     media: Media;
+    categories: Category;
     'private-spike-media': PrivateSpikeMedia;
     'approved-designs': ApprovedDesign;
     orders: Order;
@@ -96,6 +97,7 @@ export interface Config {
     admins: AdminsSelect<false> | AdminsSelect<true>;
     customers: CustomersSelect<false> | CustomersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    categories: CategoriesSelect<false> | CategoriesSelect<true>;
     'private-spike-media': PrivateSpikeMediaSelect<false> | PrivateSpikeMediaSelect<true>;
     'approved-designs': ApprovedDesignsSelect<false> | ApprovedDesignsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
@@ -255,6 +257,26 @@ export interface Media {
   focalY?: number | null;
 }
 /**
+ * Categorías de las prendas. Una categoría deshabilitada deja de mostrarse en el catálogo, junto con sus prendas.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories".
+ */
+export interface Category {
+  id: number;
+  name: string;
+  /**
+   * Se usa en el enlace del catálogo (`/catalogo?category=…`). Si lo dejas vacío se genera a partir del nombre.
+   */
+  slug: string;
+  /**
+   * Desmárcalo para deshabilitar la categoría sin borrarla. Sus prendas dejan de mostrarse en el catálogo.
+   */
+  active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "private-spike-media".
  */
@@ -409,7 +431,10 @@ export interface Product {
    * Diseños disponibles para esta prenda. Se muestran en el detalle del catálogo (HU-08).
    */
   designs?: (number | Media)[] | null;
-  category: 'camisetas' | 'hoodies' | 'camisa' | 'gorras';
+  /**
+   * Se administran en «Categorías». Si la categoría está deshabilitada, la prenda no se muestra en el catálogo (HU-22).
+   */
+  category: number | Category;
   material: string;
   enableVariants?: boolean | null;
   variantTypes?: (number | VariantType)[] | null;
@@ -494,6 +519,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'categories';
+        value: number | Category;
       } | null)
     | ({
         relationTo: 'private-spike-media';
@@ -648,6 +677,17 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories_select".
+ */
+export interface CategoriesSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

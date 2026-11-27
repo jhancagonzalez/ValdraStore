@@ -3,6 +3,7 @@ import type { EcommercePluginConfig } from "@payloadcms/plugin-ecommerce/types";
 import type { Access, Plugin, Where } from "payload";
 import { hasAdminRole, isAdmin, isAdminField, isCustomer } from "@/access/roles";
 import { revalidateCatalog } from "@/hooks/revalidate-catalog";
+import { requireProductBasics } from "@/services/catalog/product-rules";
 
 const isAuthenticated: Access = ({ req }) => Boolean(req.user);
 
@@ -65,6 +66,10 @@ const ecommerceConfig: EcommercePluginConfig = {
         defaultColumns: ["title", "category", "priceInCOP", "_status"],
         useAsTitle: "title",
       },
+      hooks: {
+        ...defaultCollection.hooks,
+        beforeChange: [...(defaultCollection.hooks?.beforeChange ?? []), requireProductBasics],
+      },
       labels: {
         plural: "Prendas",
         singular: "Prenda",
@@ -109,15 +114,14 @@ const ecommerceConfig: EcommercePluginConfig = {
         },
         {
           name: "category",
-          type: "select",
+          type: "relationship",
           label: "Categoría",
-          options: [
-            { label: "Camisetas", value: "camisetas" },
-            { label: "Hoodies", value: "hoodies" },
-            { label: "Camisa", value: "camisa" },
-            { label: "Gorras", value: "gorras" },
-          ],
+          relationTo: "categories",
           required: true,
+          admin: {
+            description:
+              "Se administran en «Categorías». Si la categoría está deshabilitada, la prenda no se muestra en el catálogo (HU-22).",
+          },
         },
         {
           name: "material",

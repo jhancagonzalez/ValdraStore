@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CATEGORY_LABELS } from "@/lib/catalog";
+import { visibleCategoryOf } from "@/lib/categories";
 import { formatCop } from "@/lib/format";
 import { collectProductImages } from "@/lib/media";
 import type { Product } from "../../../payload-types";
@@ -38,9 +38,7 @@ export const ProductCard = ({ catalogPage = 1, preload = false, product }: Produ
           </span>
         </span>
         <span className="product-info">
-          <span className="product-category">
-            {CATEGORY_LABELS[product.category] ?? product.category}
-          </span>
+          <span className="product-category">{visibleCategoryOf(product)?.name}</span>
           <span className="product-name">{product.title}</span>
           {price ? <span className="product-price">{price}</span> : null}
         </span>

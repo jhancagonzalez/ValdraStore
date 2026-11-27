@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductVariants, getPublishedProductById } from "@/lib/catalog";
+import { visibleCategoryOf } from "@/lib/categories";
 import { formatCop } from "@/lib/format";
 import { collectProductImages } from "@/lib/media";
 import type { Variant, VariantOption, VariantType } from "../../../../payload-types";
@@ -10,13 +11,6 @@ import { BackToCatalogButton } from "./back-to-catalog-button";
 import { VariantSelector } from "./variant-selector";
 
 export const metadata: Metadata = { title: "Prenda" };
-
-const CATEGORY_LABELS: Record<string, string> = {
-  camisa: "Camisa",
-  camisetas: "Camisetas",
-  gorras: "Gorras",
-  hoodies: "Hoodies",
-};
 
 type SelectedVariant = {
   id: number;
@@ -76,9 +70,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
         <ProductGallery images={images} fallbackAlt={product.title} />
         <div className="product-meta">
           <div className="detail-row">
-            <span className="detail-label">
-              {CATEGORY_LABELS[product.category] ?? product.category}
-            </span>
+            <span className="detail-label">{visibleCategoryOf(product)?.name}</span>
             <h1>{product.title}</h1>
           </div>
           <div className="detail-row">

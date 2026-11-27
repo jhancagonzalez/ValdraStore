@@ -14,6 +14,9 @@
   defecto `src/assets/product-placeholder.png` (HU-08). `gallery` reúne vistas
   adicionales y `designs`, los diseños asociados que se muestran en el detalle; la
   colección administrable de diseños corresponde a HU-23 (Sprint 3).
+  `category` es una relación con la colección `categories` (HU-22, D-09): el
+  administrador crea, edita y deshabilita categorías en «Catálogo → Categorías», y
+  una prenda no se publica sin nombre, categoría y precio.
 - El plugin usa `customers` como colección de clientes, con autenticación propia de
   Payload. El panel está restringido a la colección `admins`.
 - La moneda predeterminada y única configurada es COP, con cero decimales para su

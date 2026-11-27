@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { type CatalogFilters, type CatalogSort, getPublishedProducts } from "@/lib/catalog";
+import {
+  type CatalogFilters,
+  type CatalogSort,
+  getCatalogCategories,
+  getPublishedProducts,
+} from "@/lib/catalog";
 import { CategoryPills } from "../_components/category-pills";
 import { ProductCard } from "../_components/product-card";
 import { CatalogFiltersForm } from "./catalog-filters";
@@ -58,7 +63,10 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       filters.maxPrice !== null,
   );
 
-  const products = await getPublishedProducts(page, filters);
+  const [products, categories] = await Promise.all([
+    getPublishedProducts(page, filters),
+    getCatalogCategories(),
+  ]);
 
   // Keeps search and filters in pagination links; the page number is added per link.
   const baseQuery = new URLSearchParams();
@@ -114,7 +122,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       </div>
 
       <div className="catalog-toolbar">
-        <CategoryPills active={filters.category} hrefFor={categoryHref} />
+        <CategoryPills active={filters.category} categories={categories} hrefFor={categoryHref} />
         <CatalogSortSelect value={filters.sort} query={baseQuery.toString()} />
       </div>
 

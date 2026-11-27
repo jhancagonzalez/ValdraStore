@@ -95,6 +95,8 @@ Responsable propuesto: **Andrés Valencia**. Depende de D-09.
 
 Tareas: colección `categories`; relación con productos; migración revisada; validaciones del producto; deshabilitar producto/categoría; revalidación del catálogo. Coordinar con Jhancarlos por el cambio en `src/plugins/ecommerce.ts`.
 
+> **Avance (2026-11-27).** Implementado en `feat/HU-22-sprint-3-categories`: colección `categories`, relación en prendas, regla de publicación (nombre, categoría y precio), catálogo con categorías del panel y migración `20261127_120000_categories`. Pruebas unitarias, tipos, build y migración `up`/`down`/`up` en PGlite aprobados. Falta la revisión de Jhancarlos, aplicar la migración y la prueba manual; por eso los criterios siguen sin marcar. Evidencia en [evidence/HU-22.md](evidence/HU-22.md).
+
 ## HU-23 — Gestionar diseños disponibles · 3 puntos · Should Have
 
 Responsable propuesto: **Daniel Cárdenas**. Depende de D-10.
