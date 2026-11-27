@@ -1,5 +1,6 @@
 import { Admins } from "@/collections/Admins";
 import { ApprovedDesigns } from "@/collections/ApprovedDesigns";
+import { Categories } from "@/collections/Categories";
 import { Customers } from "@/collections/Customers";
 import { Designs } from "@/collections/Designs";
 import { GarmentStock } from "@/collections/GarmentStock";
@@ -13,6 +14,7 @@ export const collections = withRoleManagement([
   Admins,
   Customers,
   Media,
+  Categories,
   Designs,
   PrivateSpikeMedia,
   ApprovedDesigns,

@@ -12,6 +12,7 @@ import * as migration_20261121_120000_orders_core from "./20261121_120000_orders
 import * as migration_20261121_140000_order_number from "./20261121_140000_order_number";
 import * as migration_20261122_120000_order_number_check from "./20261122_120000_order_number_check";
 import * as migration_20261126_120000_designs from "./20261126_120000_designs";
+import * as migration_20261127_120000_categories from "./20261127_120000_categories";
 
 export const migrations = [
   {
@@ -83,5 +84,10 @@ export const migrations = [
     up: migration_20261126_120000_designs.up,
     down: migration_20261126_120000_designs.down,
     name: "20261126_120000_designs",
+  },
+  {
+    up: migration_20261127_120000_categories.up,
+    down: migration_20261127_120000_categories.down,
+    name: "20261127_120000_categories",
   },
 ];

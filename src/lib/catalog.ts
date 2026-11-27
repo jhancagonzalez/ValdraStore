@@ -1,17 +1,14 @@
 import { unstable_cache } from "next/cache";
 import type { Where } from "payload";
+import { visibleCategoryOf } from "@/lib/categories";
 import { getPayloadClient } from "@/lib/payload";
 import type { Product, Variant, VariantOption } from "../../payload-types";
 import { hasVisibleDesigns } from "./design-visibility";
 
 export const CATALOG_PAGE_SIZE = 12;
 
-export const CATEGORY_LABELS: Record<string, string> = {
-  camisa: "Camisa",
-  camisetas: "Camisetas",
-  gorras: "Gorras",
-  hoodies: "Hoodies",
-};
+/** A category as the storefront lists it: `slug` goes in the URL, `name` on screen. */
+export type CatalogCategory = { name: string; slug: string };
 
 export type CatalogSort = "newest" | "price-asc" | "price-desc";
 
@@ -102,16 +99,17 @@ const matchesFilters = (
   attributes: ProductAttributes,
   filters: CatalogFilters,
 ) => {
+  const category = visibleCategoryOf(product);
   const query = normalizeText(filters.q);
   if (query) {
     const haystack = normalizeText(
-      `${product.title} ${product.category} ${CATEGORY_LABELS[product.category] ?? ""}`,
+      `${product.title} ${category?.slug ?? ""} ${category?.name ?? ""}`,
     );
     if (!haystack.includes(query)) {
       return false;
     }
   }
-  if (filters.category && product.category !== filters.category) {
+  if (filters.category && category?.slug !== filters.category) {
     return false;
   }
   if (
@@ -186,11 +184,35 @@ const loadCatalogRows = unstable_cache(
   { revalidate: CATALOG_CACHE_SECONDS, tags: ["catalog"] },
 );
 
+/**
+ * Active categories for the storefront pills (HU-22). Read without
+ * overrideAccess, so the collection access keeps disabled ones out.
+ */
+const loadCatalogCategories = unstable_cache(
+  async (): Promise<CatalogCategory[]> => {
+    const payload = await getPayloadClient();
+    const { docs } = await payload.find({
+      collection: "categories",
+      depth: 0,
+      overrideAccess: false,
+      pagination: false,
+      sort: "name",
+    });
+    return docs.map(({ name, slug }) => ({ name, slug }));
+  },
+  ["catalog-categories"],
+  { revalidate: CATALOG_CACHE_SECONDS, tags: ["catalog"] },
+);
+
+export const getCatalogCategories = () => loadCatalogCategories();
+
 export const getPublishedProducts = async (page: number, filters: CatalogFilters) => {
   const rows = await loadCatalogRows();
   const { variants } = rows;
-  // A garment whose associated designs are all hidden is not offered (HU-23).
-  const products = rows.products.filter(hasVisibleDesigns);
+  // Garments with a disabled category (HU-22) or all hidden designs (HU-23) are not offered.
+  const products = rows.products.filter(
+    (product) => visibleCategoryOf(product) !== null && hasVisibleDesigns(product),
+  );
 
   const attributesByProduct = groupVariantAttributes(variants);
   const attributesOf = (product: Product) =>
@@ -260,8 +282,8 @@ const loadProductById = unstable_cache(
 export const getPublishedProductById = async (id: string) => {
   try {
     const product = await loadProductById(id);
-    // Same rule as the list: hidden designs take their garment out of the catalog (HU-23).
-    return hasVisibleDesigns(product) ? product : null;
+    // Same rule as the list: disabled categories (HU-22) or hidden designs (HU-23) hide the garment.
+    return visibleCategoryOf(product) && hasVisibleDesigns(product) ? product : null;
   } catch {
     return null;
   }

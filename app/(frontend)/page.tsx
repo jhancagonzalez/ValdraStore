@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getPublishedProducts } from "@/lib/catalog";
+import { getCatalogCategories, getPublishedProducts } from "@/lib/catalog";
 import bannerEditorial from "../../imagen_banner1.png";
 import bannerDuo from "../../imagen_banner2.png";
 import { CategoryPills } from "./_components/category-pills";
@@ -48,7 +48,10 @@ const emptyFilters = {
 };
 
 export default async function HomePage() {
-  const products = await getPublishedProducts(1, emptyFilters);
+  const [products, categories] = await Promise.all([
+    getPublishedProducts(1, emptyFilters),
+    getCatalogCategories(),
+  ]);
   const preview = products.docs.slice(0, 4);
 
   return (
@@ -67,7 +70,7 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <CategoryPills />
+          <CategoryPills categories={categories} />
 
           {preview.length > 0 ? (
             <ul className="product-grid product-grid-home">
