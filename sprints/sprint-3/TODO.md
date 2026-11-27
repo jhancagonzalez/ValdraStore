@@ -99,13 +99,15 @@ Tareas: colección `categories`; relación con productos; migración revisada; v
 
 Responsable propuesto: **Daniel Cárdenas**. Depende de D-10.
 
-- [ ] El administrador puede crear, editar y eliminar los diseños disponibles.
-- [ ] Los diseños se pueden asociar a las prendas con su imagen.
-- [ ] Los diseños deshabilitados dejan de mostrarse a los clientes.
+- [x] El administrador puede crear, editar y eliminar los diseños disponibles.
+- [x] Los diseños se pueden asociar a las prendas con su imagen.
+- [x] Los diseños deshabilitados dejan de mostrarse a los clientes.
 
 **Decisión confirmada (D-10):** se crea la colección `designs` con imagen, relación a prendas y `active`; `products.designs` pasa de carga de medios a relación. Incluye migración y lectura pública solo de activos.
 
 Tareas: colección `designs`; carga de imagen; relación con prendas; `active`; migración revisada; CRUD y lectura pública de activos. Coordinar con Jhancarlos por el cambio en `src/plugins/ecommerce.ts`.
+
+**Estado:** implementada en `feat/HU-23-sprint-3-designs` y validada por Daniel el 25 nov 2026 (panel, catálogo y API). Migración `20261126_120000_designs` aplicada en la base de la validación; su revisión (D-17) y el cambio en `src/plugins/ecommerce.ts` quedan para Jhancarlos en el PR. Evidencia: [evidence/HU-23.md](evidence/HU-23.md).
 
 ## HU-24 — Gestionar clientes y pedidos · 5 puntos · Must Have
 
